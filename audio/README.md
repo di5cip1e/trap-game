@@ -1,0 +1,176 @@
+# Trap Game - Audio Assets Required
+
+This document lists all sound effects, music, and ambient audio needed for the Trap game.
+
+## 📁 Directory Structure
+
+```
+audio/
+├── SoundManager.js      # Sound management module
+├── README.md            # This file
+├── sfx/                 # Sound effects (one-shot)
+│   ├── footstep.mp3
+│   ├── ui_click.mp3
+│   ├── ...
+├── music/               # Background music (looped)
+│   ├── street.mp3
+│   ├── safehouse.mp3
+│   ├── battle.mp3
+│   └── menu.mp3
+└── ambient/             # Ambient sounds (looped)
+    ├── city.mp3
+    ├── traffic.mp3
+    ├── rain.mp3
+    └── distant_sirens.mp3
+```
+
+---
+
+## 🔊 Sound Effects (SFX)
+
+### Player Actions
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Footstep | `sfx/footstep.mp3` | Footsteps when walking | ~0.3s |
+| Item Pickup | `sfx/item_pickup.mp3` | Picking up items/materials | ~0.5s |
+
+### UI Interactions
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| UI Click | `sfx/ui_click.mp3` | Button press/confirmation | ~0.1s |
+| UI Hover | `sfx/ui_hover.mp3` | Mouse over button (subtle) | ~0.1s |
+| Bell Notification | `sfx/bell_notification.mp3` | Notification alert | ~1s |
+
+### Economic
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Cash Register | `sfx/cash_register.mp3` | Buying or selling items | ~1s |
+
+### Safehouse
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Door Open | `sfx/door_open.mp3` | Entering safehouse | ~0.5s |
+| Door Close | `sfx/door_close.mp3` | Leaving safehouse | ~0.5s |
+
+### Police / Heat System
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Heat Warning | `sfx/heat_warning.mp3` | Heat level rising warning | ~2s |
+| Police Siren | `sfx/police_siren.mp3` | Police approaching | ~3s (loopable) |
+| Arrest Alarm | `sfx/arrest_alarm.mp3` | Player gets arrested | ~2s |
+
+### Combat
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Battle Punch | `sfx/battle_punch.mp3` | Successful attack | ~0.3s |
+| Battle Defend | `sfx/battle_defend.mp3` | Blocking an attack | ~0.5s |
+| Battle Hurt | `sfx/battle_hurt.mp3` | Taking damage | ~0.5s |
+
+### Outcomes
+| Sound | File | Description | Duration |
+|-------|------|-------------|----------|
+| Success Jingle | `sfx/success.mp3` | Mission complete/sale | ~2s |
+| Failure Jingle | `sfx/failure.mp3` | Failed mission/raid | ~2s |
+
+---
+
+## 🎵 Background Music
+
+| Zone | File | Description | Style |
+|------|------|-------------|-------|
+| Street | `music/street.mp3` | Outdoor/roaming music | Hip-hop, urban |
+| Safehouse | `music/safehouse.mp3` | Inside safehouse | Lo-fi, chill |
+| Battle | `music/battle.mp3` | Combat encounters | Intense, fast |
+| Menu | `music/menu.mp3` | Main menu screen | Atmospheric |
+
+---
+
+## 🌆 Ambient Sounds
+
+| Sound | File | Description |
+|-------|------|-------------|
+| City Ambience | `ambient/city.mp3` | General city background noise |
+| Traffic | `ambient/traffic.mp3` | Distant car sounds, horns |
+| Rain | `ambient/rain.mp3` | Rainfall (for night/weather) |
+| Distant Sirens | `ambient/distant_sirens.mp3` | Police/fire sirens far away |
+
+---
+
+## 🎮 Integration Guide
+
+### Importing SoundManager
+
+```javascript
+import SoundManager, { SOUND_TRIGGERS, ZONE_MUSIC, ZONE_AMBIENT } from './audio/SoundManager.js';
+```
+
+### Initializing in GameScene
+
+```javascript
+create() {
+    // Initialize sound manager
+    this.soundManager = new SoundManager(this);
+    
+    // Play background music
+    this.soundManager.playMusic(ZONE_MUSIC.STREET);
+}
+```
+
+### Playing Sound Effects
+
+```javascript
+// On player movement
+this.input.keyboard.on('keydown', () => {
+    this.soundManager.play(SOUND_TRIGGERS.onPlayerWalk);
+});
+
+// On button click
+this.submitButton.on('pointerdown', () => {
+    this.soundManager.play(SOUND_TRIGGERS.onButtonClick);
+});
+
+// On purchase
+this.soundManager.play(SOUND_TRIGGERS.onBuy);
+```
+
+### Zone-Based Music
+
+```javascript
+// When entering safehouse
+this.soundManager.playMusic(ZONE_MUSIC.SAFEHOUSE, 1000);
+
+// When combat starts
+this.soundManager.playMusic(ZONE_MUSIC.BATTLE, 500);
+
+// When returning to street
+this.soundManager.playMusic(ZONE_MUSIC.STREET, 1000);
+```
+
+### Volume Control
+
+```javascript
+// Adjust category volumes
+this.soundManager.setVolume('music', 0.3);
+this.soundManager.setVolume('sfx', 0.8);
+
+// Mute/unmute
+this.soundManager.mute();
+this.soundManager.unmute();
+```
+
+---
+
+## 📝 Notes
+
+- All audio files should be in **MP3** or **OGG** format
+- For best browser compatibility, provide both formats
+- Music and ambient sounds should be **loopable** (seamless start/end)
+- SFX should be short and snappy
+- Consider creating variations for footstep sounds to avoid repetition
+
+---
+
+## 🔧 Generated By
+
+Prism (2D/3D Modeler) - Sound & Audio System
+Date: 2026-03-10

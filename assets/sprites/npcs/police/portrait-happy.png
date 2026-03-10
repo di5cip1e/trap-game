@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Error><Code>AuthenticationFailed</Code><Message>Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature.
+RequestId:ee7dcae2-601e-000a-69c0-b0bb0d000000
+Time:2026-03-10T18:59:38.6129534Z</Message><AuthenticationErrorDetail>Signature did not match. String to sign used was r
+2026-03-10T17:56:29Z
+2026-03-10T19:56:29Z
+/blob/oaidalleapiprodscus/private/org-uega65UGCCvUf4iqzB1kKZWH/user-kJBkpZAjfIq2XzSpLi0mbl0v/img-dHIq7QJlijpmN723zEpMRGsz.png
+38e27a3b-6174-4d3eXXXXXXXXXXXXXXXXXX
+a48cca56-e6da-484e-a814-9c849652bcb3
+2026-03-10T02:30:55Z
+2026-03-11T02:30:55Z
+b
+2026-02-06
+
+
+
+
+
+
+
+2026-02-06
+b
+
+
+
+inline
+
+
+</AuthenticationErrorDetail></Error>

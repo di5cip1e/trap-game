@@ -295,18 +295,65 @@ export default class HUD {
         // Event indicators (active events shown here)
         this.eventTexts = [];
         
+        // ============ MENU/SETTINGS BUTTON ============
+        const menuX = width - 30;
+        const menuY = 30;
+        
+        this.menuBtn = this.scene.add.rectangle(menuX, menuY, 70, 50, 0x2a2a2a);
+        this.menuBtn.setOrigin(1, 0);
+        this.menuBtn.setScrollFactor(0);
+        this.menuBtn.setDepth(502);
+        this.menuBtn.setStrokeStyle(2, 0x44aaff);
+        this.menuBtn.setInteractive({ useHandCursor: true });
+        
+        this.menuBtnText = this.scene.add.text(menuX - 35, menuY + 25, '☰', {
+            fontSize: '24px',
+            color: '#44aaff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(503);
+        
+        this.menuBtn.on('pointerover', () => {
+            this.menuBtn.setFillStyle(0x444444);
+        });
+        
+        this.menuBtn.on('pointerout', () => {
+            this.menuBtn.setFillStyle(0x2a2a2a);
+        });
+        
+        this.menuBtn.on('pointerdown', () => {
+            this.menuBtn.setScale(0.95);
+            // Open pause/menu screen
+            if (this.scene.openPauseMenu) {
+                this.scene.openPauseMenu();
+            }
+        });
+        
+        this.menuBtn.on('pointerup', () => {
+            this.menuBtn.setScale(1);
+        });
+        
+        // Touch-friendly: Also trigger on tap for mobile
+        this.scene.input.on('pointerdown', (pointer) => {
+            if (pointer.x > menuX - 80 && pointer.x < menuX + 10 && 
+                pointer.y > menuY && pointer.y < menuY + 55) {
+                if (this.scene.openPauseMenu) {
+                    this.scene.openPauseMenu();
+                }
+            }
+        });
+        // ============ END MENU BUTTON ============
+        
         // ============ HELP BUTTON ============
-        const helpX = width - 30;
+        const helpX = menuX - 90;
         const helpY = 30;
         
-        this.helpBtn = this.scene.add.rectangle(helpX, helpY, 80, 35, 0x2a2a2a);
+        this.helpBtn = this.scene.add.rectangle(helpX, helpY, 70, 50, 0x2a2a2a);
         this.helpBtn.setOrigin(1, 0);
         this.helpBtn.setScrollFactor(0);
         this.helpBtn.setDepth(502);
         this.helpBtn.setStrokeStyle(2, 0xff6600);
         this.helpBtn.setInteractive({ useHandCursor: true });
         
-        this.helpBtnText = this.scene.add.text(helpX - 40, helpY + 17, 'HELP', {
+        this.helpBtnText = this.scene.add.text(helpX - 35, helpY + 25, 'HELP', {
             fontFamily: 'Press Start 2P',
             fontSize: '12px',
             color: CONFIG.COLORS.primary
@@ -321,9 +368,14 @@ export default class HUD {
         });
         
         this.helpBtn.on('pointerdown', () => {
+            this.helpBtn.setScale(0.95);
             if (this.scene.tutorialUI) {
                 this.scene.tutorialUI.open(0);
             }
+        });
+        
+        this.helpBtn.on('pointerup', () => {
+            this.helpBtn.setScale(1);
         });
         // ============ END HELP BUTTON ============
         

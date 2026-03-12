@@ -24,6 +24,8 @@ import SkillTree from './SkillTree.js';
 import CombatScene, { ENEMY_TYPES } from './CombatScene.js';
 // Mobile controls - already exists in rosie/controls/
 import { MobileControlsManager, VirtualJoystick, ActionButton } from './rosie/controls/phaserMobileControls.js';
+// NEW: Touch controls system
+import TouchControls from './TouchControls.js';
 // Achievements system
 import Achievements, { trackSale, trackSupplierMeeting, trackHeatEscape, trackEquipmentPurchase } from './Achievements.js';
 import { EventBus, EVENTS } from './EventBus.js';
@@ -1015,18 +1017,15 @@ export default class GameScene extends Phaser.Scene {
     setupMobileControls() {
         const { width, height } = this.scale;
         
-        // Create mobile controls manager
-        this.mobileControls = new MobileControlsManager(this);
+        // Create TouchControls for mobile joystick and buttons
+        this.touchControls = new TouchControls(this);
+        this.touchControls.setupJoystick();
         
-        // Add virtual joystick in bottom-left corner
-        // Position: 15% from left, 20% from bottom
-        this.joystick = this.mobileControls.addJoystick({
-            baseRadius: 70,
-            knobRadius: 35,
-            maxDistance: 55,
-            x: width * 0.12,
-            y: height * 0.78
-        });
+        // Set this.joystick to TouchControls for PlayerController compatibility
+        this.joystick = this.touchControls;
+        
+        // Also create mobile controls manager for any additional controls
+        this.mobileControls = new MobileControlsManager(this);
         
         // Add INTERACT button (right side)
         this.interactButton = this.add.rectangle(

@@ -1153,13 +1153,17 @@ export default class GameScene extends Phaser.Scene {
      * @param {string} neighborhoodKey - The neighborhood key (e.g., 'OLD_TOWN', 'SKID_ROW')
      */
     generateMapForNeighborhood(neighborhoodKey) {
-        // Prevent neighborhood transitions while indoors
-        if (this.isIndoor) {
-            this.showFloatingText('Exit building first!', CONFIG.COLORS.danger);
-            return;
-        }
-        
-        const neighborhood = neighborhoodKey || this.playerState.neighborhood;
+        try {
+            // Prevent neighborhood transitions while indoors
+            if (this.isIndoor) {
+                this.showFloatingText('Exit building first!', CONFIG.COLORS.danger);
+                return;
+            }
+            
+            // Show loading indicator
+            this.showFloatingText('Traveling...', CONFIG.COLORS.info);
+            
+            const neighborhood = neighborhoodKey || this.playerState.neighborhood;
         
         // Get neighborhood config
         const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
@@ -1227,6 +1231,11 @@ export default class GameScene extends Phaser.Scene {
         // Update HUD to show new neighborhood
         if (this.hud) {
             this.hud.update();
+        }
+        
+        } catch (error) {
+            console.error('Error generating map for neighborhood:', error);
+            this.showFloatingText('Travel failed!', CONFIG.COLORS.danger);
         }
     }
     

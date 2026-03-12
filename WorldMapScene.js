@@ -335,21 +335,29 @@ export default class WorldMapScene extends Phaser.Scene {
     }
 
     performTravel(targetNeighborhood) {
-        // Update player state
-        if (this.gameScene && this.gameScene.playerState) {
-            this.gameScene.playerState.neighborhood = targetNeighborhood;
+        try {
+            // Update player state
+            if (this.gameScene && this.gameScene.playerState) {
+                this.gameScene.playerState.neighborhood = targetNeighborhood;
+                
+                // Regenerate map for new neighborhood
+                this.gameScene.generateMapForNeighborhood(targetNeighborhood);
+            } else {
+                console.error('gameScene not available for travel');
+                this.showFloatingText('Travel error!', 0xff0000);
+            }
             
-            // Regenerate map for new neighborhood
-            this.gameScene.generateMapForNeighborhood(targetNeighborhood);
+            // Fade out and return
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.stop();
+                this.scene.resume('GameScene');
+            });
+        } catch (error) {
+            console.error('Error during travel:', error);
+            this.showFloatingText('Travel failed!', 0xff0000);
         }
-        
-        // Fade out and return
-        this.cameras.main.fadeOut(300, 0, 0, 0);
-        
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.stop();
-            this.scene.resume('GameScene');
-        });
     }
 
     returnToGame() {

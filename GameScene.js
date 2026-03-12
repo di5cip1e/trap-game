@@ -572,6 +572,9 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
         
+        // Generate fallback textures in case external assets failed to load
+        this.generateFallbackTextures();
+        
         // Generate procedural map with neighborhood settings
         const neighborhood = this.playerState.neighborhood;
         const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
@@ -4707,5 +4710,152 @@ export default class GameScene extends Phaser.Scene {
             this.pauseContainer.destroy();
             this.pauseContainer = null;
         }
+    }
+    
+    /**
+     * Generate fallback textures in case external assets fail to load
+     * This ensures the game works even without external assets
+     */
+    generateFallbackTextures() {
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Player texture (green square)
+        graphics.fillStyle(0x00ff00, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('player-top', 32, 32);
+        graphics.clear();
+        
+        // Street tile (dark gray)
+        graphics.fillStyle(0x333333, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-street', 32, 32);
+        graphics.clear();
+        
+        // Sidewalk (light gray)
+        graphics.fillStyle(0x666666, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-sidewalk', 32, 32);
+        graphics.clear();
+        
+        // HUD bar (dark blue)
+        graphics.fillStyle(0x1a1a2e, 1);
+        graphics.fillRect(0, 0, 200, 30);
+        graphics.generateTexture('hud-bar', 200, 30);
+        graphics.clear();
+        
+        // Panel (dark purple)
+        graphics.fillStyle(0x2a2a4e, 1);
+        graphics.fillRect(0, 0, 400, 300);
+        graphics.generateTexture('panel', 400, 300);
+        graphics.clear();
+        
+        // Alley tile (darker gray)
+        graphics.fillStyle(0x222222, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-alley', 32, 32);
+        graphics.clear();
+        
+        // Concrete tile
+        graphics.fillStyle(0x444444, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-concrete-cracked', 32, 32);
+        graphics.clear();
+        
+        // Dirty floor
+        graphics.fillStyle(0x3a3a3a, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-dirty-floor', 32, 32);
+        graphics.clear();
+        
+        // Wood floor
+        graphics.fillStyle(0x5c4033, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wood-floor', 32, 32);
+        graphics.clear();
+        
+        // Wall brick
+        graphics.fillStyle(0x8b4513, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wall-brick', 32, 32);
+        graphics.clear();
+        
+        // Interior wall
+        graphics.fillStyle(0xaaaaaa, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wall-interior', 32, 32);
+        graphics.clear();
+        
+        // Cardboard box (brown)
+        graphics.fillStyle(0x8b6914, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('cardboard-box', 32, 32);
+        graphics.clear();
+        
+        // Storage unit (gray)
+        graphics.fillStyle(0x555555, 1);
+        graphics.fillRect(0, 0, 64, 48);
+        graphics.generateTexture('storage-unit', 64, 48);
+        graphics.clear();
+        
+        // Dumpster (dark green)
+        graphics.fillStyle(0x2d5a27, 1);
+        graphics.fillRect(0, 0, 48, 32);
+        graphics.generateTexture('dumpster', 48, 32);
+        graphics.clear();
+        
+        // Workstation (blue)
+        graphics.fillStyle(0x3366cc, 1);
+        graphics.fillRect(0, 0, 48, 32);
+        graphics.generateTexture('workstation', 48, 32);
+        graphics.clear();
+        
+        // NPC Vendor (cyan)
+        graphics.fillStyle(0x00ffff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-vendor', 32, 32);
+        graphics.clear();
+        
+        // NPC Buyer (yellow)
+        graphics.fillStyle(0xffff00, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-buyer', 32, 32);
+        graphics.clear();
+        
+        // NPC Rival (red)
+        graphics.fillStyle(0xff0000, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-rival', 32, 32);
+        graphics.clear();
+        
+        // NPC Police (blue)
+        graphics.fillStyle(0x0066ff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-police', 32, 32);
+        graphics.clear();
+        
+        // NPC Shop Owner (purple)
+        graphics.fillStyle(0x9900ff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-shop-owner', 32, 32);
+        graphics.clear();
+        
+        // NPC Corrupt Cop (dark blue)
+        graphics.fillStyle(0x003366, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-corrupt-cop', 32, 32);
+        graphics.clear();
+        
+        // Icon Raw Materials (orange)
+        graphics.fillStyle(0xff9900, 1);
+        graphics.fillRect(0, 0, 24, 24);
+        graphics.generateTexture('icon-raw', 24, 24);
+        graphics.clear();
+        
+        // Icon Product (green)
+        graphics.fillStyle(0x00cc00, 1);
+        graphics.fillRect(0, 0, 24, 24);
+        graphics.generateTexture('icon-product', 24, 24);
+        
+        graphics.destroy();
     }
 }

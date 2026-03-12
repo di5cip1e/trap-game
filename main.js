@@ -1,4 +1,5 @@
 import Phaser from './lib/phaser.min.js';
+import TitleScene from './TitleScene.js';
 import CharacterCreationScene from './CharacterCreationScene.js';
 import GameScene from './GameScene.js';
 import WorldMapScene from './WorldMapScene.js';
@@ -12,7 +13,7 @@ const config = {
         height: 1080
     },
     backgroundColor: '#000000',
-    scene: [CharacterCreationScene, GameScene, WorldMapScene],
+    scene: [TitleScene, CharacterCreationScene, GameScene, WorldMapScene],
     parent: document.body,
     pixelArt: true
 };

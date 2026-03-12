@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script src="bundle.js"></script>
     <style>
       html, body { 
         margin: 0; 
@@ -24,35 +26,7 @@
         -webkit-touch-action: none;
       }
     </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "phaser": "https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"
-      }
-    }
-    </script>
   </head>
   <body>
-    <script type="module">
-      import CharacterCreationScene from './CharacterCreationScene.js';
-      import GameScene from './GameScene.js';
-      import WorldMapScene from './WorldMapScene.js';
-
-      const config = {
-        type: Phaser.AUTO,
-        scale: {
-          mode: Phaser.Scale.FIT,
-          autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: 1920,
-          height: 1080
-        },
-        backgroundColor: '#000000',
-        scene: [CharacterCreationScene, GameScene, WorldMapScene],
-        parent: document.body,
-        pixelArt: true
-      };
-
-      window.game = new Phaser.Game(config);
-    </script>
   </body>
 </html>

@@ -1,0 +1,227 @@
+[
+  {
+    "name": "street-lamp",
+    "filename": "street-lamp.png",
+    "success": true
+  },
+  {
+    "name": "fire-hydrant",
+    "filename": "fire-hydrant.png",
+    "success": true
+  },
+  {
+    "name": "trash-can-metal",
+    "filename": "trash-can-metal.png",
+    "success": true
+  },
+  {
+    "name": "dumpster-closed",
+    "filename": "dumpster-closed.png",
+    "success": true
+  },
+  {
+    "name": "dumpster-open",
+    "filename": "dumpster-open.png",
+    "success": true
+  },
+  {
+    "name": "cardboard-box-scattered",
+    "filename": "cardboard-box-scattered.png",
+    "success": true
+  },
+  {
+    "name": "shopping-cart",
+    "filename": "shopping-cart.png",
+    "success": true
+  },
+  {
+    "name": "park-bench",
+    "filename": "park-bench.png",
+    "success": true
+  },
+  {
+    "name": "newspaper-stand",
+    "filename": "newspaper-stand.png",
+    "success": true
+  },
+  {
+    "name": "phone-booth",
+    "filename": "phone-booth.png",
+    "success": true
+  },
+  {
+    "name": "mailbox",
+    "filename": "mailbox.png",
+    "success": true
+  },
+  {
+    "name": "traffic-cone",
+    "filename": "traffic-cone.png",
+    "success": true
+  },
+  {
+    "name": "barricade",
+    "filename": "barricade.png",
+    "success": true
+  },
+  {
+    "name": "fence-section",
+    "filename": "fence-section.png",
+    "success": true
+  },
+  {
+    "name": "guard-rail",
+    "filename": "guard-rail.png",
+    "success": true
+  },
+  {
+    "name": "pothole",
+    "filename": "pothole.png",
+    "success": true
+  },
+  {
+    "name": "car-sedan",
+    "filename": "car-sedan.png",
+    "success": true
+  },
+  {
+    "name": "car-suv",
+    "filename": "car-suv.png",
+    "success": true
+  },
+  {
+    "name": "van-cargo",
+    "filename": "van-cargo.png",
+    "success": true
+  },
+  {
+    "name": "motorcycle",
+    "filename": "motorcycle.png",
+    "success": true
+  },
+  {
+    "name": "truck-delivery",
+    "filename": "truck-delivery.png",
+    "success": true
+  },
+  {
+    "name": "bicycle",
+    "filename": "bicycle.png",
+    "success": true
+  },
+  {
+    "name": "graffiti-wall",
+    "filename": "graffiti-wall.png",
+    "success": true
+  },
+  {
+    "name": "broken-window",
+    "filename": "broken-window.png",
+    "success": true
+  },
+  {
+    "name": "brick-wall",
+    "filename": "brick-wall.png",
+    "success": true
+  },
+  {
+    "name": "faded-paint",
+    "filename": "faded-paint.png",
+    "success": true
+  },
+  {
+    "name": "steam-vent",
+    "filename": "steam-vent.png",
+    "success": true
+  },
+  {
+    "name": "manhole-cover",
+    "filename": "manhole-cover.png",
+    "success": true
+  },
+  {
+    "name": "sprinkler",
+    "filename": "sprinkler.png",
+    "success": true
+  },
+  {
+    "name": "pool-water",
+    "filename": "pool-water.png",
+    "success": true
+  },
+  {
+    "name": "oil-stain",
+    "filename": "oil-stain.png",
+    "success": true
+  },
+  {
+    "name": "mattress",
+    "filename": "mattress.png",
+    "success": true
+  },
+  {
+    "name": "old-chair",
+    "filename": "old-chair.png",
+    "success": true
+  },
+  {
+    "name": "table",
+    "filename": "table.png",
+    "success": true
+  },
+  {
+    "name": "crates",
+    "filename": "crates.png",
+    "success": true
+  },
+  {
+    "name": "barrels",
+    "filename": "barrels.png",
+    "success": true
+  },
+  {
+    "name": "lockers",
+    "filename": "lockers.png",
+    "success": true
+  },
+  {
+    "name": "safe",
+    "filename": "safe.png",
+    "success": true
+  },
+  {
+    "name": "scale",
+    "filename": "scale.png",
+    "success": true
+  },
+  {
+    "name": "burner-phone",
+    "filename": "burner-phone.png",
+    "success": true
+  },
+  {
+    "name": "cash-pile",
+    "filename": "cash-pile.png",
+    "success": true
+  },
+  {
+    "name": "dead-tree",
+    "filename": "dead-tree.png",
+    "success": true
+  },
+  {
+    "name": "bushes",
+    "filename": "bushes.png",
+    "success": true
+  },
+  {
+    "name": "weeds",
+    "filename": "weeds.png",
+    "success": true
+  },
+  {
+    "name": "puddle",
+    "filename": "puddle.png",
+    "success": true
+  }
+]

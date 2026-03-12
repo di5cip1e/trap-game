@@ -7,23 +7,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Phaser loaded locally -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
     <style>
       html, body { 
         margin: 0; 
         padding: 0; 
         background-color: black;
-        /* Prevent touch callout and double-tap zoom */
         touch-callout: none;
         -webkit-touch-callout: none;
         -webkit-user-select: none;
         user-select: none;
-        /* Prevent pull-to-refresh and overscroll */
         overscroll-behavior: none;
-        /* Prevent text selection on touch */
         -webkit-tap-highlight-color: transparent;
       }
-      /* Disable touch zooming on canvas */
       canvas {
         touch-action: none;
         -webkit-touch-action: none;
@@ -31,10 +27,25 @@
     </style>
   </head>
   <body>
-    <script type="module" src="main.js"></script>
-    <script src="https://storage.googleapis.com/rosebud_staticfiles/ChatManager.js"></script>
-    <script src="https://storage.googleapis.com/rosebud_staticfiles/ImageGenerator.js"></script>
-    <script src="https://storage.googleapis.com/rosebud_staticfiles/ProgressLogger.js"></script>
-    <script src="https://storage.googleapis.com/rosebud_staticfiles/OGP.js"></script>
+    <script src="CharacterCreationScene.js"></script>
+    <script src="GameScene.js"></script>
+    <script src="WorldMapScene.js"></script>
+    <script>
+      const config = {
+        type: Phaser.AUTO,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: 1920,
+          height: 1080
+        },
+        backgroundColor: '#000000',
+        scene: [CharacterCreationScene, GameScene, WorldMapScene],
+        parent: document.body,
+        pixelArt: true
+      };
+
+      window.game = new Phaser.Game(config);
+    </script>
   </body>
 </html>

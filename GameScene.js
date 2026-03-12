@@ -536,37 +536,37 @@ export default class GameScene extends Phaser.Scene {
         
         // --- LEGACY SINGLE-IMAGE LOADING (current) ---
         // Load game assets
-        this.load.image('player-top', 'https://rosebud.ai/assets/player-top-down.png.webp?8YJk');
-        this.load.image('tile-street', 'https://rosebud.ai/assets/tile-street.png.webp?ekRg');
-        this.load.image('tile-sidewalk', 'https://rosebud.ai/assets/tile-sidewalk.png.webp?WAgM');
-        this.load.image('hud-bar', 'https://rosebud.ai/assets/hud-panel-bar.png.webp?IDtt');
-        this.load.image('panel', 'https://rosebud.ai/assets/ui-panel.png.webp?eL0r');
+        this.load.image('player-top', 'assets/player-top-down.png');
+        this.load.image('tile-street', 'assets/tile-street.png');
+        this.load.image('tile-sidewalk', 'assets/tile-sidewalk.png');
+        this.load.image('hud-bar', 'assets/hud-panel-bar.png');
+        this.load.image('panel', 'assets/ui-panel.png');
         
         // Load biome-specific tiles
-        this.load.image('tile-alley', 'https://rosebud.ai/assets/tile-alley.png.webp?HvWg');
-        this.load.image('tile-concrete-cracked', 'https://rosebud.ai/assets/tile-concrete-cracked.png.webp?uX48');
-        this.load.image('tile-dirty-floor', 'https://rosebud.ai/assets/tile-dirty-floor.png.webp?3xwW');
-        this.load.image('tile-wood-floor', 'https://rosebud.ai/assets/tile-wood-floor.png.webp?7QYt');
-        this.load.image('tile-wall-brick', 'https://rosebud.ai/assets/tile-wall-brick.png.webp?IhUH');
-        this.load.image('tile-wall-interior', 'https://rosebud.ai/assets/tile-wall-interior.png.webp?COiM');
+        this.load.image('tile-alley', 'assets/tile-alley.png');
+        this.load.image('tile-concrete-cracked', 'assets/tile-concrete-cracked.png');
+        this.load.image('tile-dirty-floor', 'assets/tile-dirty-floor.png');
+        this.load.image('tile-wood-floor', 'assets/tile-wood-floor.png');
+        this.load.image('tile-wall-brick', 'assets/tile-wall-brick.png');
+        this.load.image('tile-wall-interior', 'assets/tile-wall-interior.png');
         
         // Load objects
-        this.load.image('cardboard-box', 'https://rosebud.ai/assets/cardboard-box.png.webp?ROVi');
-        this.load.image('storage-unit', 'https://rosebud.ai/assets/storage-unit.webp?hVbG');
-        this.load.image('dumpster', 'https://rosebud.ai/assets/tile-dumpster.png.webp?4ZFT');
-        this.load.image('workstation', 'https://rosebud.ai/assets/workstation.png.webp?moWH');
+        this.load.image('cardboard-box', 'assets/cardboard-box.png');
+        this.load.image('storage-unit', 'assets/storage-unit.png');
+        this.load.image('dumpster', 'assets/tile-dumpster.png');
+        this.load.image('workstation', 'assets/workstation.png');
         
         // Load NPCs
-        this.load.image('npc-vendor', 'https://rosebud.ai/assets/npc-vendor.png.webp?8BrV');
-        this.load.image('npc-buyer', 'https://rosebud.ai/assets/npc-buyer.png.webp?WVHF');
-        this.load.image('npc-rival', 'https://rosebud.ai/assets/npc-rival.webp?gi7R');
-        this.load.image('npc-police', 'https://rosebud.ai/assets/npc-police.webp?K9SU');
-        this.load.image('npc-shop-owner', 'https://rosebud.ai/assets/npc-shop-owner.webp?vt7M');
-        this.load.image('npc-corrupt-cop', 'https://rosebud.ai/assets/npc-corrupt-cop.webp?DHMq');
+        this.load.image('npc-vendor', 'assets/npc-vendor.png');
+        this.load.image('npc-buyer', 'assets/npc-buyer.png');
+        this.load.image('npc-rival', 'assets/npc-rival.png');
+        this.load.image('npc-police', 'assets/npc-police.png');
+        this.load.image('npc-shop-owner', 'assets/npc-shop-owner.png');
+        this.load.image('npc-corrupt-cop', 'assets/npc-corrupt-cop.png');
         
         // Load icons
-        this.load.image('icon-raw', 'https://rosebud.ai/assets/icon-raw-materials.png.webp?X41g');
-        this.load.image('icon-product', 'https://rosebud.ai/assets/icon-product.png.webp?PPUj');
+        this.load.image('icon-raw', 'assets/icon-raw-materials.png');
+        this.load.image('icon-product', 'assets/icon-product.png');
     }
     
     create() {

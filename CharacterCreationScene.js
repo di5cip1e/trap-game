@@ -24,10 +24,10 @@ export default class CharacterCreationScene extends Phaser.Scene {
     
     preload() {
         // Load assets
-        this.load.image('background', 'https://rosebud.ai/assets/background-creation.png.webp?xy4i');
-        this.load.image('panel', 'https://rosebud.ai/assets/ui-panel.png.webp?eL0r');
-        this.load.image('male', 'https://rosebud.ai/assets/male-char.png.webp?jt3w');
-        this.load.image('female', 'https://rosebud.ai/assets/female-char.png.webp?qKkE');
+        this.load.image('background', 'assets/background-creation.png');
+        this.load.image('panel', 'assets/ui-panel.png');
+        this.load.image('male', 'assets/male-char.png');
+        this.load.image('female', 'assets/female-char.png');
     }
     
     create() {

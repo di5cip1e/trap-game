@@ -24,7 +24,7 @@ Simple: Make enough money to get out. Or make enough money to stay and actually 
 
 The Docks isn't a place you "win." It's a place you survive long enough to build something. Your goal is to become the biggest operator in The Docks—not through violence, but through connections, reputation, and cold hard cash. Every dollar you make is a vote of confidence from the streets. Every product you move is a statement.
 
-Reach **$50,000** and you've "made it." Until then, you're just another face in the crowd, trying not to get clipped.
+Reach **$500,000** and you've "made it." Until then, you're just another face in the crowd, trying not to get clipped.
 
 ### What Drives You
 

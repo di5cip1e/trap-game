@@ -1063,7 +1063,7 @@ export const CONFIG = {
             name: 'The Don',
             fullName: 'Don Moretti',
             description: 'Classic organized crime, formal wear',
-            origin: 'Italian-American',
+            origin: 'Harbor District',
             color: '#1a1a2e',
             accentColor: '#c70039',
             // Behavior
@@ -1088,8 +1088,8 @@ export const CONFIG = {
                 warning: "Careful who you trust in this business.",
                 threat: "You disappoint me. This is your last warning."
             },
-            portrait: 'italian-boss',
-            spriteType: 'mafia-boss'
+            portrait: 'don-boss',
+            spriteType: 'faction-boss'
         },
         viper: {
             id: 'viper',

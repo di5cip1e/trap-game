@@ -10,11 +10,11 @@
 - **Reward:** Unlock "Connected" status, access to runners
 
 ### Chapter 2: Building the Network
-**Objective:** Earn $10,000 and unlock Tier 2 safehouse
+**Objective:** Earn $10,000 and unlock Tier 3 safehouse
 - Expand operations to 3+ territories
 - Hire your first runner
 - Maintain heat below 50% to avoid police crackdown
-- **Reward:** Tier 2 safehouse, faster production
+- **Reward:** Tier 3 safehouse (Apartment), faster production
 
 ### Chapter 3: The Faction Wars
 **Objective:** Choose a faction alliance, earn $50,000
@@ -34,8 +34,8 @@
 
 ## Win Conditions
 
-### Standard Victory
-- Accumulate $1,000,000 total net worth
+### Victory
+- Accumulate $500,000 total net worth
 - Control 50%+ of all 12 territories
 
 ### Peaceful Victory  

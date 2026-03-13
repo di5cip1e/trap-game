@@ -72,9 +72,12 @@ Net: ~$85 profit per cycle, minus heat consequences
 
 **Safehouse Tiers:**
 - **Crib** (Tier 1): Basic, 2 stash slots
+- **Shack** (Tier 2): Small upgrades, 4 stash slots
 - **Apartment** (Tier 3): Workstation unlocked
-- **House** (Tier 5): Can hire runners, 6 stash slots
-- **Mansion** (Tier 7): Full capabilities
+- **Townhouse** (Tier 4): Better security, 8 stash slots
+- **House** (Tier 5): Can hire runners, 10 stash slots
+- **Warehouse** (Tier 6): Large operations, 15 stash slots
+- **Mansion** (Tier 7): Full capabilities, 20 stash slots
 
 ---
 

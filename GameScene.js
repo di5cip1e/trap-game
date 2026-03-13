@@ -161,6 +161,10 @@ export default class GameScene extends Phaser.Scene {
             playerHP: 100,
             playerMaxHP: 100,
             
+            // Pistol ammo (defined in CONFIG but not tracked - now adding tracking)
+            pistolAmmo: 0,
+            maxPistolAmmo: 30,
+            
             // NEW GAME+ tracking
             newGamePlusCount: 0,
             ngpMoneyCarriedOver: 0,
@@ -2279,7 +2283,7 @@ export default class GameScene extends Phaser.Scene {
                     if (index > -1) this.worldObjects.splice(index, 1);
                     
                     this.rivalDefeated = true;
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             },
             // Defeat callback
@@ -2296,7 +2300,7 @@ export default class GameScene extends Phaser.Scene {
                     if (this.playerState.hustle <= 0) {
                         this.passOut();
                     }
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             }
         );
@@ -2329,14 +2333,14 @@ export default class GameScene extends Phaser.Scene {
                 
                 // Run away!
                 this.removeBuyer(buyer);
-                this.hud.update();
+                if (this.hud) this.hud.update();
                 this.minimap.update();
                 
                 this.showFloatingText(`${customerConfig.name} stole ${stolenAmount} product and ran!`, CONFIG.COLORS.danger);
                 
                 // Add some heat from the theft
                 this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 10);
-                this.hud.update();
+                if (this.hud) this.hud.update();
                 return;
             }
         }
@@ -2449,7 +2453,7 @@ export default class GameScene extends Phaser.Scene {
         // Remove buyer after transaction
         this.removeBuyer(buyer);
         
-        this.hud.update();
+        if (this.hud) this.hud.update();
         this.minimap.update();
         
         // Heat warning message
@@ -2473,13 +2477,13 @@ export default class GameScene extends Phaser.Scene {
             this.playerState.money -= bribeCost;
             this.playerState.heat = Math.max(0, this.playerState.heat - 30);
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             this.showFloatingText(`Undercover cop took your bribe! -$${bribeCost}, Heat -30`, '#6699ff');
         } else if (Math.random() < bustChance) {
             // Busted!
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             
             // Trigger arrest
@@ -2495,7 +2499,7 @@ export default class GameScene extends Phaser.Scene {
                     this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 30);
                     
                     this.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, CONFIG.COLORS.danger);
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             });
         } else {
@@ -2518,13 +2522,13 @@ export default class GameScene extends Phaser.Scene {
             }
             
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             this.showFloatingText(`Sold to undercover! +$${totalEarned}`, CONFIG.COLORS.success);
             
             // Small heat gain from dealing
             this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 8);
-            this.hud.update();
+            if (this.hud) this.hud.update();
         }
     }
     
@@ -3196,7 +3200,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerState.unlockedSkills.push(skillKey);
         
         this.showFloatingText(`Unlocked ${skill.name}!`, CONFIG.COLORS.success);
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         return true;
     }
@@ -3343,7 +3347,7 @@ export default class GameScene extends Phaser.Scene {
         this.timeSystem.advanceTime(CONFIG.MINUTES_PER_MOVE);
         
         // Update UI
-        this.hud.update();
+        if (this.hud) this.hud.update();
         this.minimap.update();
     }
     
@@ -3401,7 +3405,7 @@ export default class GameScene extends Phaser.Scene {
             this.playerState.hustle = CONFIG.MAX_HUSTLE;
             this.timeSystem.advanceToNextDay();
             
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.playerState.isMoving = false;
         });
     }
@@ -3453,7 +3457,7 @@ export default class GameScene extends Phaser.Scene {
                 this.playerState.gridY = safehouse.y;
             }
             
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.playerState.isMoving = false;
         });
     }
@@ -3545,7 +3549,7 @@ export default class GameScene extends Phaser.Scene {
                 this.placeSupplierNPCs();
             }
             
-            this.hud.update();
+            if (this.hud) this.hud.update();
             
             // Auto-save on new day (to slot 0)
             SaveLoadSystem.saveToSlot(this, 0, `Day ${this.currentDay} Auto-save`);
@@ -3580,7 +3584,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         // Auto-save on safehouse upgrade (to slot 0)
         SaveLoadSystem.saveToSlot(this, 0, `Safehouse Tier ${tierIndex} Upgrade`);
@@ -3633,7 +3637,7 @@ export default class GameScene extends Phaser.Scene {
                 CONFIG.COLORS.success);
         }
         
-        this.hud.update();
+        if (this.hud) this.hud.update();
     }
     
     showRunnerMessage(title, message, color) {
@@ -3694,7 +3698,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         // Track achievement: equipment purchase
         EventBus.emit('achievement:purchasedEquipment');
@@ -3721,7 +3725,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         return true;
     }

@@ -161,6 +161,13 @@ export default class HUD {
             color: CONFIG.COLORS.success
         }).setScrollFactor(0).setDepth(502);
         
+        // Pistol Ammo indicator
+        this.ammoText = this.scene.add.text(leftMargin + 400, topY + 58, '', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '9px',
+            color: CONFIG.COLORS.secondary
+        }).setScrollFactor(0).setDepth(502);
+        
         // Runner indicator
         this.runnerText = this.scene.add.text(leftMargin + 600, topY + 45, '', {
             fontFamily: 'Press Start 2P',
@@ -517,6 +524,20 @@ export default class HUD {
             equipmentLabels.push('[BACKPACK]');
         }
         this.equipmentText.setText(equipmentLabels.join(' '));
+        
+        // Pistol ammo indicator
+        const hasPistol = player.equipment.pistol;
+        if (hasPistol) {
+            const ammo = player.pistolAmmo || 0;
+            const maxAmmo = player.maxPistolAmmo || 30;
+            const ammoColor = ammo === 0 ? CONFIG.COLORS.danger : 
+                             ammo < maxAmmo * 0.3 ? CONFIG.COLORS.primary : 
+                             CONFIG.COLORS.success;
+            this.ammoText.setText(`🔫 AMMO: ${ammo}/${maxAmmo}`);
+            this.ammoText.setColor(ammoColor);
+        } else {
+            this.ammoText.setText('');
+        }
         
         // Runner indicator
         if (player.hasRunner) {

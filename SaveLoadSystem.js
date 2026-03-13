@@ -375,6 +375,9 @@ export default class SaveLoadSystem {
                 
                 // Equipment/Inventory
                 equipment: { ...gameScene.playerState.equipment },
+                // Pistol Ammo
+                pistolAmmo: gameScene.playerState.pistolAmmo || 0,
+                maxPistolAmmo: gameScene.playerState.maxPistolAmmo || 30,
                 
                 // Safehouse
                 safehouseTier: gameScene.playerState.safehouseTier,
@@ -607,6 +610,9 @@ export default class SaveLoadSystem {
                 
                 // Equipment/Inventory
                 equipment: { ...gameScene.playerState.equipment },
+                // Pistol Ammo
+                pistolAmmo: gameScene.playerState.pistolAmmo || 0,
+                maxPistolAmmo: gameScene.playerState.maxPistolAmmo || 30,
                 
                 // Safehouse
                 safehouseTier: gameScene.playerState.safehouseTier,

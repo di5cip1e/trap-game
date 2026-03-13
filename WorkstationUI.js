@@ -306,19 +306,11 @@ export default class WorkstationUI {
             this.processButton.setAlpha(0.5);
         }
         
-        // Show/hide meth button based on precursor availability
+        // Meth button is always visible but disabled if not enough precursors
+        // No action needed - button stays visible, updateDisplay handles enable/disable state
         if (this.methButton) {
-            const precursorA = player.drugs.precursorA || 0;
-            const precursorB = player.drugs.precursorB || 0;
-            const hasEnoughPrecursors = precursorA >= 3 && precursorB >= 3;
-            this.methButton.setVisible(hasEnoughPrecursors);
-            
-            // If meth was selected but now hidden, switch to basic
-            if (!hasEnoughPrecursors && this.selectedProcessingType === 'meth') {
-                this.selectedProcessingType = 'basic';
-                this.updateProcessingTypeSelection();
-                this.updateRecipeDisplay();
-            }
+            // Always ensure meth button is visible
+            this.methButton.setVisible(true);
         }
     }
     

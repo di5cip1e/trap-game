@@ -74,6 +74,10 @@ export default class CombatScene {
         // Active effects
         this.activeEffects = {};
         
+        // Enemy status effects (Poisoned, Bleeding, On Fire, etc.)
+        this.enemyStatusEffects = {};
+        this.lastStatusEffectTick = 0;
+        
         // Callbacks
         this.onVictory = null;
         this.onDefeat = null;
@@ -121,6 +125,10 @@ export default class CombatScene {
         
         // Reset active effects
         this.activeEffects = {};
+        
+        // Reset enemy status effects
+        this.enemyStatusEffects = {};
+        this.lastStatusEffectTick = this.scene.time.now;
         
         // Create UI
         this.createCombatUI();
@@ -705,6 +713,11 @@ export default class CombatScene {
                 break;
         }
         
+        // Apply status effect from skill if it has one
+        if (skill.statusEffect) {
+            this.applyEnemyStatusEffect(skill.statusEffect, skill.statusDuration);
+        }
+        
         // Refresh skill buttons
         this.refreshSkillButtons();
         
@@ -941,6 +954,110 @@ export default class CombatScene {
                 this.playerHP = Math.floor(this.playerMaxHP * 0.25);
                 this.showDamageText('UNBREAKABLE!', this.scene.scale.width / 2, 400, 0xffd700);
                 this.updateCombatUI();
+            }
+        }
+        
+        // Process enemy status effects (damage per turn, tick every second)
+        this.processStatusEffects();
+    }
+    
+    /**
+     * Apply a status effect to the enemy
+     * @param {string} statusKey - Key from CONFIG.STATUS_EFFECTS (poisoned, bleeding, onFire, etc.)
+     * @param {number} duration - Override duration (optional)
+     */
+    applyEnemyStatusEffect(statusKey, duration = null) {
+        const statusConfig = CONFIG.STATUS_EFFECTS[statusKey];
+        if (!statusConfig) {
+            console.warn(`Unknown status effect: ${statusKey}`);
+            return false;
+        }
+        
+        const statuses = this.enemyStatusEffects;
+        
+        // Check for mutually exclusive statuses
+        if (statusConfig.mutuallyExclusive) {
+            for (const exclusiveKey of statusConfig.mutuallyExclusive) {
+                if (statuses[exclusiveKey]) {
+                    delete statuses[exclusiveKey];
+                }
+            }
+        }
+        
+        // Set the duration (use config default or override)
+        const actualDuration = duration !== null ? duration : statusConfig.duration;
+        
+        // For stackable statuses like bleeding, increment stack count
+        if (statusConfig.stackable) {
+            if (!statuses[statusKey]) {
+                statuses[statusKey] = { duration: actualDuration, stacks: 1 };
+            } else {
+                statuses[statusKey].stacks += 1;
+                statuses[statusKey].duration = Math.max(statuses[statusKey].duration, actualDuration);
+            }
+        } else {
+            statuses[statusKey] = { duration: actualDuration, stacks: 1 };
+        }
+        
+        // Show status applied message
+        const icon = statusConfig.icon || '';
+        this.showDamageText(`${icon} ${statusConfig.name}!`, this.scene.scale.width / 2, 250, 
+            parseInt(statusConfig.color.replace('#', ''), 16));
+        
+        return true;
+    }
+    
+    /**
+     * Process enemy status effects - applies damage per turn
+     * Called every second in update loop
+     */
+    processStatusEffects() {
+        const now = this.scene.time.now;
+        
+        // Only process once per second
+        if (now - this.lastStatusEffectTick < 1000) return;
+        this.lastStatusEffectTick = now;
+        
+        const statuses = this.enemyStatusEffects;
+        const keys = Object.keys(statuses);
+        
+        if (keys.length === 0) return;
+        
+        for (const statusKey of keys) {
+            const status = statuses[statusKey];
+            const config = CONFIG.STATUS_EFFECTS[statusKey];
+            
+            if (!config) continue;
+            
+            // Apply damage per turn for damaging statuses
+            let damage = 0;
+            
+            if (config.damagePerTurn) {
+                damage += config.damagePerTurn * (status.stacks || 1);
+            }
+            
+            // Apply immediate damage
+            if (damage > 0) {
+                this.enemyHP = Math.max(0, this.enemyHP - damage);
+                
+                // Show damage text
+                const icon = config.icon || '';
+                this.showDamageText(`${icon} -${damage}`, this.scene.scale.width / 2, 230, 
+                    parseInt(config.color.replace('#', ''), 16));
+                
+                // Update UI and check for victory
+                this.updateCombatUI();
+                this.checkCombatEnd();
+            }
+            
+            // Decrement duration
+            status.duration -= 1;
+            
+            // Remove expired statuses
+            if (status.duration <= 0) {
+                delete statuses[statusKey];
+                this.showDamageText(`${config.icon} ${config.name} wore off!`, this.scene.scale.width / 2, 260, 
+                    parseInt(config.color.replace('#', ''), 16));
             }
         }
     }

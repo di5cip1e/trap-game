@@ -157,7 +157,8 @@ export default class NPCController {
             npcId: 'shopOwner',
             x: shopX,
             y: shopY,
-            walkable: true
+            walkable: true,
+            schedule: 'day' // Available during day (6 AM - 10 PM)
         };
         
         const shopSprite = this.scene.add.image(
@@ -195,7 +196,8 @@ export default class NPCController {
             npcId: 'corruptCop',
             x: copX,
             y: copY,
-            walkable: true
+            walkable: true,
+            schedule: 'night' // Available during night (10 PM - 6 AM)
         };
         
         const copSprite = this.scene.add.image(

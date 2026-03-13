@@ -347,7 +347,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
                     // Reset character but keep some stats
                     name: saveData.name,
                     gender: saveData.gender,
-                    neighborhood: saveData.neighborhood || saveData.race || 'Old Town',
+                    neighborhood: saveData.neighborhood || saveData.race || 'RIVERSIDE',
                     neighborhoodBonus: saveData.neighborhoodBonus || saveData.raceBonus || null,
                     stats: { ...saveData.stats },
                     
@@ -355,9 +355,9 @@ export default class CharacterCreationScene extends Phaser.Scene {
                     money: carryOverMoney,
                     ngpMoneyCarriedOver: carryOverMoney,
                     
-                    // Unlock all neighborhoods from start
-                    unlockedNeighborhoods: allNeighborhoods,
-                    visitedNeighborhoods: allNeighborhoods,
+                    // Start with only home neighborhood unlocked - others discovered but locked
+                    unlockedNeighborhoods: [GameScene.convertNeighborhoodToKeyStatic(this.characterData.neighborhood)],
+                    visitedNeighborhoods: [GameScene.convertNeighborhoodToKeyStatic(this.characterData.neighborhood)],
                     
                     // Keep achievements (level, XP, skills, class)
                     level: saveData.level || 1,

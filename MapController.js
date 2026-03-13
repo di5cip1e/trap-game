@@ -343,10 +343,10 @@ export default class MapController {
     static get ADJACENCY() {
         return {
             'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
-            'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+            'SKID_ROW': ['THE_FLATS', 'THE_MAW'],
+            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD', 'THE_MAW'],
             'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
-            'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
+            'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE', 'SKID_ROW', 'THE_FLATS'],
             'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
             'IRONWORKS': ['SALVAGE_YARD', 'THE_HARBOR'],
             'THE_HARBOR': ['INDUSTRIAL_ZONE', 'IRONWORKS']

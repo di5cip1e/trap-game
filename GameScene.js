@@ -39,6 +39,7 @@ import PlayerController from './PlayerController.js';
 // Biome mapping based on neighborhood origin
 function getBiomeForNeighborhood(neighborhood) {
     const biomeMap = {
+        'Riverside': 'block',        // Starting area - simple block map
         'Old Town': 'block',
         'Skid Row': 'traphouse',
         'The Flats': 'traphouse',
@@ -139,6 +140,24 @@ export default class GameScene extends Phaser.Scene {
                 shopOwner: 0,
                 corruptCop: 0
             },
+            
+            // Faction reputation (new system)
+            // Format: { FACTION_NAME: repValue, ... } where repValue ranges from -100 to 100
+            // -100 = hostile, 0 = neutral, 100 = allied
+            factionReputation: {
+                THE_DON: 0,      // The Don - Old Family
+                VIPER: 0,        // Viper - The Serpents
+                ROOK: 0,         // Rook - The Crown
+                GHOST: 0,        // Ghost - The Ravens
+                IRON: 0,         // Iron - The Iron Hands
+                FANG: 0,         // Fang - The Jackals
+                FROST: 0,        // Frost - The Ice
+                BLAZE: 0,        // Blaze - The Inferno
+                RAZOR: 0,        // Razor - The Cut
+                STORM: 0,        // Storm - The Nomads
+                SHADE: 0,        // Shade - The Shadows
+                BYTE: 0          // Byte - The Network
+            },
             // Daily flags
             corruptCopUsedToday: false,
             // Runner system
@@ -233,6 +252,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Convert display name to key
         const keyMap = {
+            'Riverside': 'RIVERSIDE',
             'Old Town': 'OLD_TOWN',
             'Skid Row': 'SKID_ROW',
             'The Flats': 'THE_FLATS',
@@ -243,7 +263,7 @@ export default class GameScene extends Phaser.Scene {
             'Salvage Yard': 'SALVAGE_YARD'
         };
         
-        return keyMap[neighborhood] || 'OLD_TOWN';
+        return keyMap[neighborhood] || 'RIVERSIDE';
     }
     
     /**
@@ -648,6 +668,9 @@ export default class GameScene extends Phaser.Scene {
         this.levelSystem = new LevelSystem(this);
         this.skillTree = new SkillTree(this);
         
+        // NEW: Player Controller for movement delegation (eliminates duplicate tryMove)
+        this.playerController = new PlayerController(this, this.playerState);
+        
         // Initialize class type and starting skills based on highest stat
         this.initializeClassAndSkills();
         
@@ -782,8 +805,10 @@ export default class GameScene extends Phaser.Scene {
                 sprite.setScale(CONFIG.SCALE.DUMPSTER);
                 sprite.setDepth(50);
                 
-                // Mark as non-walkable
-                this.worldMap[obj.y][obj.x].walkable = false;
+                // Mark as non-walkable (with bounds check)
+                if (this.worldMap[obj.y] && this.worldMap[obj.y][obj.x]) {
+                    this.worldMap[obj.y][obj.x].walkable = false;
+                }
             } else if (obj.type === 'workstation') {
                 sprite = this.add.image(
                     obj.x * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2,
@@ -1270,9 +1295,10 @@ export default class GameScene extends Phaser.Scene {
     unlockNeighborNeighborhoods(neighborhood) {
         // Define neighborhood adjacency (who connects to whom)
         const adjacency = {
-            'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
+            'RIVERSIDE': ['OLD_TOWN', 'THE_FLATS'], // Starting area - gateway
+            'OLD_TOWN': ['RIVERSIDE', 'THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
             'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+            'THE_FLATS': ['RIVERSIDE', 'OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
             'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
             'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
             'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
@@ -1336,9 +1362,10 @@ export default class GameScene extends Phaser.Scene {
         
         // Get neighboring neighborhoods based on direction
         const adjacency = {
-            'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
+            'RIVERSIDE': ['OLD_TOWN', 'THE_FLATS'], // Starting area - gateway
+            'OLD_TOWN': ['RIVERSIDE', 'THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
             'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+            'THE_FLATS': ['RIVERSIDE', 'OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
             'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
             'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
             'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
@@ -1468,7 +1495,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Move in the predominant direction
         if (dx !== 0 || dy !== 0) {
-            this.tryMove(dx, dy);
+            this.playerController.tryMove(dx, dy);
         }
     }
     
@@ -1491,9 +1518,9 @@ export default class GameScene extends Phaser.Scene {
         // Determine primary movement direction (like keyboard input)
         // Move one tile in the predominant direction (for grid-based movement)
         if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) {
-            this.tryMove(dx > 0 ? 1 : -1, 0);
+            this.playerController.tryMove(dx > 0 ? 1 : -1, 0);
         } else if (dy !== 0) {
-            this.tryMove(0, dy > 0 ? 1 : -1);
+            this.playerController.tryMove(0, dy > 0 ? 1 : -1);
         }
     }
     
@@ -1592,23 +1619,72 @@ export default class GameScene extends Phaser.Scene {
         // Check keyboard input
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left) || 
             Phaser.Input.Keyboard.JustDown(this.wasd.left)) {
-            this.tryMove(-1, 0);
+            this.playerController.tryMove(-1, 0);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.right)) {
-            this.tryMove(1, 0);
+            this.playerController.tryMove(1, 0);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
-            this.tryMove(0, -1);
+            this.playerController.tryMove(0, -1);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.down)) {
-            this.tryMove(0, 1);
+            this.playerController.tryMove(0, 1);
         }
+    }
+    
+    /**
+     * Check if an NPC is available based on their schedule
+     * @param {Object} obj - The NPC object with optional schedule property
+     * @returns {boolean} - True if NPC is available, false otherwise
+     */
+    isNPCScheduleAvailable(obj) {
+        // If no schedule property, NPC is always available
+        if (!obj.schedule) return true;
+        
+        // Check current time of day
+        const currentHour = this.timeSystem ? this.timeSystem.getHour() : 12;
+        const isNight = currentHour >= CONFIG.NIGHT_START_HOUR || currentHour < CONFIG.DAY_START_HOUR;
+        
+        if (obj.schedule === 'day') {
+            return !isNight;
+        } else if (obj.schedule === 'night') {
+            return isNight;
+        }
+        
+        return true; // Default to available if schedule is unknown
+    }
+    
+    /**
+     * Get schedule status text for NPC
+     * @param {Object} obj - The NPC object
+     * @returns {string} - Status message or empty string
+     */
+    getNPCScheduleStatus(obj) {
+        if (!obj.schedule) return '';
+        
+        const currentHour = this.timeSystem ? this.timeSystem.getHour() : 12;
+        const isNight = currentHour >= CONFIG.NIGHT_START_HOUR || currentHour < CONFIG.DAY_START_HOUR;
+        
+        if (obj.schedule === 'day' && isNight) {
+            return ' (Closed - opens at 6 AM)';
+        } else if (obj.schedule === 'night' && !isNight) {
+            return ' (Sleeping - active at 10 PM)';
+        }
+        
+        return '';
     }
     
     checkInteractionProximity() {
         // Check all interactive objects
         this.worldObjects.forEach(obj => {
             if (!obj.indicator) return;
+            
+            // Check NPC schedule - hide indicator if NPC isn't available
+            if ((obj.type === 'shopOwner' || obj.type === 'corruptCop') && 
+                !this.isNPCScheduleAvailable(obj)) {
+                obj.indicator.setAlpha(0);
+                return;
+            }
             
             const dist = Phaser.Math.Distance.Between(
                 this.playerState.gridX, this.playerState.gridY,
@@ -1660,6 +1736,12 @@ export default class GameScene extends Phaser.Scene {
                     this.sellToBuyer(obj);
                     return;
                 } else if (obj.type === 'shopOwner' || obj.type === 'corruptCop') {
+                    // Check NPC schedule before allowing interaction
+                    if (!this.isNPCScheduleAvailable(obj)) {
+                        const status = this.getNPCScheduleStatus(obj);
+                        this.showFloatingText(`NPC not available${status}`, CONFIG.COLORS.warning);
+                        return;
+                    }
                     this.relationshipUI.open(obj);
                     return;
                 } else if (obj.type === 'supplier') {
@@ -2168,8 +2250,9 @@ export default class GameScene extends Phaser.Scene {
             
             attempts++;
             
-            // Valid if walkable, not occupied, and far enough from player and safehouse
-            if (this.worldMap[rivalY][rivalX].walkable &&
+            // Valid if walkable (with bounds check), not occupied, and far enough from player and safehouse
+            const rivalTile = this.worldMap[rivalY]?.[rivalX];
+            if (rivalTile?.walkable &&
                 !this.worldObjects.some(obj => obj.x === rivalX && obj.y === rivalY) &&
                 distFromPlayer > 8 &&
                 distFromSafehouse > 5) {
@@ -3249,97 +3332,6 @@ export default class GameScene extends Phaser.Scene {
         }
     }
     
-    tryMove(dx, dy) {
-        // Check for status effects that prevent movement
-        const statuses = this.playerState.activeStatuses;
-        
-        // Paralyzed: Cannot move at all
-        if (statuses.paralyzed) {
-            this.showFloatingText('Paralyzed! Cannot move!', '#ffcc00');
-            return;
-        }
-        
-        // Frozen: Cannot move
-        if (statuses.frozen) {
-            this.showFloatingText('Frozen! Cannot move!', '#00ccff');
-            return;
-        }
-        
-        // Stunned: Cannot act (already handled separately, but double-check)
-        if (statuses.stunned) {
-            this.showFloatingText('Stunned! Cannot act!', '#ff6600');
-            return;
-        }
-        
-        // Asleep: Cannot move
-        if (statuses.asleep) {
-            this.showFloatingText('Asleep! Wake up first!', '#6666ff');
-            return;
-        }
-        
-        // Confused: Random movement instead of intended
-        if (statuses.confused) {
-            const confuseRoll = Math.random();
-            if (confuseRoll < 0.4) {
-                // 40% chance to move in random wrong direction
-                const directions = [
-                    { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
-                    { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
-                ];
-                const randomDir = directions[Math.floor(Math.random() * directions.length)];
-                dx = randomDir.dx;
-                dy = randomDir.dy;
-                this.showFloatingText('🌀 Confused! Moving randomly!', '#ff66ff');
-            } else {
-                // Show indicator that player is confused even on normal movement
-                this.showFloatingText('🌀 Confused...', '#ff66ff');
-            }
-        }
-        
-        // Slowed: 50% chance to fail movement (simulates slow speed)
-        if (statuses.slowed) {
-            if (Math.random() < 0.5) {
-                this.showFloatingText('Slowed! Too slow to move!', '#9966ff');
-                return;
-            }
-        }
-        
-        const newX = this.playerState.gridX + dx;
-        const newY = this.playerState.gridY + dy;
-        
-        // Check bounds
-        if (newX < 0 || newX >= CONFIG.GRID_WIDTH || 
-            newY < 0 || newY >= CONFIG.GRID_HEIGHT) {
-            return;
-        }
-        
-        // Check if tile is walkable
-        if (!this.worldMap[newY][newX].walkable) {
-            return;
-        }
-        
-        // Start movement
-        this.playerState.isMoving = true;
-        this.playerState.gridX = newX;
-        this.playerState.gridY = newY;
-        
-        const targetX = newX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
-        const targetY = newY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
-        
-        // Animate movement
-        this.tweens.add({
-            targets: this.player,
-            x: targetX,
-            y: targetY,
-            duration: 150,
-            ease: 'Linear',
-            onComplete: () => {
-                this.playerState.isMoving = false;
-                this.events.emit('playerMoved');
-            }
-        });
-    }
-    
     onPlayerMove() {
         // Update status effects (tick down duration, apply damage)
         this.updateStatusEffects();
@@ -4153,7 +4145,8 @@ export default class GameScene extends Phaser.Scene {
             
             attempts++;
             
-            if (this.worldMap[policeY][policeX].walkable &&
+            const policeTile = this.worldMap[policeY]?.[policeX];
+            if (policeTile?.walkable &&
                 !this.worldObjects.some(obj => obj.x === policeX && obj.y === policeY) &&
                 distFromPlayer > 10) {
                 break;
@@ -4279,10 +4272,11 @@ export default class GameScene extends Phaser.Scene {
         const newX = this.police.gridX + moveX;
         const newY = this.police.gridY + moveY;
         
-        // Check if new position is walkable
+        // Check if new position is walkable (with bounds check)
+        const policeMoveTile = this.worldMap[newY]?.[newX];
         if (newX >= 0 && newX < CONFIG.GRID_WIDTH &&
             newY >= 0 && newY < CONFIG.GRID_HEIGHT &&
-            this.worldMap[newY][newX].walkable) {
+            policeMoveTile?.walkable) {
             
             this.police.gridX = newX;
             this.police.gridY = newY;
@@ -4427,10 +4421,11 @@ export default class GameScene extends Phaser.Scene {
         const newX = this.police.gridX + moveX;
         const newY = this.police.gridY + moveY;
         
-        // Check if new position is walkable
+        // Check if new position is walkable (with bounds check)
+        const chaseTile = this.worldMap[newY]?.[newX];
         if (newX >= 0 && newX < CONFIG.GRID_WIDTH &&
             newY >= 0 && newY < CONFIG.GRID_HEIGHT &&
-            this.worldMap[newY][newX].walkable) {
+            chaseTile?.walkable) {
             
             this.police.gridX = newX;
             this.police.gridY = newY;

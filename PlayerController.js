@@ -77,8 +77,9 @@ export default class PlayerController {
             return;
         }
         
-        // Check if tile is walkable
-        if (!this.scene.worldMap[newY][newX].walkable) {
+        // Check if tile exists and is walkable (with safety check)
+        const targetTile = this.scene.worldMap[newY]?.[newX];
+        if (!targetTile || !targetTile.walkable) {
             return;
         }
         

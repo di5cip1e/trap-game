@@ -402,4 +402,148 @@ export default class PlayerManager {
     getPrecursorAmount(type) {
         return this.playerState.precursors?.[type] || 0;
     }
+
+    // ============================================================
+    // FACTION REPUTATION
+    // ============================================================
+
+    /**
+     * Get reputation with a specific faction
+     * @param {string} factionKey - The faction key (e.g., 'THE_DON')
+     * @returns {number} Reputation value (-100 to 100)
+     */
+    getFactionReputation(factionKey) {
+        return this.playerState.factionReputation?.[factionKey] || 0;
+    }
+
+    /**
+     * Change reputation with a faction
+     * @param {string} factionKey - The faction key
+     * @param {number} amount - Amount to change (positive or negative)
+     * @param {string} reason - Optional reason for the change
+     */
+    changeFactionReputation(factionKey, amount, reason = '') {
+        if (!this.playerState.factionReputation) {
+            this.playerState.factionReputation = {};
+        }
+        
+        // Initialize faction if not present
+        if (this.playerState.factionReputation[factionKey] === undefined) {
+            this.playerState.factionReputation[factionKey] = 0;
+        }
+        
+        // Clamp the value between -100 and 100
+        const currentRep = this.playerState.factionReputation[factionKey];
+        const newRep = Math.max(-100, Math.min(100, currentRep + amount));
+        this.playerState.factionReputation[factionKey] = newRep;
+        
+        // Show notification
+        if (amount !== 0) {
+            const factionName = this.getFactionDisplayName(factionKey);
+            const repLabel = this.getReputationLabel(newRep);
+            const color = amount > 0 ? CONFIG.COLORS.success : CONFIG.COLORS.danger;
+            const sign = amount > 0 ? '+' : '';
+            
+            this.scene.showFloatingText(
+                `${factionName}: ${sign}${amount} (${repLabel})`,
+                color
+            );
+        }
+        
+        // Emit event for other systems
+        EventBus.emit('faction:reputationChanged', {
+            faction: factionKey,
+            newReputation: newRep,
+            change: amount,
+            reason: reason
+        });
+    }
+
+    /**
+     * Get display name for a faction
+     * @private
+     */
+    getFactionDisplayName(factionKey) {
+        const names = {
+            THE_DON: 'The Don',
+            VIPER: 'Viper',
+            ROOK: 'Rook',
+            GHOST: 'Ghost',
+            IRON: 'Iron',
+            FANG: 'Fang',
+            FROST: 'Frost',
+            BLAZE: 'Blaze',
+            RAZOR: 'Razor',
+            STORM: 'Storm',
+            SHADE: 'Shade',
+            BYTE: 'Byte'
+        };
+        return names[factionKey] || factionKey;
+    }
+
+    /**
+     * Get reputation label
+     * @private
+     */
+    getReputationLabel(rep) {
+        if (rep >= 75) return 'Allied';
+        if (rep >= 50) return 'Friendly';
+        if (rep >= 25) return 'Neutral+';
+        if (rep >= 0) return 'Neutral';
+        if (rep >= -25) return 'Neutral-';
+        if (rep >= -50) return 'Unfriendly';
+        if (rep >= -75) return 'Hostile';
+        return 'Enemy';
+    }
+
+    /**
+     * Check if player has good reputation with a faction
+     * @param {string} factionKey 
+     * @returns {boolean}
+     */
+    isFactionFriendly(factionKey) {
+        return this.getFactionReputation(factionKey) >= 25;
+    }
+
+    /**
+     * Check if player has bad reputation with a faction
+     * @param {string} factionKey 
+     * @returns {boolean}
+     */
+    isFactionHostile(factionKey) {
+        return this.getFactionReputation(factionKey) <= -25;
+    }
+
+    /**
+     * Get all faction reputations
+     * @returns {Object} All faction reputations
+     */
+    getAllFactionReputations() {
+        return { ...this.playerState.factionReputation } || {};
+    }
+
+    /**
+     * Get factions that the player has significant reputation with
+     * @returns {Array} Array of {key, reputation, label} objects
+     */
+    getNotableFactions() {
+        const reps = this.getAllFactionReputations();
+        const notable = [];
+        
+        for (const [key, value] of Object.entries(reps)) {
+            if (Math.abs(value) >= 25) {
+                notable.push({
+                    key: key,
+                    name: this.getFactionDisplayName(key),
+                    reputation: value,
+                    label: this.getReputationLabel(value)
+                });
+            }
+        }
+        
+        // Sort by reputation (highest first)
+        notable.sort((a, b) => b.reputation - a.reputation);
+        
+        return notable;
+    }
 }

@@ -8,6 +8,16 @@ import { CONFIG } from './config.js';
 
 // Neighborhood definitions - each has unique tiles, atmosphere, and faction presence
 export const NEIGHBORHOODS = {
+    RIVERSIDE: {
+        name: 'Riverside',
+        description: "A small, impoverished town on the outskirts. The gateway to The Docks. Player starts here.",
+        tiles: { main: 'tile-dirt', border: 'tile-wall-wood', accent: 'tile-concrete-cracked' },
+        factions: [], // No major factions - player builds their network here
+        dangerLevel: 2, // Relatively safe - starting area
+        atmosphere: 'impoverished',
+        color: '#556B2F',
+        isStartingArea: true
+    },
     OLD_TOWN: {
         name: 'Old Town',
         description: "Victorian district with brownstones and hidden wine cellars. The Don and Rook's domain.",
@@ -240,6 +250,41 @@ export const POINTS_OF_INTEREST = {
         dangerLevel: 3,
         usable: true
     },
+    'Subway Platform': {
+        type: 'passage',
+        description: "Abandoned subway station platform - a hub for Shade's network",
+        tile: 'tile-stone-dark',
+        dangerLevel: 2,
+        usable: true
+    },
+    'Utility Tunnel': {
+        type: 'passage',
+        description: "Narrow maintenance tunnel connecting different sections of the underground",
+        tile: 'tile-stone-dark',
+        dangerLevel: 2,
+        usable: true
+    },
+    'Steam Tunnel': {
+        type: 'passage',
+        description: "Old steam pipes creates a maze of metallic passages",
+        tile: 'tile-metal-floor',
+        dangerLevel: 3,
+        usable: true
+    },
+    'Catacombs': {
+        type: 'passage',
+        description: "Ancient burial tunnels extend deep beneath the city",
+        tile: 'tile-stone-dark',
+        dangerLevel: 4,
+        usable: true
+    },
+    'Maintenance Shaft': {
+        type: 'passage',
+        description: "Vertical shaft connecting multiple underground levels",
+        tile: 'tile-grate',
+        dangerLevel: 3,
+        usable: true
+    },
     
     // Waterfront
     'Abandoned Pier': {
@@ -317,6 +362,205 @@ export const POINTS_OF_INTEREST = {
         usable: true
     },
 
+    // ============================================================
+    // RIVERSIDE - Starting Area POIs
+    // ============================================================
+    
+    // Houses - Residential buildings (5-8 homes)
+    'Riverside House 1': {
+        type: 'building',
+        description: "A run-down wooden house. Home to the O'Brien family.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        npc: 'obrien-family',
+        questAvailable: true
+    },
+    'Riverside House 2': {
+        type: 'building',
+        description: "Small clapboard house with peeling paint.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: true
+    },
+    'Riverside House 3': {
+        type: 'building',
+        description: "Abandoned house, windows boarded up.",
+        tile: 'tile-dirty-floor',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: false
+    },
+    'Riverside House 4': {
+        type: 'building',
+        description: "Small cottage with a rusted fence.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: true
+    },
+    'Riverside House 5': {
+        type: 'building',
+        description: "House with a broken porch step.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: true
+    },
+    'Riverside House 6': {
+        type: 'building',
+        description: "Family home with laundry out back.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: true
+    },
+    'Riverside House 7': {
+        type: 'building',
+        description: "Older man's place - collects bottles.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        npc: 'bottle-collector',
+        questAvailable: true
+    },
+    'Riverside House 8': {
+        type: 'building',
+        description: "Empty house, for sale sign in yard.",
+        tile: 'tile-dirty-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'residence',
+        questAvailable: false
+    },
+    
+    // Convenience Store - 24/7 shop
+    'Riverside Convenience Store': {
+        type: 'service',
+        description: "Quick-Mart: 24/7 convenience store. Run by Mr. Kim.",
+        tile: 'tile-concrete',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'shop',
+        npc: 'kim-shopkeeper',
+        shopInventory: ['Weed Plants', 'Mushroom Spores', 'Supplies'],
+        questAvailable: true,
+        isMainPlugQuestHub: true
+    },
+    
+    // Knock-off Walmart
+    'MartMart': {
+        type: 'service',
+        description: "MartMart - 'If we don't have it, you don't need it.' Impoverished's Walmart.",
+        tile: 'tile-concrete',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'store',
+        npc: 'martmart-employee',
+        shopInventory: ['All supplies', 'Weed Plants'],
+        questAvailable: true
+    },
+    
+    // Eating Places
+    'Riverside Diner': {
+        type: 'service',
+        description: "Sally's Diner - Best burgers in Riverside. Open 6AM-10PM.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'restaurant',
+        npc: 'sally-diner',
+        shopInventory: ['Food', 'Intel'],
+        questAvailable: true,
+        hours: { open: 6, close: 22 }
+    },
+    'Taco Truck': {
+        type: 'service',
+        description: "El Fuego Taco Truck - Parked on Main Street.",
+        tile: 'tile-sidewalk',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'food-truck',
+        npc: 'taco-vendor',
+        shopInventory: ['Food', 'Supplies'],
+        questAvailable: true,
+        hours: { open: 11, close: 21 }
+    },
+    'Pizza Joint': {
+        type: 'service',
+        description: " Luigi's Pizza - Cash only, no questions.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'restaurant',
+        npc: 'luigi-pizza',
+        shopInventory: ['Food', 'Supplies'],
+        questAvailable: true
+    },
+    
+    // Gas Station
+    'Riverside Gas & Go': {
+        type: 'service',
+        description: "Gas & Go - Fuel, snacks, and lottery tickets.",
+        tile: 'tile-concrete',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'gas-station',
+        npc: 'gas-attendant',
+        shopInventory: ['Fuel', 'Supplies', 'Weed Plants'],
+        questAvailable: true,
+        isMainPlugQuestHub: true
+    },
+    
+    // Pharmacy
+    'Riverside Pharmacy': {
+        type: 'service',
+        description: "Riverside Pharmacy - 'We have what you need.' For medical backstory.",
+        tile: 'tile-dirty-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'pharmacy',
+        npc: 'pharmacist',
+        shopInventory: ['Medical Supplies', 'Weed Plants'],
+        questAvailable: true,
+        isMainPlugQuestHub: true
+    },
+    
+    // Train Station - Gateway to The Docks
+    'Riverside Train Station': {
+        type: 'passage',
+        description: "The Train Station - Your ticket to The Docks. Departs daily at 8AM and 6PM.",
+        tile: 'tile-concrete',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'transport',
+        isTransportHub: true,
+        destination: 'THE_HARBOR',
+        travelTime: '30 minutes',
+        questAvailable: true,
+        isMainPlugQuestHub: true
+    },
+    
+    // Homeless/Street NPCs
+    'Street Person': {
+        type: 'npc',
+        description: "A homeless person resting in the alley. Might have useful intel.",
+        tile: 'tile-alley',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'street-npc',
+        npc: 'homeless-person',
+        questAvailable: true
+    },
+    
     // Drug Labs - discoverable production facilities
     'Weed Grow House': {
         type: 'lab',
@@ -442,6 +686,11 @@ export const CONTESTED_ZONES = {
 
 // Street names - to make the world feel lived-in
 export const STREET_NAMES = [
+    // Riverside - Small town/impoverished
+    "Main Street", "River Road", "Old Mill Lane", "Park Avenue",
+    "First Street", "Second Street", "Railroad Ave", "Bridge Way",
+    "Elm Street", "Oak Street", "Maple Drive", "Cedar Lane",
+    "School House Road", "Church Street", "Town Square", "Station Road",
     // Old Town - Victorian/elegant
     "Moretti Way", "Thornwood Lane", "Crown Street", "Brownian Ave",
     "Victorian Row", "Heritage Lane", "Estate Drive", "Wine Cellar Alley",
@@ -477,18 +726,19 @@ export function generateNeighborhoodGrid(gridWidth, gridHeight) {
     // Southwest: The Flats, Skid Row
     // Southeast: Harbor, Ironworks, Salvage Yard
     // Underground: The Maw (accessible from multiple locations)
+    // Starting Area: Riverside (gateway to The Docks, player starts here)
     
     const layout = [
-        // Row 0 (top)
-        ['OLD_TOWN', 'OLD_TOWN', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
+        // Row 0 (top) - Entry from Riverside
+        ['RIVERSIDE', 'OLD_TOWN', 'OLD_TOWN', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
         // Row 1
-        ['OLD_TOWN', 'THE_MAW', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
+        ['RIVERSIDE', 'OLD_TOWN', 'THE_MAW', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
         // Row 2
-        ['SKID_ROW', 'THE_FLATS', 'INDUSTRIAL_ZONE', 'THE_HARBOR'],
+        ['RIVERSIDE', 'SKID_ROW', 'THE_FLATS', 'INDUSTRIAL_ZONE', 'THE_HARBOR'],
         // Row 3
-        ['SKID_ROW', 'THE_FLATS', 'SALVAGE_YARD', 'THE_HARBOR'],
+        ['RIVERSIDE', 'SKID_ROW', 'THE_FLATS', 'SALVAGE_YARD', 'THE_HARBOR'],
         // Row 4
-        ['SKID_ROW', 'THE_FLATS', 'IRONWORKS', 'THE_HARBOR']
+        ['RIVERSIDE', 'SKID_ROW', 'THE_FLATS', 'IRONWORKS', 'THE_HARBOR']
     ];
     
     for (let y = 0; y < gridHeight; y++) {
@@ -806,6 +1056,14 @@ export default class MapGenerator {
         
         // Different tile patterns based on neighborhood atmosphere
         switch (atmosphere) {
+            case 'impoverished':
+                // Riverside: Small town - dirt, cracked concrete, wood
+                this.addTilePatches(map, 'tile-dirt', 8, 2, 4);
+                this.addTilePatches(map, 'tile-concrete-cracked', 8, 2, 4);
+                this.addTilePatches(map, 'tile-wood-floor', 6, 2, 3);
+                this.addTilePatches(map, 'tile-sidewalk', 6, 2, 3);
+                break;
+                
             case 'elegant':
                 // Old Town: Wood floors, polished surfaces
                 this.addTilePatches(map, 'tile-wood-floor', 8, 3, 5);
@@ -1115,6 +1373,7 @@ export default class MapGenerator {
      */
     getAllowedPOITypes(neighborhood) {
         const typeMap = {
+            'RIVERSIDE': ['building', 'passage', 'service', 'npc'], // Starting area - all types
             'OLD_TOWN': ['building', 'passage', 'service'],
             'SKID_ROW': ['building', 'danger', 'passage'],
             'THE_FLATS': ['building', 'service', 'danger'],
@@ -1349,6 +1608,16 @@ export function getStreetName(neighborhoodKey = null) {
     // Filter by neighborhood if specified
     let filtered;
     switch (neighborhoodKey) {
+        case 'RIVERSIDE':
+            filtered = names.filter(n => 
+                n.includes('Main') || n.includes('River') || 
+                n.includes('Mill') || n.includes('Park') ||
+                n.includes('Street') || n.includes('Road') ||
+                n.includes('Avenue') || n.includes('Lane') ||
+                n.includes('School') || n.includes('Church') ||
+                n.includes('Station') || n.includes('Square')
+            );
+            break;
         case 'OLD_TOWN':
             filtered = names.filter(n => 
                 n.includes('Moretti') || n.includes('Thornwood') || 

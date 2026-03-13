@@ -32,6 +32,15 @@ export const CONFIG = {
     
     // Neighborhood origin bonuses definition (using display names as fallback keys for display)
     NEIGHBORHOOD_BONUSES: {
+        'RIVERSIDE': {
+            displayName: 'Riverside',
+            statBoosts: { luck: 1, intuition: 1 },
+            priceDiscount: 0.15,          // 15% better prices (small town - everyone knows everyone)
+            heatResistance: 0.05,          // Familiar faces = less attention
+            startingArea: true,            // This is where players start
+            isGateway: true,               // Gateway to The Docks
+            trainAccess: true              // Can take train to The Docks
+        },
         'OLD_TOWN': {
             displayName: 'Old Town',
             statBoosts: { intuition: 2 },

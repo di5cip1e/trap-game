@@ -331,6 +331,13 @@ export default class HUD {
         
         this.heatBarMaxWidth = heatBarWidth - 4;
         
+        // Faction Reputation display (below heat)
+        this.factionText = this.scene.add.text(leftMargin + 600, topY + 75, '', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.text
+        }).setScrollFactor(0).setDepth(502);
+        
         // Time/Day (center-right)
         this.timeText = this.scene.add.text(width - 400, topY, '', {
             fontFamily: 'Press Start 2P',

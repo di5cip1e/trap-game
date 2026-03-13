@@ -534,6 +534,20 @@ export const POINTS_OF_INTEREST = {
         isMainPlugQuestHub: true
     },
     
+    // Police Station - Law enforcement in Riverside
+    'Riverside Police Station': {
+        type: 'service',
+        description: "Riverside Police Station - Chief Thompson runs a tight ship. Stay on their good side.",
+        tile: 'tile-concrete',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'police',
+        npc: 'chief-thompson',
+        questAvailable: false, // Police don't give quests initially
+        hours: { open: 0, close: 24 }, // 24/7 operation
+        isLawEnforcement: true // Special flag for police interactions
+    },
+    
     // Train Station - Gateway to The Docks
     'Riverside Train Station': {
         type: 'passage',

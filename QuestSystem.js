@@ -597,6 +597,11 @@ export default class QuestSystem {
         
         this.showQuestNotification(`✅ Quest Complete: ${quest.title}`, `Reward: $${rewards.money}`);
         
+        // NEW: Trigger callback for quest completion (e.g., police suspicion)
+        if (this.scene.onQuestComplete) {
+            this.scene.onQuestComplete(questId);
+        }
+        
         return true;
     }
     

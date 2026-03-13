@@ -35,6 +35,8 @@ import CombatManager from './CombatManager.js';
 import UIManager from './UIManager.js';
 // Player controller (for movement delegation)
 import PlayerController from './PlayerController.js';
+// Riverside Police System - Law enforcement and suspicion tracking
+import { RiversidePoliceSystem, RIVERSIDE_COPS, getAllCops, getCopPosition } from './RiversidePolice.js';
 
 // Biome mapping based on neighborhood origin
 function getBiomeForNeighborhood(neighborhood) {
@@ -664,6 +666,13 @@ export default class GameScene extends Phaser.Scene {
         this.questUI = new QuestUI(this);
         this.questUI.create();
         
+        // Setup quest completion callback for police suspicion tracking
+        this.questSystem.onQuestComplete = (questId) => {
+            if (this.riversidePolice) {
+                this.riversidePolice.onQuestComplete(questId);
+            }
+        };
+        
         // NEW: Level & Skill Systems
         this.levelSystem = new LevelSystem(this);
         this.skillTree = new SkillTree(this);
@@ -705,6 +714,13 @@ export default class GameScene extends Phaser.Scene {
         // Police system
         this.police = null;
         this.policeState = 'none'; // 'none', 'patrol', 'chase'
+        
+        // Riverside Police System - Suspicion tracking and law enforcement interactions
+        this.riversidePolice = null;
+        if (this.playerState.neighborhood === 'RIVERSIDE' || 
+            this.playerState.neighborhood === 'riverside') {
+            this.riversidePolice = new RiversidePoliceSystem(this);
+        }
         this.policePatrolPath = [];
         this.policePatrolIndex = 0;
         
@@ -1748,6 +1764,11 @@ export default class GameScene extends Phaser.Scene {
                     this.openSupplierMeeting(obj.supplierId);
                     return;
                 } else if (obj.type === 'poi' && obj.interactive) {
+                    // Check if it's the police station
+                    if (obj.isLawEnforcement) {
+                        this.interactWithPoliceStation(obj);
+                        return;
+                    }
                     this.enterBuilding(obj);
                     return;
                 }
@@ -1775,6 +1796,122 @@ export default class GameScene extends Phaser.Scene {
         
         // Open the supplier UI
         this.supplierUI.open(supplier);
+    }
+    
+    /**
+     * Interact with the Riverside Police Station
+     */
+    interactWithPoliceStation(policeStationObj) {
+        // Check if player is in Riverside and has police system
+        if (!this.riversidePolice) {
+            this.showFloatingText('Nothing to do here', CONFIG.COLORS.text);
+            return;
+        }
+        
+        const suspLevel = this.riversidePolice.getSuspicionLevel();
+        const suspValue = this.riversidePolice.getSuspicion();
+        
+        // Show police interaction UI
+        this.showPoliceStationUI(suspLevel, suspValue);
+    }
+    
+    /**
+     * Show the police station interaction UI
+     */
+    showPoliceStationUI(suspicionLevel, suspicionValue) {
+        const { width, height } = this.scale;
+        
+        // Create container
+        const container = this.add.container(0, 0).setScrollFactor(0).setDepth(2000);
+        
+        // Dark overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+        container.add(overlay);
+        
+        // Title panel
+        const titlePanel = this.add.rectangle(width / 2, 120, 700, 80, 0x1a3a5c);
+        titlePanel.setStrokeStyle(4, 0x4488cc);
+        container.add(titlePanel);
+        
+        const titleText = this.add.text(width / 2, 120, 'RIVERSIDE POLICE STATION', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: '#4488cc'
+        }).setOrigin(0.5);
+        container.add(titleText);
+        
+        // Suspicion display
+        const suspColors = {
+            'none': '#44cc44',
+            'low': '#88cc44',
+            'medium': '#ccaa44',
+            'high': '#cc6644',
+            'critical': '#cc4444'
+        };
+        
+        const suspPanel = this.add.rectangle(width / 2, 200, 700, 60, 0x2a2a2a);
+        suspPanel.setStrokeStyle(2, suspColors[suspicionLevel] || '#ffffff');
+        container.add(suspPanel);
+        
+        const suspText = this.add.text(width / 2, 200, 
+            `Police Interest: ${suspicionLevel.toUpperCase()} (${suspicionValue}%)`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: suspColors[suspicionLevel] || '#ffffff'
+        }).setOrigin(0.5);
+        container.add(suspText);
+        
+        // Info panel
+        const infoPanel = this.add.rectangle(width / 2, 320, 700, 180, 0x1a1a1a);
+        infoPanel.setStrokeStyle(2, 0x333333);
+        container.add(infoPanel);
+        
+        let infoMessage = '';
+        if (suspicionLevel === 'none') {
+            infoMessage = "Chief Thompson nods as you enter.\n\n\"Stay out of trouble, citizen.\"\n\nThe station is quiet. No one suspects anything.";
+        } else if (suspicionLevel === 'low') {
+            infoMessage = "Officer Jenkins glances at you.\n\n\"Heard some rumors lately.\nNothing specific, though.\"\n\nBetter be more careful.";
+        } else if (suspicionLevel === 'medium') {
+            infoMessage = "The Chief looks at you sternly.\n\n\"We've been getting tips about\nsome activity in town.\"\n\nThey're getting suspicious.";
+        } else if (suspicionLevel === 'high') {
+            infoMessage = "\"Sit down.\" The Chief is serious.\n\n\"We know about your operations.\nDon't think we haven't been watching.\"\n\nThis is bad. Very bad.";
+        } else {
+            infoMessage = "They're ready to pounce.\n\n\"We've got enough evidence.\nYou're going down.\"\n\nA raid is imminent!";
+        }
+        
+        const infoText = this.add.text(width / 2, 320, infoMessage, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5);
+        container.add(infoText);
+        
+        // Close button
+        const closeButton = this.add.rectangle(width / 2, height - 100, 300, 60, 0x2a2a2a);
+        closeButton.setStrokeStyle(3, 0x4488cc);
+        closeButton.setInteractive({ useHandCursor: true });
+        container.add(closeButton);
+        
+        const closeText = this.add.text(width / 2, height - 100, 'LEAVE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '18px',
+            color: '#4488cc'
+        }).setOrigin(0.5);
+        container.add(closeText);
+        
+        closeButton.on('pointerover', () => {
+            closeButton.setFillStyle(0x3a3a3a);
+        });
+        
+        closeButton.on('pointerout', () => {
+            closeButton.setFillStyle(0x2a2a2a);
+        });
+        
+        closeButton.on('pointerdown', () => {
+            container.destroy();
+        });
     }
     
     placeVendor() {

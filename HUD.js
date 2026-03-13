@@ -332,11 +332,34 @@ export default class HUD {
         this.heatBarMaxWidth = heatBarWidth - 4;
         
         // Faction Reputation display (below heat)
-        this.factionText = this.scene.add.text(leftMargin + 600, topY + 75, '', {
+        this.factionText = this.add.text(leftMargin + 600, topY + 75, '', {
             fontFamily: 'Press Start 2P',
             fontSize: '10px',
             color: CONFIG.COLORS.text
         }).setScrollFactor(0).setDepth(502);
+        
+        // Police Suspicion display (only in Riverside)
+        this.suspicionText = this.scene.add.text(leftMargin + 400, topY + 95, '', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.text
+        }).setScrollFactor(0).setDepth(502);
+        
+        // Suspicion bar
+        this.suspBarBg = this.scene.add.rectangle(
+            leftMargin + 600, topY + 95,
+            200, 12,
+            0x1a1a1a
+        ).setOrigin(0, 0.5).setScrollFactor(0).setDepth(502);
+        this.suspBarBg.setStrokeStyle(2, 0x4488cc);
+        
+        this.suspBarFill = this.scene.add.rectangle(
+            leftMargin + 602, topY + 95,
+            0, 8,
+            0x4488cc
+        ).setOrigin(0, 0.5).setScrollFactor(0).setDepth(503);
+        
+        this.suspBarMaxWidth = 196;
         
         // Time/Day (center-right)
         this.timeText = this.scene.add.text(width - 400, topY, '', {

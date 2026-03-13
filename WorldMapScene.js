@@ -5,6 +5,37 @@
 
 import { NEIGHBORHOODS } from './MapGenerator.js';
 
+// ============================================================
+// SHARED WORLD CONSTANTS (synced with MapController)
+// ============================================================
+
+// Adjacency graph - defines which neighborhoods connect to which
+const WORLD_ADJACENCY = {
+    'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
+    'SKID_ROW': ['THE_FLATS'],
+    'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+    'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
+    'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
+    'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
+    'IRONWORKS': ['SALVAGE_YARD', 'THE_HARBOR'],
+    'THE_HARBOR': ['INDUSTRIAL_ZONE', 'IRONWORKS']
+};
+
+// Unlock requirements by danger level
+const UNLOCK_REQUIREMENTS = {
+    // Danger level 1-2: Available from start
+    'OLD_TOWN': { minLevel: 1, dangerLevel: 2 },
+    'SKID_ROW': { minLevel: 1, dangerLevel: 5 },
+    // Danger level 3: Level 2+
+    'THE_FLATS': { minLevel: 2, dangerLevel: 4 },
+    'IRONWORKS': { minLevel: 2, dangerLevel: 3 },
+    'THE_HARBOR': { minLevel: 2, dangerLevel: 3 },
+    // Danger level 4-5: Level 4+
+    'INDUSTRIAL_ZONE': { minLevel: 4, dangerLevel: 4 },
+    'THE_MAW': { minLevel: 4, dangerLevel: 4 },
+    'SALVAGE_YARD': { minLevel: 4, dangerLevel: 3 }
+};
+
 export default class WorldMapScene extends Phaser.Scene {
     constructor() {
         super({ key: 'WorldMapScene' });
@@ -90,19 +121,19 @@ export default class WorldMapScene extends Phaser.Scene {
         const mapBg = this.add.rectangle(width/2, mapY + mapHeight/2, mapWidth, mapHeight, 0x0a0a15);
         mapBg.setStrokeStyle(2, 0x444444);
         
-        // Draw connections between neighborhoods
-        const connections = [
-            ['OLD_TOWN', 'THE_MAW'],
-            ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
-            ['OLD_TOWN', 'THE_FLATS'],
-            ['SKID_ROW', 'THE_FLATS'],
-            ['THE_FLATS', 'SALVAGE_YARD'],
-            ['THE_FLATS', 'INDUSTRIAL_ZONE'],
-            ['INDUSTRIAL_ZONE', 'THE_HARBOR'],
-            ['SALVAGE_YARD', 'IRONWORKS'],
-            ['IRONWORKS', 'THE_HARBOR'],
-            ['THE_MAW', 'INDUSTRIAL_ZONE']
-        ];
+        // Draw connections between neighborhoods (derived from adjacency)
+        const connections = [];
+        
+        // Generate connections from adjacency graph (both directions)
+        Object.entries(WORLD_ADJACENCY).forEach(([from, neighbors]) => {
+            neighbors.forEach(to => {
+                // Add connection in both directions (avoiding duplicates)
+                const forward = [from, to].sort().join('-');
+                if (!connections.some(c => [...c].sort().join('-') === forward)) {
+                    connections.push([from, to]);
+                }
+            });
+        });
         
         const graphics = this.add.graphics();
         
@@ -129,7 +160,12 @@ export default class WorldMapScene extends Phaser.Scene {
             const x = mapX + pos.x * mapWidth;
             const y = mapY + pos.y * mapHeight;
             const neighborhood = NEIGHBORHOODS[key];
-            const isUnlocked = this.unlockedNeighborhoods.includes(key);
+            
+            // Check unlock status
+            const playerLevel = this.gameScene?.playerState?.level || 1;
+            const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
+            const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
+            const isLockedByLevel = !isUnlocked && this.unlockedNeighborhoods.includes(key) && playerLevel < reqs.minLevel;
             const isCurrent = this.currentNeighborhood === key;
             
             // Marker
@@ -144,16 +180,23 @@ export default class WorldMapScene extends Phaser.Scene {
             }
             
             // Label
+            let labelColor = isUnlocked ? '#ffffff' : '#555555';
+            if (isLockedByLevel) labelColor = '#ff6666'; // Red for level-locked
             this.add.text(x, y + 25, neighborhood.name, {
                 fontSize: isCurrent ? '14px' : '12px',
                 fontFamily: 'Courier, monospace',
-                color: isUnlocked ? '#ffffff' : '#555555'
+                color: labelColor
             }).setOrigin(0.5);
             
             // Store for click detection
             if (isUnlocked) {
                 marker.setInteractive({ useHandCursor: true })
                     .on('pointerdown', () => this.travelToNeighborhood(key));
+            } else if (isLockedByLevel) {
+                // Show level requirement on hover
+                marker.setInteractive({ useHandCursor: true })
+                    .on('pointerover', () => this.showUnlockRequirement(key, reqs.minLevel))
+                    .on('pointerout', () => this.hideUnlockRequirement());
             }
         });
         
@@ -190,18 +233,25 @@ export default class WorldMapScene extends Phaser.Scene {
         this.cards = [];
         
         const createCard = (key, data, x, y) => {
-            const isUnlocked = this.unlockedNeighborhoods.includes(key);
+            const playerLevel = this.gameScene?.playerState?.level || 1;
+            const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
+            const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
+            const isLockedByLevel = this.unlockedNeighborhoods.includes(key) && playerLevel < reqs.minLevel;
             const isCurrent = this.currentNeighborhood === key;
             
             // Card background
-            const bgColor = isCurrent ? 0x2a4a2a : (isUnlocked ? 0x2a2a3a : 0x1a1a1a);
+            const bgColor = isCurrent ? 0x2a4a2a : (isUnlocked ? 0x2a2a3a : (isLockedByLevel ? 0x3a2a2a : 0x1a1a1a));
             const card = this.add.rectangle(x, y, cardWidth, cardHeight, bgColor);
-            card.setStrokeStyle(isCurrent ? 2 : 1, isCurrent ? 0x00ff00 : (isUnlocked ? 0x666666 : 0x333333));
+            card.setStrokeStyle(isCurrent ? 2 : 1, isCurrent ? 0x00ff00 : (isUnlocked ? 0x666666 : (isLockedByLevel ? 0xff4444 : 0x333333)));
             
-            // Neighborhood name
+            // Neighborhood name - red if level-locked
+            const nameColor = isLockedByLevel ? '#ff6666' : (isUnlocked ? data.color : '#555555');
             this.add.text(x - cardWidth/2 + 15, y - 30, data.name, {
                 fontSize: '18px',
                 fontFamily: 'Courier, monospace',
+                color: nameColor,
+                fontStyle: 'bold'
+            });
                 color: isUnlocked ? data.color : '#555555',
                 fontStyle: 'bold'
             });
@@ -237,6 +287,9 @@ export default class WorldMapScene extends Phaser.Scene {
             if (isCurrent) {
                 statusText = 'CURRENT';
                 statusColor = '#00ff00';
+            } else if (isLockedByLevel) {
+                statusText = `LVL ${reqs.minLevel}`;
+                statusColor = '#ff4444';
             } else if (isUnlocked) {
                 statusText = 'UNLOCKED';
                 statusColor = '#888888';
@@ -251,12 +304,20 @@ export default class WorldMapScene extends Phaser.Scene {
                 fontStyle: 'bold'
             }).setOrigin(1, 0);
             
-            // Make interactive if unlocked
+            // Make interactive if unlocked, show error for level-locked
             if (isUnlocked && !isCurrent) {
                 card.setInteractive({ useHandCursor: true })
                     .on('pointerover', () => card.setFillStyle(isCurrent ? 0x3a5a3a : 0x3a3a4a))
                     .on('pointerout', () => card.setFillStyle(bgColor))
                     .on('pointerdown', () => this.travelToNeighborhood(key));
+            } else if (isLockedByLevel) {
+                // Show level requirement message
+                card.setInteractive({ useHandCursor: true })
+                    .on('pointerover', () => card.setFillStyle(0x4a2a2a))
+                    .on('pointerout', () => card.setFillStyle(bgColor))
+                    .on('pointerdown', () => {
+                        this.showFloatingText(`Requires Level ${reqs.minLevel}!`, 0xff4444);
+                    });
             }
             
             this.cards.push(card);
@@ -367,5 +428,47 @@ export default class WorldMapScene extends Phaser.Scene {
             this.scene.stop();
             this.scene.resume('GameScene');
         });
+    }
+
+    // ============================================================
+    // HELPER METHODS
+    // ============================================================
+
+    /**
+     * Show floating text message
+     */
+    showFloatingText(message, color = 0xffffff) {
+        const { width, height } = this.scale;
+        
+        const text = this.add.text(width / 2, height / 2 - 100, message, {
+            fontSize: '24px',
+            fontFamily: 'Courier, monospace',
+            color: '#' + color.toString(16).padStart(6, '0'),
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        this.tweens.add({
+            targets: text,
+            y: text.y - 50,
+            alpha: 0,
+            duration: 1500,
+            onComplete: () => text.destroy()
+        });
+    }
+
+    /**
+     * Show unlock requirement tooltip
+     */
+    showUnlockRequirement(neighborhood, minLevel) {
+        // Could implement a tooltip here
+        this.showFloatingText(`Requires Level ${minLevel}`, 0xff4444);
+    }
+
+    /**
+     * Hide unlock requirement tooltip
+     */
+    hideUnlockRequirement() {
+        // Tooltip cleanup if implemented
     }
 }

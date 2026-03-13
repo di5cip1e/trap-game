@@ -174,12 +174,37 @@ export default class SupplierMeetingSystem {
     
     // Handle new day - decay loyalty for missed meetings
     onNewDay() {
+        let decayCount = 0;
+        let decayedSuppliers = [];
+        
         for (const gangId of Object.keys(this.supplierRelations)) {
             // Only decay if not at max loyalty
             if (this.supplierRelations[gangId] < CONFIG.MAX_LOYALTY) {
+                const oldLoyalty = this.supplierRelations[gangId];
                 this.supplierRelations[gangId] = Math.max(0, 
                     this.supplierRelations[gangId] - CONFIG.SUPPLIER_CONFIG.LOYALTY_DECAY_PER_MISS);
+                
+                // Track if loyalty actually decayed
+                if (this.supplierRelations[gangId] < oldLoyalty) {
+                    decayCount++;
+                    const gang = this.getSupplier(gangId);
+                    if (gang) {
+                        decayedSuppliers.push(gang.name);
+                    }
+                }
             }
         }
+        
+        // Show HUD notification if any supplier loyalty decayed
+        if (decayCount > 0 && this.scene && this.scene.showFloatingText) {
+            const supplierList = decayedSuppliers.slice(0, 3).join(', ');
+            const moreText = decayedSuppliers.length > 3 ? ` and ${decayCount - 3} more` : '';
+            this.scene.showFloatingText(
+                `Supplier Loyalty Decayed: ${supplierList}${moreText}`,
+                0xffaa00 // Orange/warning color
+            );
+        }
+        
+        return { decayCount, decayedSuppliers };
     }
 }

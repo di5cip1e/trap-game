@@ -490,6 +490,48 @@ export default class NPCController {
     // ============================================================
 
     /**
+     * Check if player has unlocked meth precursors (has purchased before or has in inventory)
+     */
+    hasUnlockedMethPrecursors() {
+        const { playerState } = this;
+        
+        // Check if player has any precursors in drugs inventory (from traveling salesman)
+        if (playerState.drugs) {
+            if (playerState.drugs.precursorA > 0 || playerState.drugs.precursorB > 0) {
+                return true;
+            }
+        }
+        
+        // Also check legacy precursors inventory
+        if (playerState.precursors) {
+            for (const key of Object.keys(playerState.precursors)) {
+                if (playerState.precursors[key] > 0) return true;
+            }
+        }
+        
+        // Check save data for previous precursor purchases (tracked via custom flag)
+        // If player has purchased from traveling salesman before, they can see him again
+        if (playerState.purchasedFromSalesman) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if player is ready for traveling salesman content (mid-game progression)
+     * Readiness is determined by having some money and progression
+     */
+    isReadyForSalesmanContent() {
+        const { playerState } = this;
+        
+        // Player needs at least $200 to afford anything useful from salesman
+        // and should have made some progress (at least 1 product sold)
+        return playerState.money >= 200 && 
+               (playerState.product > 0 || playerState.totalSales > 0 || playerState.drugs?.methamphetamine > 0);
+    }
+    
+    /**
      * Spawn traveling salesman (rare random spawn in neighborhoods)
      */
     spawnTravelingSalesman() {
@@ -502,6 +544,12 @@ export default class NPCController {
             const index = this.scene.worldObjects.indexOf(this.travelingSalesman);
             if (index > -1) this.scene.worldObjects.splice(index, 1);
             this.travelingSalesman = null;
+        }
+        
+        // Traveling salesman only spawns when player has unlocked meth precursors
+        // or is ready for that content (mid-game progression)
+        if (!this.hasUnlockedMethPrecursors() && !this.isReadyForSalesmanContent()) {
+            return; // Don't spawn - player hasn't unlocked this content yet
         }
         
         // Traveling salesman only spawns occasionally (rare)
@@ -807,16 +855,30 @@ export default class NPCController {
      * Trigger rival encounter
      */
     triggerRivalEncounter() {
-        const { CONFIG, CombatScene, ENEMY_TYPES } = this.scene;
+        const { CONFIG, CombatScene, ENEMY_TYPES, playerState } = this.scene;
         
         this.playerState.isMoving = true;
         
         const enemyType = this.rival.type || 'gangster';
+        
+        // Get base stats from enemy types (already scaled by NG+ in GameScene)
+        let baseHp = ENEMY_TYPES[enemyType].hp;
+        let baseDamage = ENEMY_TYPES[enemyType].damage;
+        
+        // Additional rival-specific NG+ scaling (extra 5% per NG+ cycle beyond base enemy scaling)
+        const ngpCount = playerState.newGamePlusCount || 0;
+        if (ngpCount > 0) {
+            const rivalMult = 1 + (ngpCount * 0.05);
+            baseHp = Math.floor(baseHp * rivalMult);
+            baseDamage = Math.floor(baseDamage * rivalMult);
+        }
+        
         const enemyData = {
             type: enemyType,
             name: this.rival.name || 'Rival',
-            hp: ENEMY_TYPES[enemyType].hp,
-            damage: ENEMY_TYPES[enemyType].damage
+            hp: baseHp,
+            maxHp: baseHp,
+            damage: baseDamage
         };
         
         this.scene.combatScene.startCombat(enemyData, 

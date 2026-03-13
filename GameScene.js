@@ -3418,48 +3418,190 @@ export default class GameScene extends Phaser.Scene {
         
         const { width, height } = this.scale;
         
-        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        // Create game over overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.95);
         overlay.setScrollFactor(0);
         overlay.setDepth(1000);
         
-        const messageText = this.add.text(width / 2, height / 2 - 50, 'OVERWHELMED', {
+        // Game Over title
+        const titleText = this.add.text(width / 2, height / 2 - 120, 'GAME OVER', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '48px',
+            color: CONFIG.COLORS.danger,
+            stroke: '#000000',
+            strokeThickness: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Death reason
+        const reasonText = this.add.text(width / 2, height / 2 - 50, 'You have been overwhelmed...\nYour body gave out.', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Medical help cost
+        const medicalCost = 500;
+        const canAffordMedical = this.playerState.money >= medicalCost;
+        
+        // Stats display
+        const statsText = this.add.text(width / 2, height / 2 + 20, 
+            `Day: ${this.timeSystem?.day || 1} | Money: $${this.playerState.money}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.textDark
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Options container
+        const optionsContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(1002);
+        
+        // Option 1: Medical Help button
+        const medicalBtnBg = this.add.rectangle(width / 2 - 120, height / 2 + 100, 200, 60, 
+            canAffordMedical ? 0x2a4a2a : 0x1a1a1a);
+        medicalBtnBg.setStrokeStyle(2, canAffordMedical ? 0x00ff00 : 0x444444);
+        optionsContainer.add(medicalBtnBg);
+        
+        const medicalBtnText = this.add.text(width / 2 - 120, height / 2 + 100, 
+            canAffordMedical ? `MEDICAL\n$${medicalCost}` : 'NO FUNDS\nFOR MEDICAL', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: canAffordMedical ? '#00ff00' : '#666666',
+            align: 'center'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(medicalBtnText);
+        
+        // Make medical button interactive
+        if (canAffordMedical) {
+            medicalBtnBg.setInteractive({ useHandCursor: true });
+            medicalBtnBg.on('pointerover', () => medicalBtnBg.setFillStyle(0x3a5a3a));
+            medicalBtnBg.on('pointerout', () => medicalBtnBg.setFillStyle(0x2a4a2a));
+            medicalBtnBg.on('pointerup', () => {
+                this.handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, medicalCost);
+            });
+        }
+        
+        // Option 2: Restart button
+        const restartBtnBg = this.add.rectangle(width / 2 + 120, height / 2 + 100, 200, 60, 0x2a2a4a);
+        restartBtnBg.setStrokeStyle(2, 0x6666ff);
+        optionsContainer.add(restartBtnBg);
+        
+        const restartBtnText = this.add.text(width / 2 + 120, height / 2 + 100, 'RESTART\nGAME', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: '#6666ff',
+            align: 'center'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(restartBtnText);
+        
+        // Make restart button interactive
+        restartBtnBg.setInteractive({ useHandCursor: true });
+        restartBtnBg.on('pointerover', () => restartBtnBg.setFillStyle(0x3a3a5a));
+        restartBtnBg.on('pointerout', () => restartBtnBg.setFillStyle(0x2a2a4a));
+        restartBtnBg.on('pointerup', () => {
+            this.restartGame(overlay, titleText, reasonText, statsText, optionsContainer);
+        });
+        
+        // Keyboard shortcuts hint
+        this.input.keyboard.once('keydown-M', () => {
+            if (canAffordMedical) {
+                this.handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, medicalCost);
+            }
+        });
+        
+        this.input.keyboard.once('keydown-R', () => {
+            this.restartGame(overlay, titleText, reasonText, statsText, optionsContainer);
+        });
+    }
+    
+    /**
+     * Handle medical revival option
+     */
+    handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, cost) {
+        // Deduct cost
+        this.playerState.money -= cost;
+        
+        // Clear overlay
+        overlay.destroy();
+        titleText.destroy();
+        reasonText.destroy();
+        statsText.destroy();
+        optionsContainer.destroy();
+        
+        const { width, height } = this.scale;
+        
+        // Show revival message
+        const revivalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        revivalOverlay.setScrollFactor(0).setDepth(1000);
+        
+        const revivalTitle = this.add.text(width / 2, height / 2 - 30, 'TREATED', {
             fontFamily: 'Press Start 2P',
             fontSize: '36px',
-            color: CONFIG.COLORS.danger,
+            color: '#00ff00',
             stroke: '#000000',
             strokeThickness: 6
         }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
         
-        const penaltyText = this.add.text(width / 2, height / 2 + 30, 'Status effects were too much...\nWoke up at Safehouse', {
+        const revivalText = this.add.text(width / 2, height / 2 + 30, 'Medical team stabilized you.\nBack in the streets...', {
             fontFamily: 'Press Start 2P',
-            fontSize: '16px',
+            fontSize: '14px',
             color: CONFIG.COLORS.text,
             align: 'center'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
         
         // Clear all status effects
         this.playerState.activeStatuses = {};
-        if (this.hud) this.hud.updateStatusDisplay();
         
-        // Wait, then revive player at safehouse
-        this.time.delayedCall(3000, () => {
-            overlay.destroy();
-            messageText.destroy();
-            penaltyText.destroy();
+        // Restore HP to 75%
+        this.playerState.playerHP = Math.floor(this.playerState.playerMaxHP * 0.75);
+        
+        // Revive at safehouse
+        this.reviveAtSafehouse();
+        
+        // Continue after delay
+        this.time.delayedCall(2500, () => {
+            revivalOverlay.destroy();
+            revivalTitle.destroy();
+            revivalText.destroy();
             
-            // Restore partial HP
-            this.playerState.playerHP = Math.floor(this.playerState.playerMaxHP * 0.5);
-            
-            // Find and move to safehouse
-            const safehouse = this.mapObjects?.find(obj => obj.type === 'safehouse');
-            if (safehouse) {
-                this.playerState.gridX = safehouse.x;
-                this.playerState.gridY = safehouse.y;
+            if (this.hud) {
+                this.hud.updateStatusDisplay();
+                this.hud.update();
             }
-            
-            if (this.hud) this.hud.update();
             this.playerState.isMoving = false;
         });
+    }
+    
+    /**
+     * Restart the game
+     */
+    restartGame(overlay, titleText, reasonText, statsText, optionsContainer) {
+        overlay.destroy();
+        titleText.destroy();
+        reasonText.destroy();
+        statsText.destroy();
+        optionsContainer.destroy();
+        
+        // Restart the scene
+        this.scene.restart();
+    }
+    
+    /**
+     * Revive player at safehouse
+     */
+    reviveAtSafehouse() {
+        // Find safehouse position
+        const safehouse = this.worldObjects?.find(obj => obj.type === 'safehouse');
+        if (safehouse) {
+            this.playerState.gridX = safehouse.x + 1;
+            this.playerState.gridY = safehouse.y;
+            
+            // Update player sprite position
+            if (this.player) {
+                this.player.x = this.playerState.gridX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+                this.player.y = this.playerState.gridY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+            }
+        }
     }
     
     getRank() {
@@ -3755,8 +3897,8 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
-        
+        if (this.hud) this.hud.update();
+
         return sellValue;
     }
     

@@ -161,6 +161,13 @@ export default class HUD {
             color: CONFIG.COLORS.success
         }).setScrollFactor(0).setDepth(502);
         
+        // NEW: Pistol Ammo indicator
+        this.pistolAmmoText = this.scene.add.text(leftMargin + 600, topY + 30, '', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.primary
+        }).setScrollFactor(0).setDepth(502);
+        
         // Runner indicator
         this.runnerText = this.scene.add.text(leftMargin + 600, topY + 45, '', {
             fontFamily: 'Press Start 2P',
@@ -465,6 +472,27 @@ export default class HUD {
             equipmentLabels.push('[BACKPACK]');
         }
         this.equipmentText.setText(equipmentLabels.join(' '));
+        
+        // NEW: Pistol ammo display
+        if (player.equipment.pistol) {
+            const ammo = player.pistolAmmo || 0;
+            const maxAmmo = player.pistolMaxAmmo || 72;
+            const magazineSize = player.magazineSize || 12;
+            
+            // Show ammo in magazine / total format
+            this.pistolAmmoText.setText(`🔫 ${ammo}/${maxAmmo}`);
+            
+            // Color based on ammo level
+            if (ammo === 0) {
+                this.pistolAmmoText.setColor(CONFIG.COLORS.danger);  // Red - no ammo
+            } else if (ammo <= magazineSize / 4) {
+                this.pistolAmmoText.setColor('#ff6600');  // Orange - low ammo
+            } else {
+                this.pistolAmmoText.setColor(CONFIG.COLORS.primary);  // Normal
+            }
+        } else {
+            this.pistolAmmoText.setText('');
+        }
         
         // Runner indicator
         if (player.hasRunner) {

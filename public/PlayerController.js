@@ -184,8 +184,8 @@ export default class PlayerController {
         this.scene.timeSystem.advanceTime(CONFIG.MINUTES_PER_MOVE);
         
         // Update UI
-        this.scene.hud.update();
-        this.scene.minimap.update();
+        if (this.scene.hud) this.scene.hud.update();
+        if (this.scene.minimap) this.scene.minimap.update();
         
         // Emit event for other controllers
         EventBus.emit(EVENTS.TIME_ADVANCED, { moves: 1 });
@@ -362,7 +362,7 @@ export default class PlayerController {
             this.playerState.productCapacity += equipment.productCapacityBonus;
         }
         
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_EQUIPMENT_CHANGED, { equipmentId, action: 'purchased' });
         
         return true;
@@ -383,7 +383,7 @@ export default class PlayerController {
             this.playerState.productCapacity -= equipment.productCapacityBonus;
         }
         
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_EQUIPMENT_CHANGED, { equipmentId, action: 'unequipped' });
         
         return true;
@@ -406,7 +406,7 @@ export default class PlayerController {
             this.playerState.productCapacity -= equipment.productCapacityBonus;
         }
         
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_EQUIPMENT_CHANGED, { equipmentId, action: 'sold' });
         
         return sellValue;
@@ -484,7 +484,7 @@ export default class PlayerController {
 
     addMoney(amount) {
         this.playerState.money += amount;
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_MONEY_CHANGED, { 
             amount: amount,
             currentMoney: this.playerState.money 
@@ -494,7 +494,7 @@ export default class PlayerController {
     spendMoney(amount) {
         if (this.playerState.money < amount) return false;
         this.playerState.money -= amount;
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_MONEY_CHANGED, { 
             amount: -amount,
             currentMoney: this.playerState.money 
@@ -506,19 +506,19 @@ export default class PlayerController {
         const reduction = this.getHeatReduction();
         const actualAmount = Math.floor(amount * (1 - reduction));
         this.playerState.heat = Math.min(100, this.playerState.heat + actualAmount);
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_HEAT_CHANGED, { heat: this.playerState.heat });
     }
 
     reduceHeat(amount) {
         this.playerState.heat = Math.max(0, this.playerState.heat - amount);
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_HEAT_CHANGED, { heat: this.playerState.heat });
     }
 
     changeHustle(amount) {
         this.playerState.hustle = Math.max(0, Math.min(100, this.playerState.hustle + amount));
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         EventBus.emit(EVENTS.PLAYER_HUSTLE_CHANGED, { hustle: this.playerState.hustle });
     }
 
@@ -543,7 +543,89 @@ export default class PlayerController {
 
     heal(amount) {
         this.playerState.playerHP = Math.min(this.playerState.playerMaxHP, this.playerState.playerHP + amount);
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
+    }
+
+    // ============================================================
+    // PISTOL AMMO & RELOAD
+    // ============================================================
+
+    /**
+     * Reload the pistol - refill magazine from reserve ammo
+     * @returns {boolean} - Success
+     */
+    reloadPistol() {
+        const { CONFIG } = this.scene;
+        const player = this.playerState;
+        
+        // Check if player has pistol
+        if (!player.equipment.pistol) {
+            this.scene.showFloatingText('No pistol equipped!', CONFIG.COLORS.danger);
+            return false;
+        }
+        
+        const magazineSize = player.magazineSize || 12;
+        const currentAmmo = player.pistolAmmo || 0;
+        const totalAmmo = player.pistolAmmo || 0;
+        const reserveAmmo = player.pistolMaxAmmo || 72;
+        
+        // Check if magazine is already full
+        if (currentAmmo >= magazineSize) {
+            this.scene.showFloatingText('Magazine already full!', CONFIG.COLORS.text);
+            return false;
+        }
+        
+        // Check if there's reserve ammo
+        if (reserveAmmo <= 0) {
+            this.scene.showFloatingText('No ammo in reserve!', CONFIG.COLORS.danger);
+            return false;
+        }
+        
+        // Calculate how many bullets needed to fill magazine
+        const bulletsNeeded = magazineSize - currentAmmo;
+        const bulletsToLoad = Math.min(bulletsNeeded, reserveAmmo);
+        
+        // Transfer ammo
+        player.pistolAmmo = currentAmmo + bulletsToLoad;
+        player.pistolMaxAmmo = reserveAmmo - bulletsToLoad;
+        
+        // Clamp: ensure we don't go negative
+        player.pistolMaxAmmo = Math.max(0, player.pistolMaxAmmo);
+        
+        this.scene.showFloatingText(`Reloaded! +${bulletsToLoad} rounds`, CONFIG.COLORS.success);
+        
+        // Update HUD
+        if (this.scene.hud) this.scene.hud.update();
+        
+        return true;
+    }
+
+    /**
+     * Use pistol - consumes ammo
+     * @returns {boolean} - True if shot was fired
+     */
+    usePistol() {
+        const { CONFIG } = this.scene;
+        const player = this.playerState;
+        
+        // Check if player has pistol
+        if (!player.equipment.pistol) {
+            return false;
+        }
+        
+        // Check ammo
+        if (player.pistolAmmo <= 0) {
+            this.scene.showFloatingText('Click... No ammo! [R] to reload', CONFIG.COLORS.danger);
+            return false;
+        }
+        
+        // Consume ammo
+        player.pistolAmmo -= 1;
+        
+        // Update HUD
+        if (this.scene.hud) this.scene.hud.update();
+        
+        return true;
     }
 
     useSkill(skillKey) {
@@ -584,7 +666,7 @@ export default class PlayerController {
         this.playerState.unlockedSkills.push(skillKey);
         
         this.scene.showFloatingText(`Unlocked ${skill.name}!`, '#00ff00');
-        this.scene.hud.update();
+        if (this.scene.hud) this.scene.hud.update();
         
         return true;
     }

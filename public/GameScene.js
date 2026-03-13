@@ -24,6 +24,8 @@ import SkillTree from './SkillTree.js';
 import CombatScene, { ENEMY_TYPES } from './CombatScene.js';
 // Mobile controls - already exists in rosie/controls/
 import { MobileControlsManager, VirtualJoystick, ActionButton } from './rosie/controls/phaserMobileControls.js';
+// NEW: Touch controls system
+import TouchControls from './TouchControls.js';
 // Achievements system
 import Achievements, { trackSale, trackSupplierMeeting, trackHeatEscape, trackEquipmentPurchase } from './Achievements.js';
 import { EventBus, EVENTS } from './EventBus.js';
@@ -158,6 +160,10 @@ export default class GameScene extends Phaser.Scene {
             // Player HP (for status effect damage)
             playerHP: 100,
             playerMaxHP: 100,
+            
+            // Pistol ammo (defined in CONFIG but not tracked - now adding tracking)
+            pistolAmmo: 0,
+            maxPistolAmmo: 30,
             
             // NEW GAME+ tracking
             newGamePlusCount: 0,
@@ -534,41 +540,44 @@ export default class GameScene extends Phaser.Scene {
         
         // --- LEGACY SINGLE-IMAGE LOADING (current) ---
         // Load game assets
-        this.load.image('player-top', 'https://rosebud.ai/assets/player-top-down.png.webp?8YJk');
-        this.load.image('tile-street', 'https://rosebud.ai/assets/tile-street.png.webp?ekRg');
-        this.load.image('tile-sidewalk', 'https://rosebud.ai/assets/tile-sidewalk.png.webp?WAgM');
-        this.load.image('hud-bar', 'https://rosebud.ai/assets/hud-panel-bar.png.webp?IDtt');
-        this.load.image('panel', 'https://rosebud.ai/assets/ui-panel.png.webp?eL0r');
+        this.load.image('player-top', 'assets/player-top-down.png');
+        this.load.image('tile-street', 'assets/tile-street.png');
+        this.load.image('tile-sidewalk', 'assets/tile-sidewalk.png');
+        this.load.image('hud-bar', 'assets/hud-panel-bar.png');
+        this.load.image('panel', 'assets/ui-panel.png');
         
         // Load biome-specific tiles
-        this.load.image('tile-alley', 'https://rosebud.ai/assets/tile-alley.png.webp?HvWg');
-        this.load.image('tile-concrete-cracked', 'https://rosebud.ai/assets/tile-concrete-cracked.png.webp?uX48');
-        this.load.image('tile-dirty-floor', 'https://rosebud.ai/assets/tile-dirty-floor.png.webp?3xwW');
-        this.load.image('tile-wood-floor', 'https://rosebud.ai/assets/tile-wood-floor.png.webp?7QYt');
-        this.load.image('tile-wall-brick', 'https://rosebud.ai/assets/tile-wall-brick.png.webp?IhUH');
-        this.load.image('tile-wall-interior', 'https://rosebud.ai/assets/tile-wall-interior.png.webp?COiM');
+        this.load.image('tile-alley', 'assets/tile-alley.png');
+        this.load.image('tile-concrete-cracked', 'assets/tile-concrete-cracked.png');
+        this.load.image('tile-dirty-floor', 'assets/tile-dirty-floor.png');
+        this.load.image('tile-wood-floor', 'assets/tile-wood-floor.png');
+        this.load.image('tile-wall-brick', 'assets/tile-wall-brick.png');
+        this.load.image('tile-wall-interior', 'assets/tile-wall-interior.png');
         
         // Load objects
-        this.load.image('cardboard-box', 'https://rosebud.ai/assets/cardboard-box.png.webp?ROVi');
-        this.load.image('storage-unit', 'https://rosebud.ai/assets/storage-unit.webp?hVbG');
-        this.load.image('dumpster', 'https://rosebud.ai/assets/tile-dumpster.png.webp?4ZFT');
-        this.load.image('workstation', 'https://rosebud.ai/assets/workstation.png.webp?moWH');
+        this.load.image('cardboard-box', 'assets/cardboard-box.png');
+        this.load.image('storage-unit', 'assets/storage-unit.png');
+        this.load.image('dumpster', 'assets/tile-dumpster.png');
+        this.load.image('workstation', 'assets/workstation.png');
         
         // Load NPCs
-        this.load.image('npc-vendor', 'https://rosebud.ai/assets/npc-vendor.png.webp?8BrV');
-        this.load.image('npc-buyer', 'https://rosebud.ai/assets/npc-buyer.png.webp?WVHF');
-        this.load.image('npc-rival', 'https://rosebud.ai/assets/npc-rival.webp?gi7R');
-        this.load.image('npc-police', 'https://rosebud.ai/assets/npc-police.webp?K9SU');
-        this.load.image('npc-shop-owner', 'https://rosebud.ai/assets/npc-shop-owner.webp?vt7M');
-        this.load.image('npc-corrupt-cop', 'https://rosebud.ai/assets/npc-corrupt-cop.webp?DHMq');
+        this.load.image('npc-vendor', 'assets/npc-vendor.png');
+        this.load.image('npc-buyer', 'assets/npc-buyer.png');
+        this.load.image('npc-rival', 'assets/npc-rival.png');
+        this.load.image('npc-police', 'assets/npc-police.png');
+        this.load.image('npc-shop-owner', 'assets/npc-shop-owner.png');
+        this.load.image('npc-corrupt-cop', 'assets/npc-corrupt-cop.png');
         
         // Load icons
-        this.load.image('icon-raw', 'https://rosebud.ai/assets/icon-raw-materials.png.webp?X41g');
-        this.load.image('icon-product', 'https://rosebud.ai/assets/icon-product.png.webp?PPUj');
+        this.load.image('icon-raw', 'assets/icon-raw-materials.png');
+        this.load.image('icon-product', 'assets/icon-product.png');
     }
     
     create() {
         const { width, height } = this.scale;
+        
+        // Generate fallback textures in case external assets failed to load
+        this.generateFallbackTextures();
         
         // Generate procedural map with neighborhood settings
         const neighborhood = this.playerState.neighborhood;
@@ -959,6 +968,9 @@ export default class GameScene extends Phaser.Scene {
         // Pause menu (ESC)
         this.escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         
+        // NEW: Reload hotkey (R)
+        this.reloadKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+        
         // ==========================================
         // MOBILE CONTROLS
         // ==========================================
@@ -1015,18 +1027,15 @@ export default class GameScene extends Phaser.Scene {
     setupMobileControls() {
         const { width, height } = this.scale;
         
-        // Create mobile controls manager
-        this.mobileControls = new MobileControlsManager(this);
+        // Create TouchControls for mobile joystick and buttons
+        this.touchControls = new TouchControls(this);
+        this.touchControls.setupJoystick();
         
-        // Add virtual joystick in bottom-left corner
-        // Position: 15% from left, 20% from bottom
-        this.joystick = this.mobileControls.addJoystick({
-            baseRadius: 70,
-            knobRadius: 35,
-            maxDistance: 55,
-            x: width * 0.12,
-            y: height * 0.78
-        });
+        // Set this.joystick to TouchControls for PlayerController compatibility
+        this.joystick = this.touchControls;
+        
+        // Also create mobile controls manager for any additional controls
+        this.mobileControls = new MobileControlsManager(this);
         
         // Add INTERACT button (right side)
         this.interactButton = this.add.rectangle(
@@ -1154,13 +1163,17 @@ export default class GameScene extends Phaser.Scene {
      * @param {string} neighborhoodKey - The neighborhood key (e.g., 'OLD_TOWN', 'SKID_ROW')
      */
     generateMapForNeighborhood(neighborhoodKey) {
-        // Prevent neighborhood transitions while indoors
-        if (this.isIndoor) {
-            this.showFloatingText('Exit building first!', CONFIG.COLORS.danger);
-            return;
-        }
-        
-        const neighborhood = neighborhoodKey || this.playerState.neighborhood;
+        try {
+            // Prevent neighborhood transitions while indoors
+            if (this.isIndoor) {
+                this.showFloatingText('Exit building first!', CONFIG.COLORS.danger);
+                return;
+            }
+            
+            // Show loading indicator
+            this.showFloatingText('Traveling...', CONFIG.COLORS.info);
+            
+            const neighborhood = neighborhoodKey || this.playerState.neighborhood;
         
         // Get neighborhood config
         const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
@@ -1228,6 +1241,11 @@ export default class GameScene extends Phaser.Scene {
         // Update HUD to show new neighborhood
         if (this.hud) {
             this.hud.update();
+        }
+        
+        } catch (error) {
+            console.error('Error generating map for neighborhood:', error);
+            this.showFloatingText('Travel failed!', CONFIG.COLORS.danger);
         }
     }
     
@@ -1563,6 +1581,11 @@ export default class GameScene extends Phaser.Scene {
         // Check skill tree hotkey (K)
         if (Phaser.Input.Keyboard.JustDown(this.skillTreeKey)) {
             this.skillTree.openSkillTreeUI();
+        }
+        
+        // NEW: Check reload hotkey (R)
+        if (Phaser.Input.Keyboard.JustDown(this.reloadKey)) {
+            this.playerController.reloadPistol();
         }
         
         // Check keyboard input
@@ -2268,7 +2291,7 @@ export default class GameScene extends Phaser.Scene {
                     if (index > -1) this.worldObjects.splice(index, 1);
                     
                     this.rivalDefeated = true;
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             },
             // Defeat callback
@@ -2285,7 +2308,7 @@ export default class GameScene extends Phaser.Scene {
                     if (this.playerState.hustle <= 0) {
                         this.passOut();
                     }
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             }
         );
@@ -2318,14 +2341,14 @@ export default class GameScene extends Phaser.Scene {
                 
                 // Run away!
                 this.removeBuyer(buyer);
-                this.hud.update();
+                if (this.hud) this.hud.update();
                 this.minimap.update();
                 
                 this.showFloatingText(`${customerConfig.name} stole ${stolenAmount} product and ran!`, CONFIG.COLORS.danger);
                 
                 // Add some heat from the theft
                 this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 10);
-                this.hud.update();
+                if (this.hud) this.hud.update();
                 return;
             }
         }
@@ -2438,7 +2461,7 @@ export default class GameScene extends Phaser.Scene {
         // Remove buyer after transaction
         this.removeBuyer(buyer);
         
-        this.hud.update();
+        if (this.hud) this.hud.update();
         this.minimap.update();
         
         // Heat warning message
@@ -2462,13 +2485,13 @@ export default class GameScene extends Phaser.Scene {
             this.playerState.money -= bribeCost;
             this.playerState.heat = Math.max(0, this.playerState.heat - 30);
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             this.showFloatingText(`Undercover cop took your bribe! -$${bribeCost}, Heat -30`, '#6699ff');
         } else if (Math.random() < bustChance) {
             // Busted!
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             
             // Trigger arrest
@@ -2484,7 +2507,7 @@ export default class GameScene extends Phaser.Scene {
                     this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 30);
                     
                     this.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, CONFIG.COLORS.danger);
-                    this.hud.update();
+                    if (this.hud) this.hud.update();
                 }
             });
         } else {
@@ -2507,13 +2530,13 @@ export default class GameScene extends Phaser.Scene {
             }
             
             this.removeBuyer(buyer);
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.minimap.update();
             this.showFloatingText(`Sold to undercover! +$${totalEarned}`, CONFIG.COLORS.success);
             
             // Small heat gain from dealing
             this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 8);
-            this.hud.update();
+            if (this.hud) this.hud.update();
         }
     }
     
@@ -3185,7 +3208,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerState.unlockedSkills.push(skillKey);
         
         this.showFloatingText(`Unlocked ${skill.name}!`, CONFIG.COLORS.success);
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         return true;
     }
@@ -3332,7 +3355,7 @@ export default class GameScene extends Phaser.Scene {
         this.timeSystem.advanceTime(CONFIG.MINUTES_PER_MOVE);
         
         // Update UI
-        this.hud.update();
+        if (this.hud) this.hud.update();
         this.minimap.update();
     }
     
@@ -3390,7 +3413,7 @@ export default class GameScene extends Phaser.Scene {
             this.playerState.hustle = CONFIG.MAX_HUSTLE;
             this.timeSystem.advanceToNextDay();
             
-            this.hud.update();
+            if (this.hud) this.hud.update();
             this.playerState.isMoving = false;
         });
     }
@@ -3403,48 +3426,190 @@ export default class GameScene extends Phaser.Scene {
         
         const { width, height } = this.scale;
         
-        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        // Create game over overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.95);
         overlay.setScrollFactor(0);
         overlay.setDepth(1000);
         
-        const messageText = this.add.text(width / 2, height / 2 - 50, 'OVERWHELMED', {
+        // Game Over title
+        const titleText = this.add.text(width / 2, height / 2 - 120, 'GAME OVER', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '48px',
+            color: CONFIG.COLORS.danger,
+            stroke: '#000000',
+            strokeThickness: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Death reason
+        const reasonText = this.add.text(width / 2, height / 2 - 50, 'You have been overwhelmed...\nYour body gave out.', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Medical help cost
+        const medicalCost = 500;
+        const canAffordMedical = this.playerState.money >= medicalCost;
+        
+        // Stats display
+        const statsText = this.add.text(width / 2, height / 2 + 20, 
+            `Day: ${this.timeSystem?.day || 1} | Money: $${this.playerState.money}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.textDark
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        // Options container
+        const optionsContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(1002);
+        
+        // Option 1: Medical Help button
+        const medicalBtnBg = this.add.rectangle(width / 2 - 120, height / 2 + 100, 200, 60, 
+            canAffordMedical ? 0x2a4a2a : 0x1a1a1a);
+        medicalBtnBg.setStrokeStyle(2, canAffordMedical ? 0x00ff00 : 0x444444);
+        optionsContainer.add(medicalBtnBg);
+        
+        const medicalBtnText = this.add.text(width / 2 - 120, height / 2 + 100, 
+            canAffordMedical ? `MEDICAL\n$${medicalCost}` : 'NO FUNDS\nFOR MEDICAL', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: canAffordMedical ? '#00ff00' : '#666666',
+            align: 'center'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(medicalBtnText);
+        
+        // Make medical button interactive
+        if (canAffordMedical) {
+            medicalBtnBg.setInteractive({ useHandCursor: true });
+            medicalBtnBg.on('pointerover', () => medicalBtnBg.setFillStyle(0x3a5a3a));
+            medicalBtnBg.on('pointerout', () => medicalBtnBg.setFillStyle(0x2a4a2a));
+            medicalBtnBg.on('pointerup', () => {
+                this.handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, medicalCost);
+            });
+        }
+        
+        // Option 2: Restart button
+        const restartBtnBg = this.add.rectangle(width / 2 + 120, height / 2 + 100, 200, 60, 0x2a2a4a);
+        restartBtnBg.setStrokeStyle(2, 0x6666ff);
+        optionsContainer.add(restartBtnBg);
+        
+        const restartBtnText = this.add.text(width / 2 + 120, height / 2 + 100, 'RESTART\nGAME', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: '#6666ff',
+            align: 'center'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(restartBtnText);
+        
+        // Make restart button interactive
+        restartBtnBg.setInteractive({ useHandCursor: true });
+        restartBtnBg.on('pointerover', () => restartBtnBg.setFillStyle(0x3a3a5a));
+        restartBtnBg.on('pointerout', () => restartBtnBg.setFillStyle(0x2a2a4a));
+        restartBtnBg.on('pointerup', () => {
+            this.restartGame(overlay, titleText, reasonText, statsText, optionsContainer);
+        });
+        
+        // Keyboard shortcuts hint
+        this.input.keyboard.once('keydown-M', () => {
+            if (canAffordMedical) {
+                this.handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, medicalCost);
+            }
+        });
+        
+        this.input.keyboard.once('keydown-R', () => {
+            this.restartGame(overlay, titleText, reasonText, statsText, optionsContainer);
+        });
+    }
+    
+    /**
+     * Handle medical revival option
+     */
+    handleMedicalRevival(overlay, titleText, reasonText, statsText, optionsContainer, cost) {
+        // Deduct cost
+        this.playerState.money -= cost;
+        
+        // Clear overlay
+        overlay.destroy();
+        titleText.destroy();
+        reasonText.destroy();
+        statsText.destroy();
+        optionsContainer.destroy();
+        
+        const { width, height } = this.scale;
+        
+        // Show revival message
+        const revivalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        revivalOverlay.setScrollFactor(0).setDepth(1000);
+        
+        const revivalTitle = this.add.text(width / 2, height / 2 - 30, 'TREATED', {
             fontFamily: 'Press Start 2P',
             fontSize: '36px',
-            color: CONFIG.COLORS.danger,
+            color: '#00ff00',
             stroke: '#000000',
             strokeThickness: 6
         }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
         
-        const penaltyText = this.add.text(width / 2, height / 2 + 30, 'Status effects were too much...\nWoke up at Safehouse', {
+        const revivalText = this.add.text(width / 2, height / 2 + 30, 'Medical team stabilized you.\nBack in the streets...', {
             fontFamily: 'Press Start 2P',
-            fontSize: '16px',
+            fontSize: '14px',
             color: CONFIG.COLORS.text,
             align: 'center'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
         
         // Clear all status effects
         this.playerState.activeStatuses = {};
-        if (this.hud) this.hud.updateStatusDisplay();
         
-        // Wait, then revive player at safehouse
-        this.time.delayedCall(3000, () => {
-            overlay.destroy();
-            messageText.destroy();
-            penaltyText.destroy();
+        // Restore HP to 75%
+        this.playerState.playerHP = Math.floor(this.playerState.playerMaxHP * 0.75);
+        
+        // Revive at safehouse
+        this.reviveAtSafehouse();
+        
+        // Continue after delay
+        this.time.delayedCall(2500, () => {
+            revivalOverlay.destroy();
+            revivalTitle.destroy();
+            revivalText.destroy();
             
-            // Restore partial HP
-            this.playerState.playerHP = Math.floor(this.playerState.playerMaxHP * 0.5);
-            
-            // Find and move to safehouse
-            const safehouse = this.mapObjects?.find(obj => obj.type === 'safehouse');
-            if (safehouse) {
-                this.playerState.gridX = safehouse.x;
-                this.playerState.gridY = safehouse.y;
+            if (this.hud) {
+                this.hud.updateStatusDisplay();
+                this.hud.update();
             }
-            
-            this.hud.update();
             this.playerState.isMoving = false;
         });
+    }
+    
+    /**
+     * Restart the game
+     */
+    restartGame(overlay, titleText, reasonText, statsText, optionsContainer) {
+        overlay.destroy();
+        titleText.destroy();
+        reasonText.destroy();
+        statsText.destroy();
+        optionsContainer.destroy();
+        
+        // Restart the scene
+        this.scene.restart();
+    }
+    
+    /**
+     * Revive player at safehouse
+     */
+    reviveAtSafehouse() {
+        // Find safehouse position
+        const safehouse = this.worldObjects?.find(obj => obj.type === 'safehouse');
+        if (safehouse) {
+            this.playerState.gridX = safehouse.x + 1;
+            this.playerState.gridY = safehouse.y;
+            
+            // Update player sprite position
+            if (this.player) {
+                this.player.x = this.playerState.gridX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+                this.player.y = this.playerState.gridY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+            }
+        }
     }
     
     getRank() {
@@ -3534,7 +3699,7 @@ export default class GameScene extends Phaser.Scene {
                 this.placeSupplierNPCs();
             }
             
-            this.hud.update();
+            if (this.hud) this.hud.update();
             
             // Auto-save on new day (to slot 0)
             SaveLoadSystem.saveToSlot(this, 0, `Day ${this.currentDay} Auto-save`);
@@ -3569,7 +3734,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         // Auto-save on safehouse upgrade (to slot 0)
         SaveLoadSystem.saveToSlot(this, 0, `Safehouse Tier ${tierIndex} Upgrade`);
@@ -3622,7 +3787,7 @@ export default class GameScene extends Phaser.Scene {
                 CONFIG.COLORS.success);
         }
         
-        this.hud.update();
+        if (this.hud) this.hud.update();
     }
     
     showRunnerMessage(title, message, color) {
@@ -3682,8 +3847,14 @@ export default class GameScene extends Phaser.Scene {
             this.playerState.productCapacity += equipment.productCapacityBonus;
         }
         
+        // NEW: Grant starting ammo when purchasing pistol
+        if (equipmentId === 'pistol') {
+            this.playerState.pistolAmmo = this.playerState.magazineSize || 12;  // Full magazine
+            this.playerState.pistolMaxAmmo = 60;  // Starting reserve
+        }
+        
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         // Track achievement: equipment purchase
         EventBus.emit('achievement:purchasedEquipment');
@@ -3710,7 +3881,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
+        if (this.hud) this.hud.update();
         
         return true;
     }
@@ -3740,8 +3911,8 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update HUD
-        this.hud.update();
-        
+        if (this.hud) this.hud.update();
+
         return sellValue;
     }
     
@@ -4699,5 +4870,152 @@ export default class GameScene extends Phaser.Scene {
             this.pauseContainer.destroy();
             this.pauseContainer = null;
         }
+    }
+    
+    /**
+     * Generate fallback textures in case external assets fail to load
+     * This ensures the game works even without external assets
+     */
+    generateFallbackTextures() {
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Player texture (green square)
+        graphics.fillStyle(0x00ff00, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('player-top', 32, 32);
+        graphics.clear();
+        
+        // Street tile (dark gray)
+        graphics.fillStyle(0x333333, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-street', 32, 32);
+        graphics.clear();
+        
+        // Sidewalk (light gray)
+        graphics.fillStyle(0x666666, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-sidewalk', 32, 32);
+        graphics.clear();
+        
+        // HUD bar (dark blue)
+        graphics.fillStyle(0x1a1a2e, 1);
+        graphics.fillRect(0, 0, 200, 30);
+        graphics.generateTexture('hud-bar', 200, 30);
+        graphics.clear();
+        
+        // Panel (dark purple)
+        graphics.fillStyle(0x2a2a4e, 1);
+        graphics.fillRect(0, 0, 400, 300);
+        graphics.generateTexture('panel', 400, 300);
+        graphics.clear();
+        
+        // Alley tile (darker gray)
+        graphics.fillStyle(0x222222, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-alley', 32, 32);
+        graphics.clear();
+        
+        // Concrete tile
+        graphics.fillStyle(0x444444, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-concrete-cracked', 32, 32);
+        graphics.clear();
+        
+        // Dirty floor
+        graphics.fillStyle(0x3a3a3a, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-dirty-floor', 32, 32);
+        graphics.clear();
+        
+        // Wood floor
+        graphics.fillStyle(0x5c4033, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wood-floor', 32, 32);
+        graphics.clear();
+        
+        // Wall brick
+        graphics.fillStyle(0x8b4513, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wall-brick', 32, 32);
+        graphics.clear();
+        
+        // Interior wall
+        graphics.fillStyle(0xaaaaaa, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('tile-wall-interior', 32, 32);
+        graphics.clear();
+        
+        // Cardboard box (brown)
+        graphics.fillStyle(0x8b6914, 1);
+        graphics.fillRect(0, 0, 32, 32);
+        graphics.generateTexture('cardboard-box', 32, 32);
+        graphics.clear();
+        
+        // Storage unit (gray)
+        graphics.fillStyle(0x555555, 1);
+        graphics.fillRect(0, 0, 64, 48);
+        graphics.generateTexture('storage-unit', 64, 48);
+        graphics.clear();
+        
+        // Dumpster (dark green)
+        graphics.fillStyle(0x2d5a27, 1);
+        graphics.fillRect(0, 0, 48, 32);
+        graphics.generateTexture('dumpster', 48, 32);
+        graphics.clear();
+        
+        // Workstation (blue)
+        graphics.fillStyle(0x3366cc, 1);
+        graphics.fillRect(0, 0, 48, 32);
+        graphics.generateTexture('workstation', 48, 32);
+        graphics.clear();
+        
+        // NPC Vendor (cyan)
+        graphics.fillStyle(0x00ffff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-vendor', 32, 32);
+        graphics.clear();
+        
+        // NPC Buyer (yellow)
+        graphics.fillStyle(0xffff00, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-buyer', 32, 32);
+        graphics.clear();
+        
+        // NPC Rival (red)
+        graphics.fillStyle(0xff0000, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-rival', 32, 32);
+        graphics.clear();
+        
+        // NPC Police (blue)
+        graphics.fillStyle(0x0066ff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-police', 32, 32);
+        graphics.clear();
+        
+        // NPC Shop Owner (purple)
+        graphics.fillStyle(0x9900ff, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-shop-owner', 32, 32);
+        graphics.clear();
+        
+        // NPC Corrupt Cop (dark blue)
+        graphics.fillStyle(0x003366, 1);
+        graphics.fillCircle(16, 16, 16);
+        graphics.generateTexture('npc-corrupt-cop', 32, 32);
+        graphics.clear();
+        
+        // Icon Raw Materials (orange)
+        graphics.fillStyle(0xff9900, 1);
+        graphics.fillRect(0, 0, 24, 24);
+        graphics.generateTexture('icon-raw', 24, 24);
+        graphics.clear();
+        
+        // Icon Product (green)
+        graphics.fillStyle(0x00cc00, 1);
+        graphics.fillRect(0, 0, 24, 24);
+        graphics.generateTexture('icon-product', 24, 24);
+        
+        graphics.destroy();
     }
 }

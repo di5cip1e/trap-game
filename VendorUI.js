@@ -153,6 +153,12 @@ export default class VendorUI {
         });
         this.container.add(this.buyButton);
         
+        // Buy Max button
+        const buyMaxButton = this.createButton(width / 2 - 160, height / 2 + 210, 140, 40, 'BUY MAX', () => {
+            this.buyMax();
+        });
+        this.container.add(buyMaxButton);
+        
         // Equipment button
         const equipButton = this.createButton(width / 2, height / 2 + 150, 140, 50, 'GEAR', () => {
             this.close();
@@ -364,11 +370,78 @@ export default class VendorUI {
         this.moneyText.setText(`Your Money: $${this.scene.playerState.money}`);
         this.updateDisplay();
         
+        // Track precursor purchases from traveling salesman to unlock content
+        if (isPrecursor && this.customInventory) {
+            this.scene.playerState.purchasedFromSalesman = true;
+        }
+        
         // Show purchase message
         if (isPrecursor) {
             this.showMessage(`Purchased ${this.quantity} ${drugKey}`);
         } else {
             this.showMessage(`Purchased ${this.quantity} Raw Materials`);
+        }
+    }
+    
+    /**
+     * Buy maximum affordable quantity
+     */
+    buyMax() {
+        const currentPrice = this.getCurrentDrugPrice();
+        const playerMoney = this.scene.playerState.money;
+        
+        // Get selected drug info
+        const selectedDrug = this.drugTypes[this.selectedDrugIndex];
+        if (!selectedDrug) {
+            this.showMessage('No item selected!', CONFIG.COLORS.danger);
+            return;
+        }
+        const [drugKey, drug] = selectedDrug;
+        
+        // Check if this is a precursor
+        const isPrecursorA = drugKey.toLowerCase() === 'precursor a';
+        const isPrecursorB = drugKey.toLowerCase() === 'precursor b';
+        const isPrecursor = isPrecursorA || isPrecursorB;
+        
+        if (isPrecursor) {
+            // Calculate max for precursors
+            const precursorKey = isPrecursorA ? 'precursorA' : 'precursorB';
+            const currentPrecursors = this.scene.playerState.drugs[precursorKey] || 0;
+            const maxPrecursors = 20;
+            const maxByInventory = maxPrecursors - currentPrecursors;
+            const maxByMoney = Math.floor(playerMoney / currentPrice);
+            const maxAffordable = Math.min(maxByInventory, maxByMoney);
+            
+            if (maxAffordable <= 0) {
+                if (maxByInventory <= 0) {
+                    this.showMessage('Precursor inventory full!', CONFIG.COLORS.danger);
+                } else {
+                    this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
+                }
+                return;
+            }
+            
+            // Purchase max
+            this.quantity = maxAffordable;
+            this.buy();
+        } else {
+            // Calculate max for raw materials
+            const maxByInventory = this.scene.playerState.rawCapacity - this.scene.playerState.rawMaterials;
+            const maxByMoney = Math.floor(playerMoney / currentPrice);
+            const maxAffordable = Math.min(maxByInventory, maxByMoney);
+            
+            if (maxAffordable <= 0) {
+                if (maxByInventory <= 0) {
+                    this.showMessage('Inventory full!', CONFIG.COLORS.danger);
+                } else {
+                    this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
+                }
+                return;
+            }
+            
+            // Purchase max
+            this.quantity = maxAffordable;
+            this.buy();
         }
     }
     

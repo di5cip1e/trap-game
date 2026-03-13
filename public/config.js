@@ -735,6 +735,15 @@ export const CONFIG = {
             ammoCost: 25  // Cost per shot
         },
         
+        // Ammo
+        pistolAmmo: {
+            name: 'Pistol Ammo',
+            description: '12-round box of 9mm ammunition',
+            cost: 50,
+            type: 'ammo',
+            amount: 12  // 12 rounds per box
+        },
+        
         // Armor/Defense
         bulletproofVest: {
             name: 'Bulletproof Vest',

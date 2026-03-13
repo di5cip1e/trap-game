@@ -1,4 +1,9 @@
 // Game configuration and constants
+import { NEIGHBORHOODS } from './MapGenerator.js';
+
+// Get neighborhood keys as constants
+const NEIGHBORHOOD_KEYS = Object.keys(NEIGHBORHOODS);
+
 export const CONFIG = {
     // Screen config
     WIDTH: 1920,
@@ -9,51 +14,72 @@ export const CONFIG = {
     MIN_STAT: 0,
     MAX_STAT: 10,
     
-    // Neighborhood origins available
-    NEIGHBORHOODS: ['Old Town', 'Skid Row', 'The Flats', 'Ironworks', 'The Harbor', 'The Maw', 'Industrial Zone', 'Salvage Yard'],
+    // Neighborhood origins available (using constants from MapGenerator)
+    NEIGHBORHOODS: NEIGHBORHOOD_KEYS,
     
-    // Neighborhood origin bonuses definition
+    // Get display name for a neighborhood key
+    getNeighborhoodName(key) {
+        return NEIGHBORHOODS[key]?.name || key;
+    },
+    
+    // Get neighborhood by display name (for backward compatibility)
+    getNeighborhoodByName(name) {
+        for (const [key, data] of Object.entries(NEIGHBORHOODS)) {
+            if (data.name === name) return key;
+        }
+        return null;
+    },
+    
+    // Neighborhood origin bonuses definition (using display names as fallback keys for display)
     NEIGHBORHOOD_BONUSES: {
-        'Old Town': {
+        'OLD_TOWN': {
+            displayName: 'Old Town',
             statBoosts: { intuition: 2 },
             priceDiscount: 0.10,       // 10% better prices (connections)
             heatResistance: 0,
             rpsExtraDice: true         // Extra edge in negotiations
         },
-        'Skid Row': {
+        'SKID_ROW': {
+            displayName: 'Skid Row',
             statBoosts: { ability: 2 },
             runnerSuccessBonus: 0.10,  // +10% runner success (knows the streets)
             heatResistance: 0
         },
-        'The Flats': {
+        'THE_FLATS': {
+            displayName: 'The Flats',
             statBoosts: { luck: 2 },
             runnerSuccessBonus: 0.05,
             heatResistance: 0.10,      // Knows how to lay low
             productionSpeed: 0.10      // Efficient with resources
         },
-        'Ironworks': {
+        'IRONWORKS': {
+            displayName: 'Ironworks',
             statBoosts: { ability: 1, intuition: 1 },
             productionSpeed: 0.20,     // +20% production (knows the craft)
             heatResistance: 0
         },
-        'The Harbor': {
+        'THE_HARBOR': {
+            displayName: 'The Harbor',
             statBoosts: { intuition: 1, luck: 1 },
             policeSpawnReduction: 0.15, // -15% police spawn rate (knows the waters)
             heatResistance: 0.05
         },
-        'The Maw': {
+        'THE_MAW': {
+            displayName: 'The Maw',
             statBoosts: { intuition: 2 },
             heatResistance: 0.20,      // +20% heat resistance (hidden tunnels)
             policeSpawnReduction: 0.10,
             priceDiscount: 0.05
         },
-        'Industrial Zone': {
+        'INDUSTRIAL_ZONE': {
+            displayName: 'Industrial Zone',
             statBoosts: { ability: 2 },
             productionSpeed: 0.15,
             runnerSuccessBonus: 0.05,
             heatResistance: 0
         },
-        'Salvage Yard': {
+        'SALVAGE_YARD': {
+            displayName: 'Salvage Yard',
             statBoosts: { luck: 1, intuition: 1 },
             runnerSuccessBonus: 0.15,  // +15% runner success (best for runners)
             priceDiscount: 0.05,

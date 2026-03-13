@@ -6,7 +6,7 @@ export default class EquipmentUI {
         this.scene = scene;
         this.isOpen = false;
         this.currentCategory = 'all';
-        this.categories = ['all', 'weapons', 'armor', 'utility', 'accessories'];
+        this.categories = ['all', 'weapons', 'armor', 'utility', 'accessories', 'ammo'];
         this.comparisonPanel = null;
         
         // Equipment ID lists by category
@@ -15,7 +15,8 @@ export default class EquipmentUI {
             weapons: ['brassKnucks', 'switchblade', 'pistol'],
             armor: ['bulletproofVest', 'heavyCoat'],
             utility: ['runningShoes', 'binoculars', 'lockpick', 'burnerPhone'],
-            accessories: ['goldChain', 'designerSunglasses']
+            accessories: ['goldChain', 'designerSunglasses'],
+            ammo: ['pistolAmmo']  // Ammo for weapons
         };
         
         // Stats that can be compared

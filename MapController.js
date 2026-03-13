@@ -336,11 +336,12 @@ export default class MapController {
         EventBus.emit(EVENTS.PLAYER_NEIGHBORHOOD_CHANGED, { neighborhood });
     }
 
-    /**
-     * Unlock neighboring neighborhoods
-     */
-    unlockNeighborNeighborhoods(neighborhood) {
-        const adjacency = {
+    // ============================================================
+    // NEIGHBORHOOD ADJACENCY (shared constant - synced with WorldMapScene)
+    // ============================================================
+    
+    static get ADJACENCY() {
+        return {
             'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
             'SKID_ROW': ['THE_FLATS'],
             'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
@@ -350,13 +351,65 @@ export default class MapController {
             'IRONWORKS': ['SALVAGE_YARD', 'THE_HARBOR'],
             'THE_HARBOR': ['INDUSTRIAL_ZONE', 'IRONWORKS']
         };
+    }
+
+    // ============================================================
+    // NEIGHBORHOOD UNLOCK REQUIREMENTS
+    // ============================================================
+    
+    static get UNLOCK_REQUIREMENTS() {
+        return {
+            // Danger level 1-2: Available from start
+            'OLD_TOWN': { minLevel: 1, requiredQuest: null },
+            'SKID_ROW': { minLevel: 1, requiredQuest: null },
+            // Danger level 3: Level 2+
+            'THE_FLATS': { minLevel: 2, requiredQuest: null },
+            'IRONWORKS': { minLevel: 2, requiredQuest: null },
+            'THE_HARBOR': { minLevel: 2, requiredQuest: null },
+            // Danger level 4: Level 4+
+            'INDUSTRIAL_ZONE': { minLevel: 4, requiredQuest: null },
+            'THE_MAW': { minLevel: 4, requiredQuest: null },
+            'SALVAGE_YARD': { minLevel: 4, requiredQuest: null }
+        };
+    }
+
+    /**
+     * Check if player meets requirements to unlock a neighborhood
+     */
+    canUnlockNeighborhood(neighborhood) {
+        const requirements = MapController.UNLOCK_REQUIREMENTS[neighborhood];
+        if (!requirements) return true; // Unknown neighborhoods are unlockable
+        
+        const playerLevel = this.playerState.level || 1;
+        
+        if (playerLevel < requirements.minLevel) {
+            return { canUnlock: false, reason: `Requires level ${requirements.minLevel}` };
+        }
+        
+        return { canUnlock: true };
+    }
+
+    /**
+     * Get danger level for a neighborhood
+     */
+    getNeighborhoodDangerLevel(neighborhood) {
+        const { MapGenerator } = this.scene;
+        const hood = MapGenerator.NEIGHBORHOODS[neighborhood];
+        return hood ? hood.dangerLevel : 3;
+    }
+
+    /**
+     * Unlock neighboring neighborhoods
+     */
+    unlockNeighborNeighborhoods(neighborhood) {
+        const adjacency = MapController.ADJACENCY;
         
         const neighbors = adjacency[neighborhood] || [];
         
         neighbors.forEach(neighbor => {
             if (!this.playerState.unlockedNeighborhoods.includes(neighbor)) {
                 this.playerState.unlockedNeighborhoods.push(neighbor);
-                            }
+            }
         });
     }
 
@@ -400,21 +453,17 @@ export default class MapController {
         const { neighborhood } = this.playerState;
         const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
         
-        const adjacency = {
-            'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
-            'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
-            'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
-            'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
-            'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
-            'IRONWORKS': ['SALVAGE_YARD', 'THE_HARBOR'],
-            'THE_HARBOR': ['INDUSTRIAL_ZONE', 'IRONWORKS']
-        };
+        // Use shared adjacency constant
+        const adjacency = MapController.ADJACENCY;
         
         const neighbors = adjacency[neighborhood] || [];
-        const availableNeighbors = neighbors.filter(n => 
-            this.playerState.unlockedNeighborhoods.includes(n)
-        );
+        
+        // Filter by unlock requirements AND unlocked status
+        const availableNeighbors = neighbors.filter(n => {
+            const check = this.canUnlockNeighborhood(n);
+            if (!check.canUnlock) return false;
+            return this.playerState.unlockedNeighborhoods.includes(n);
+        });
         
         if (availableNeighbors.length === 0) return;
         

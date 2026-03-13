@@ -402,6 +402,8 @@ export default class NPCController {
                 qualityBonus: customerConfig.qualityBonus || 0,
                 hiddenIdentity: customerConfig.hiddenIdentity || false,
                 bribeCost: customerConfig.bribeCost || 0,
+                preferredDrug: customerConfig.preferredDrug || null,
+                preferredDrugBonus: customerConfig.preferredDrugBonus || 0,
                 isParanoid: buyersParanoid // DROUGHT makes buyers paranoid
             };
             

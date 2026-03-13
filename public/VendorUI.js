@@ -160,17 +160,42 @@ export default class VendorUI {
         this.container.add(buyMaxButton);
         
         // Equipment button
-        const equipButton = this.createButton(width / 2, height / 2 + 150, 140, 50, 'GEAR', () => {
+        const equipButton = this.createButton(width / 2 - 60, height / 2 + 150, 100, 50, 'GEAR', () => {
             this.close();
             this.scene.equipmentUI.open();
         });
         this.container.add(equipButton);
+        
+        // Ammo button (for pistol ammo)
+        const ammoButton = this.createButton(width / 2 + 60, height / 2 + 150, 100, 50, 'AMMO', () => {
+            this.buyAmmo();
+        });
+        this.container.add(ammoButton);
         
         // Close button
         this.closeButton = this.createButton(width / 2 + 160, height / 2 + 150, 140, 50, 'LEAVE', () => {
             this.close();
         });
         this.container.add(this.closeButton);
+        
+        // ======== SELL SECTION ========
+        // Add a SELL tab to allow selling processed drugs
+        this.sellMode = false; // Toggle between buy/sell mode
+        
+        const sellTabButton = this.createButton(width / 2 + 160, height / 2 + 210, 140, 40, 'SELL 🡢', () => {
+            this.toggleSellMode();
+        }, CONFIG.COLORS.secondary);
+        this.container.add(sellTabButton);
+        this.sellTabButton = sellTabButton;
+        
+        // Container for sell UI elements (hidden by default)
+        this.sellContainer = this.scene.add.container(0, 0);
+        this.sellContainer.setScrollFactor(0);
+        this.sellContainer.setDepth(902);
+        this.sellContainer.setVisible(false);
+        this.container.add(this.sellContainer);
+        
+        this.createSellUI();
         
         this.updateDisplay();
     }
@@ -370,6 +395,11 @@ export default class VendorUI {
         this.moneyText.setText(`Your Money: $${this.scene.playerState.money}`);
         this.updateDisplay();
         
+        // Track precursor purchases from traveling salesman to unlock content
+        if (isPrecursor && this.customInventory) {
+            this.scene.playerState.purchasedFromSalesman = true;
+        }
+        
         // Show purchase message
         if (isPrecursor) {
             this.showMessage(`Purchased ${this.quantity} ${drugKey}`);
@@ -439,6 +469,276 @@ export default class VendorUI {
             this.buy();
         }
     }
+    
+    /**
+     * Buy pistol ammo
+     */
+    buyAmmo() {
+        const player = this.scene.playerState;
+        const ammoCost = CONFIG.EQUIPMENT.pistol?.ammoCost || 25; // Default to 25 if not defined
+        
+        // Check if player has a pistol
+        if (!player.equipment.pistol) {
+            this.showMessage('You need a pistol first!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        const currentAmmo = player.pistolAmmo || 0;
+        const maxAmmo = player.maxPistolAmmo || 30;
+        const spaceAvailable = maxAmmo - currentAmmo;
+        
+        if (spaceAvailable <= 0) {
+            this.showMessage('Ammo full!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        // Calculate how many we can buy
+        const maxByMoney = Math.floor(player.money / ammoCost);
+        const maxAffordable = Math.min(spaceAvailable, maxByMoney, this.quantity);
+        
+        if (maxAffordable <= 0) {
+            if (spaceAvailable <= 0) {
+                this.showMessage('Ammo full!', CONFIG.COLORS.danger);
+            } else {
+                this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
+            }
+            return;
+        }
+        
+        const totalCost = maxAffordable * ammoCost;
+        
+        // Purchase ammo
+        player.money -= totalCost;
+        player.pistolAmmo = currentAmmo + maxAffordable;
+        
+        // Update HUD
+        if (this.scene.hud) {
+            this.scene.hud.update();
+        }
+        this.moneyText.setText(`Your Money: $${player.money}`);
+        this.updateDisplay();
+        
+        this.showMessage(`Purchased ${maxAffordable} ammo for $${totalCost}`);
+    }
+    
+    // ======== SELL MODE METHODS ========
+    
+    /**
+     * Create the sell UI elements
+     */
+    createSellUI() {
+        const { width, height } = this.scene.scale;
+        
+        // Get drugs the player has (processed products)
+        const drugs = this.scene.playerState.drugs || {};
+        
+        // Filter to only show drugs with quantity > 0
+        this.sellableDrugs = Object.entries(drugs).filter(([key, qty]) => qty > 0);
+        
+        // If no drugs to sell
+        if (this.sellableDrugs.length === 0) {
+            const noDrugsText = this.scene.add.text(width / 2, height / 2 - 80, 
+                'No processed drugs to sell!\nProcess raw materials first.', {
+                fontFamily: 'Press Start 2P',
+                fontSize: '12px',
+                color: CONFIG.COLORS.textDark,
+                align: 'center'
+            }).setOrigin(0.5).setScrollFactor(0).setDepth(903);
+            this.sellContainer.add(noDrugsText);
+            return;
+        }
+        
+        // Sell title
+        const sellTitle = this.scene.add.text(width / 2, height / 2 - 140, 'SELL DRUGS', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: CONFIG.COLORS.secondary,
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(903);
+        this.sellContainer.add(sellTitle);
+        
+        // Selected drug for selling
+        this.selectedSellIndex = 0;
+        
+        // Create drug list for selling
+        this.sellDrugItems = [];
+        const startY = height / 2 - 80;
+        const spacing = 60;
+        
+        const isDrought = this.scene.calendarSystem ? this.scene.calendarSystem.isDroughtActive() : false;
+        
+        this.sellableDrugs.forEach(([drugKey, qty], index) => {
+            const y = startY + (index * spacing);
+            
+            // Get sell price from config
+            const drugConfig = CONFIG.DRUG_TYPES[drugKey];
+            const basePrice = drugConfig?.sellPrice || 50;
+            const sellPrice = basePrice * (isDrought ? 2 : 1); // Drought doubles price
+            
+            // Background
+            const bg = this.scene.add.rectangle(width / 2, y, 500, 45, 
+                index === this.selectedSellIndex ? 0x333333 : 0x222222);
+            bg.setScrollFactor(0);
+            bg.setDepth(903);
+            bg.setStrokeStyle(2, index === this.selectedSellIndex ? CONFIG.COLORS.secondary : 0x444444);
+            bg.setInteractive({ useHandCursor: true });
+            bg.on('pointerdown', () => {
+                this.selectSellDrug(index);
+            });
+            this.sellContainer.add(bg);
+            
+            // Drug name
+            const nameText = this.scene.add.text(width / 2 - 200, y, 
+                `${drugKey.toUpperCase()} (x${qty})`, {
+                fontFamily: 'Press Start 2P',
+                fontSize: '12px',
+                color: index === this.selectedSellIndex ? CONFIG.COLORS.secondary : CONFIG.COLORS.text
+            }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(904);
+            this.sellContainer.add(nameText);
+            
+            // Price each
+            const priceText = this.scene.add.text(width / 2 + 50, y, 
+                `$${sellPrice} ea`, {
+                fontFamily: 'Press Start 2P',
+                fontSize: '12px',
+                color: CONFIG.COLORS.success
+            }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(904);
+            this.sellContainer.add(priceText);
+            
+            // Total value
+            const totalValue = sellPrice * qty;
+            const totalText = this.scene.add.text(width / 2 + 180, y, 
+                `Total: $${totalValue}`, {
+                fontFamily: 'Press Start 2P',
+                fontSize: '12px',
+                color: CONFIG.COLORS.primary
+            }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(904);
+            this.sellContainer.add(totalText);
+            
+            this.sellDrugItems.push({ bg, nameText, priceText, totalText, drugKey, qty, sellPrice });
+        });
+        
+        // SELL ALL button
+        this.sellAllButton = this.createButton(width / 2, height / 2 + 100, 180, 50, 'SELL ALL', () => {
+            this.sellAll();
+        }, CONFIG.COLORS.success);
+        this.sellContainer.add(this.sellAllButton);
+    }
+    
+    /**
+     * Toggle between buy and sell mode
+     */
+    toggleSellMode() {
+        this.sellMode = !this.sellMode;
+        
+        // Update button text
+        const buttonLabel = this.sellTabButton.list[1];
+        if (this.sellMode) {
+            buttonLabel.setText('BUY 🡠');
+            // Show sell container, hide buy elements
+            this.drugListContainer.setVisible(false);
+            this.buyButton.setVisible(false);
+            this.minusBtn.setVisible(false);
+            this.plusBtn.setVisible(false);
+            this.qtyText.setVisible(false);
+            this.totalText.setVisible(false);
+            
+            // Check if we need to rebuild the drug list
+            const drugs = this.scene.playerState.drugs || {};
+            const hasDrugs = Object.values(drugs).some(qty => qty > 0);
+            if (hasDrugs) {
+                // Rebuild sell UI with fresh data
+                this.sellContainer.removeAll(true);
+                this.createSellUI();
+            }
+            
+            this.sellContainer.setVisible(true);
+            this.sellTabButton.list[0].setStrokeStyle(2, CONFIG.COLORS.success);
+        } else {
+            buttonLabel.setText('SELL 🡢');
+            // Hide sell container, show buy elements
+            this.drugListContainer.setVisible(true);
+            this.buyButton.setVisible(true);
+            this.minusBtn.setVisible(true);
+            this.plusBtn.setVisible(true);
+            this.qtyText.setVisible(true);
+            this.totalText.setVisible(true);
+            this.sellContainer.setVisible(false);
+            this.sellTabButton.list[0].setStrokeStyle(2, 0xffcc00);
+        }
+    }
+    
+    /**
+     * Select a drug to sell
+     */
+    selectSellDrug(index) {
+        this.selectedSellIndex = index;
+        
+        // Update visual selection
+        if (this.sellDrugItems) {
+            this.sellDrugItems.forEach((item, i) => {
+                const isSelected = i === index;
+                item.bg.setFillStyle(isSelected ? 0x333333 : 0x222222);
+                item.bg.setStrokeStyle(2, isSelected ? CONFIG.COLORS.secondary : 0x444444);
+                item.nameText.setColor(isSelected ? CONFIG.COLORS.secondary : CONFIG.COLORS.text);
+            });
+        }
+    }
+    
+    /**
+     * Sell all of the selected drug
+     */
+    sellAll() {
+        if (!this.sellDrugItems || this.sellDrugItems.length === 0) {
+            this.showMessage('Nothing to sell!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        const selectedItem = this.sellDrugItems[this.selectedSellIndex];
+        if (!selectedItem) {
+            this.showMessage('Select a drug to sell!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        const { drugKey, qty, sellPrice } = selectedItem;
+        
+        if (qty <= 0) {
+            this.showMessage('No stock to sell!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        const totalEarned = qty * sellPrice;
+        
+        // Add money
+        this.scene.playerState.money += totalEarned;
+        
+        // Remove all of that drug from inventory
+        this.scene.playerState.drugs[drugKey] = 0;
+        
+        // Update HUD
+        if (this.scene.hud) {
+            this.scene.hud.update();
+        }
+        
+        // Check for rank change
+        if (this.scene.checkRankChange) {
+            this.scene.checkRankChange();
+        }
+        
+        this.moneyText.setText(`Your Money: $${this.scene.playerState.money}`);
+        
+        this.showMessage(`Sold ${qty} ${drugKey} for $${totalEarned}!`, CONFIG.COLORS.success);
+        
+        // Rebuild sell UI
+        this.sellContainer.removeAll(true);
+        this.createSellUI();
+        
+        // Also update the buy mode drug list if visible
+        this.updateDisplay();
+    }
+    
+    // ======== END SELL MODE METHODS ========
     
     showMessage(text, color = CONFIG.COLORS.success) {
         const { width, height } = this.scene.scale;

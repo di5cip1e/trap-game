@@ -6,7 +6,7 @@ export default class EquipmentUI {
         this.scene = scene;
         this.isOpen = false;
         this.currentCategory = 'all';
-        this.categories = ['all', 'weapons', 'armor', 'utility', 'accessories', 'ammo'];
+        this.categories = ['all', 'weapons', 'armor', 'utility', 'accessories'];
         this.comparisonPanel = null;
         
         // Equipment ID lists by category
@@ -15,8 +15,7 @@ export default class EquipmentUI {
             weapons: ['brassKnucks', 'switchblade', 'pistol'],
             armor: ['bulletproofVest', 'heavyCoat'],
             utility: ['runningShoes', 'binoculars', 'lockpick', 'burnerPhone'],
-            accessories: ['goldChain', 'designerSunglasses'],
-            ammo: ['pistolAmmo']  // Ammo for weapons
+            accessories: ['goldChain', 'designerSunglasses']
         };
         
         // Stats that can be compared
@@ -109,12 +108,32 @@ export default class EquipmentUI {
         const tabWidth = 140;
         const startX = centerX - ((categories.length * tabWidth) / 2) + (tabWidth / 2);
         
+        this.categoryTabs = [];
+        
         categories.forEach((cat, index) => {
             const x = startX + (index * tabWidth);
             const isActive = this.currentCategory === cat.id;
             
             const tabButton = this.createTabButton(x, y, cat.label, cat.id, isActive);
             this.container.add(tabButton);
+            this.categoryTabs.push({ container: tabButton, categoryId: cat.id });
+        });
+    }
+    
+    updateCategoryTabs() {
+        if (!this.categoryTabs) return;
+        
+        this.categoryTabs.forEach(tab => {
+            const isActive = this.currentCategory === tab.categoryId;
+            const container = tab.container;
+            
+            // Update background color
+            const bg = container.list[0];
+            bg.setFillStyle(isActive ? CONFIG.COLORS.primary : 0x2a2a2a);
+            
+            // Update text color
+            const label = container.list[1];
+            label.setColor(isActive ? '#000000' : CONFIG.COLORS.text);
         });
     }
     
@@ -149,8 +168,9 @@ export default class EquipmentUI {
         container.on('pointerup', () => {
             if (!isActive) {
                 this.currentCategory = categoryId;
-                this.close();
-                this.open(); // Refresh UI with new category
+                // Just update the equipment display instead of closing/reopening
+                this.updateCategoryTabs();
+                this.renderEquipment();
             }
         });
         
@@ -256,9 +276,8 @@ export default class EquipmentUI {
                     const success = this.scene.purchaseEquipment(equipmentId);
                     if (success) {
                         this.showPurchaseSuccess(equipment.name);
-                        // Refresh UI
-                        this.close();
-                        this.open();
+                        // Refresh UI without closing/reopening
+                        this.refreshUI();
                     }
                 }
             }, buttonColor);
@@ -272,9 +291,8 @@ export default class EquipmentUI {
                 const success = this.scene.unequipEquipment(equipmentId);
                 if (success) {
                     this.showUnequipSuccess(equipment.name);
-                    // Refresh UI
-                    this.close();
-                    this.open();
+                    // Refresh UI without closing/reopening
+                    this.refreshUI();
                 }
             }, CONFIG.COLORS.secondary);
             this.equipmentContainer.add(unequipButton);
@@ -284,9 +302,8 @@ export default class EquipmentUI {
                 const sellAmount = this.scene.sellEquipment(equipmentId);
                 if (sellAmount) {
                     this.showSellSuccess(equipment.name, sellAmount);
-                    // Refresh UI
-                    this.close();
-                    this.open();
+                    // Refresh UI without closing/reopening
+                    this.refreshUI();
                 }
             }, CONFIG.COLORS.danger);
             this.equipmentContainer.add(sellButton);
@@ -570,6 +587,24 @@ export default class EquipmentUI {
             overlay.destroy();
             message.destroy();
         });
+    }
+    
+    /**
+     * Refresh the UI without closing/reopening (performance optimization)
+     */
+    refreshUI() {
+        if (!this.isOpen) return;
+        
+        // Update money display
+        if (this.moneyText) {
+            this.moneyText.setText(`Cash: $${this.scene.playerState.money}`);
+        }
+        
+        // Update category tabs to reflect active category state
+        this.updateCategoryTabs();
+        
+        // Re-render equipment list
+        this.renderEquipment();
     }
     
     close() {

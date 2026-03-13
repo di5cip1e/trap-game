@@ -48,7 +48,30 @@ export const ENEMY_TYPES = {
         xpValue: 150,
         attackSpeed: 800,
         color: 0xffcc00,
-        description: 'Major crime figure'
+        description: 'Major crime figure',
+        isBoss: true,
+        specialAttacks: {
+            // Area attack: hits harder, described as powerful blow
+            areaAttack: {
+                chance: 0.25,           // 25% chance
+                damageMultiplier: 1.5,  // 50% more damage
+                message: 'BOSS UNLEASHES A DEVASTATING ATTACK!'
+            },
+            // Enrage: increases damage temporarily
+            enrage: {
+                chance: 0.15,           // 15% chance at 50% HP
+                hpThreshold: 0.5,       // Triggers at 50% HP
+                damageBoost: 0.5,       // +50% damage
+                duration: 5000,         // 5 seconds
+                message: 'BOSS ENRAGES! DAMAGE INCREASED!'
+            },
+            // Summon: calls for backup (spawns additional enemy)
+            summon: {
+                chance: 0.1,            // 10% chance
+                hpThreshold: 0.3,       // Triggers at 30% HP
+                message: 'BOSS CALLS FOR REINFORCEMENTS!'
+            }
+        }
     }
 };
 
@@ -595,12 +618,137 @@ export default class CombatScene {
     }
 
     /**
+     * Enemy AI decision-making (called before attack)
+     * Reacts to player defending and low HP situations
+     */
+    enemyTurn() {
+        if (!this.isActive || this.enemyHP <= 0) return;
+        
+        // Get enemy HP percentage
+        const hpPercent = this.enemyHP / this.enemyMaxHP;
+        
+        // AI Decision 1: Check if player is defending
+        // If player is defending, enemy might use a different strategy
+        if (this.activeEffects.defending) {
+            // Player is defending - enemy has reduced effectiveness
+            // 30% chance enemy will wait/observe instead of full attack
+            if (Math.random() < 0.3) {
+                this.showDamageText('Enemy hesitates...', this.scene.scale.width / 2, 350, 0xaaaaaa);
+                return 'hesitate';
+            }
+        }
+        
+        // AI Decision 2: Low HP - Check for flee behavior
+        // Enemies with less than 25% HP might try to flee
+        if (hpPercent < 0.25) {
+            // Bosses don't flee (they fight to the death)
+            if (this.enemy.type !== 'boss') {
+                // 40% chance to flee when low HP
+                if (Math.random() < 0.4) {
+                    this.showDamageText('Enemy tries to flee!', this.scene.scale.width / 2, 350, 0xffaa00);
+                    // Instead of attacking, enemy retreats - dealing reduced damage while running
+                    this.enemy.isFleeing = true;
+                    return 'flee';
+                }
+            }
+        }
+        
+        // AI Decision 3: High HP enemy might be aggressive
+        // If enemy is above 75% HP, 20% chance of power attack
+        if (hpPercent > 0.75 && Math.random() < 0.2) {
+            this.enemy.powerAttackReady = true;
+            return 'powerAttack';
+        }
+        
+        return 'attack';
+    }
+    
+    /**
      * Enemy attacks player
      */
     enemyAttack() {
         if (!this.isActive || this.enemyHP <= 0) return;
         
+        // First, make AI decision
+        const decision = this.enemyTurn();
+        
+        // Handle different AI decisions
+        if (decision === 'hesitate') {
+            // Enemy hesitates - reduced damage this turn
+            let damage = Math.floor(this.enemy.damage * 0.3);
+            let defense = this.getPlayerDefense();
+            damage = Math.floor(damage * (1 - defense));
+            this.playerHP = Math.max(0, this.playerHP - damage);
+            this.showDamageText(`-${damage}`, this.scene.scale.width / 2, 480, 0xff8800);
+            this.updateCombatUI();
+            this.checkCombatEnd();
+            return;
+        }
+        
+        if (decision === 'flee') {
+            // Enemy tries to flee - minimal damage while escaping
+            let damage = Math.floor(this.enemy.damage * 0.5);
+            let defense = this.getPlayerDefense();
+            damage = Math.floor(damage * (1 - defense));
+            this.playerHP = Math.max(0, this.playerHP - damage);
+            this.showDamageText(`Fleeing! -${damage}`, this.scene.scale.width / 2, 480, 0xffaa00);
+            
+            // Enemy becomes inactive (flees combat)
+            this.enemyHP = 0; // Trigger victory
+            this.updateCombatUI();
+            this.checkCombatEnd();
+            return;
+        }
+        
         let damage = this.enemy.damage;
+        
+        // Power attack if ready
+        if (this.enemy.powerAttackReady) {
+            damage = Math.floor(damage * 1.5);
+            this.showDamageText('POWER ATTACK!', this.scene.scale.width / 2, 300, 0xff0000);
+            this.enemy.powerAttackReady = false;
+        }
+        
+        // Check for boss special attacks
+        if (this.enemy.isBoss && this.enemy.specialAttacks) {
+            const hpRatio = this.enemyHP / this.enemyMaxHP;
+            const specialAttacks = this.enemy.specialAttacks;
+            
+            // Check for enrage (triggers at hpThreshold)
+            if (specialAttacks.enrage && hpRatio <= specialAttacks.enrage.hpThreshold && !this.enemy.enraged) {
+                if (Math.random() < specialAttacks.enrage.chance) {
+                    this.enemy.enraged = true;
+                    this.enemy.damage = Math.floor(this.enemy.damage * (1 + specialAttacks.enrage.damageBoost));
+                    this.showDamageText(specialAttacks.enrage.message, this.scene.scale.width / 2, 350, 0xff8800);
+                    // Remove enrage after duration
+                    this.scene.time.delayedCall(specialAttacks.enrage.duration, () => {
+                        if (this.enemy) {
+                            this.enemy.enraged = false;
+                            this.enemy.damage = this.enemy.damage / (1 + specialAttacks.enrage.damageBoost);
+                        }
+                    });
+                }
+            }
+            
+            // Check for summon (triggers at hpThreshold)
+            if (specialAttacks.summon && hpRatio <= specialAttacks.summon.hpThreshold && !this.enemy.summoned) {
+                if (Math.random() < specialAttacks.summon.chance) {
+                    this.enemy.summoned = true;
+                    this.showDamageText(specialAttacks.summon.message, this.scene.scale.width / 2, 320, 0xff4444);
+                    // Show that backup is coming - visual effect
+                    this.scene.cameras.main.shake(200, 0.02);
+                    // Could spawn additional enemy if we had that capability
+                }
+            }
+            
+            // Check for area attack (random chance each attack)
+            if (specialAttacks.areaAttack && Math.random() < specialAttacks.areaAttack.chance) {
+                damage = Math.floor(damage * specialAttacks.areaAttack.damageMultiplier);
+                this.showDamageText(specialAttacks.areaAttack.message, this.scene.scale.width / 2, 280, 0xff0000);
+                // Extra screen shake for area attack
+                this.scene.cameras.main.shake(150, 0.015);
+            }
+        }
         
         // Apply player defense
         let defense = this.getPlayerDefense();

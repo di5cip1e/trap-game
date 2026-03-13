@@ -29,6 +29,12 @@ import TouchControls from './TouchControls.js';
 // Achievements system
 import Achievements, { trackSale, trackSupplierMeeting, trackHeatEscape, trackEquipmentPurchase } from './Achievements.js';
 import { EventBus, EVENTS } from './EventBus.js';
+// NEW: Manager classes for code organization
+import PlayerManager from './PlayerManager.js';
+import CombatManager from './CombatManager.js';
+import UIManager from './UIManager.js';
+// Player controller (for movement delegation)
+import PlayerController from './PlayerController.js';
 
 // Biome mapping based on neighborhood origin
 function getBiomeForNeighborhood(neighborhood) {
@@ -172,7 +178,10 @@ export default class GameScene extends Phaser.Scene {
             
             // NEW: Neighborhood demand tracking - track sales per neighborhood per drug
             // Format: { OLD_TOWN: { Weed: 10, lastSale: timestamp, ... }, ... }
-            neighborhoodHistory: {}
+            neighborhoodHistory: {},
+            
+            // Rank tracking for notifications
+            currentRank: 'Street Rat'
         };
         
         // Check for New Game+ flag from registry
@@ -2275,6 +2284,7 @@ export default class GameScene extends Phaser.Scene {
                         Math.floor(Math.random() * (CONFIG.RIVAL_CASH_DROP_MAX - CONFIG.RIVAL_CASH_DROP_MIN));
                     this.playerState.money += cashReward;
                     this.showFloatingText(`Victory! Found $${cashReward}`, CONFIG.COLORS.success);
+                    this.checkRankChange();
                     
                     // Remove rival from world
                     if (this.rival.sprite) this.rival.sprite.destroy();
@@ -2379,10 +2389,10 @@ export default class GameScene extends Phaser.Scene {
             customerPriceMult += qualityBonus;
         }
         
-        // Check for preferred drug bonus (20% if player sells what buyer wants)
-        if (buyer.preferredDrug) {
+        // Check for preferred drug bonus (using config value if player sells what buyer wants)
+        if (buyer.preferredDrug && buyer.preferredDrugBonus) {
             if (soldDrug === buyer.preferredDrug) {
-                customerPriceMult *= 1.2; // 20% bonus
+                customerPriceMult *= (1 + buyer.preferredDrugBonus);
             }
         }
         
@@ -2405,6 +2415,7 @@ export default class GameScene extends Phaser.Scene {
         // Apply sale
         this.playerState.money += totalEarned;
         this.playerState.product -= amountToSell;
+        this.checkRankChange();
         
         // NEW: Track sale in neighborhood history for demand system
         this.updateNeighborhoodHistory(soldDrug, amountToSell);
@@ -2426,6 +2437,7 @@ export default class GameScene extends Phaser.Scene {
             if (Math.random() < tipChance) {
                 this.playerState.money += tipAmount;
                 this.showFloatingText(`+$${totalEarned} (incl. $${tipAmount} tip!)`, CONFIG.COLORS.success);
+                this.checkRankChange();
             } else {
                 this.showFloatingText(`Sold! +$${totalEarned}`, CONFIG.COLORS.success);
             }
@@ -2515,6 +2527,7 @@ export default class GameScene extends Phaser.Scene {
             
             this.playerState.money += totalEarned;
             this.playerState.product -= amountToSell;
+            this.checkRankChange();
             
             // Quest: Check progress on money gain
             if (this.questSystem) {
@@ -3619,6 +3632,33 @@ export default class GameScene extends Phaser.Scene {
         return rank.name;
     }
     
+    /**
+     * Check if player's rank has changed and show notification if so
+     * Should be called whenever money changes significantly
+     */
+    checkRankChange() {
+        const newRank = this.getRank();
+        const currentRank = this.playerState.currentRank;
+        
+        if (newRank !== currentRank) {
+            const oldRank = currentRank;
+            this.playerState.currentRank = newRank;
+            
+            // Show rank change notification
+            if (this.hud) {
+                this.hud.showRankChangeNotification(newRank, oldRank);
+            }
+            
+            // Also show a celebratory floating text
+            this.showFloatingText(
+                `🎉 PROMOTED TO ${newRank.toUpperCase()}! 🎉`,
+                CONFIG.COLORS.success,
+                this.player.x,
+                this.player.y - 50
+            );
+        }
+    }
+    
     onNewDay() {
         // Decay heat
         this.playerState.heat = Math.max(0, this.playerState.heat - CONFIG.HEAT_DECAY_PER_DAY);
@@ -3768,6 +3808,7 @@ export default class GameScene extends Phaser.Scene {
             // Add money to player's stash (not direct inventory)
             this.playerState.money += playerProfit;
             this.playerState.runnerProduct = 0;
+            this.checkRankChange();
             
             // Quest: Check progress on money gain
             if (this.questSystem) {
@@ -3884,6 +3925,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Add money
         this.playerState.money += sellValue;
+        this.checkRankChange();
         
         // Remove equipment (same as unequip)
         this.playerState.equipment[equipmentId] = false;

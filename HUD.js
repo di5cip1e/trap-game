@@ -100,6 +100,95 @@ export default class HUD {
         });
     }
     
+    /**
+     * Show a celebration notification when player ranks up
+     */
+    showRankChangeNotification(newRank, oldRank) {
+        const { width, height } = this.scene.scale;
+        
+        // Create celebration container
+        const toastX = width / 2;
+        const toastY = height / 2;
+        
+        // Background panel - gold border for celebration
+        const toastBg = this.scene.add.rectangle(toastX, toastY, 650, 120, 0x000000, 0.95);
+        toastBg.setScrollFactor(0);
+        toastBg.setDepth(1100);
+        toastBg.setStrokeStyle(4, 0xffd700); // Gold border
+        
+        // Celebration header
+        const headerText = this.scene.add.text(toastX, toastY - 40, '🎉 RANK UP! 🎉', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '24px',
+            color: 0xffd700 // Gold
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Old rank
+        const oldRankText = this.scene.add.text(toastX - 150, toastY + 5, oldRank, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.textDark
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Arrow
+        const arrowText = this.scene.add.text(toastX, toastY + 5, '→', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: CONFIG.COLORS.success
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // New rank (highlighted)
+        const newRankText = this.scene.add.text(toastX + 150, toastY + 5, newRank, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '18px',
+            color: 0xffd700 // Gold
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Subtitle
+        const subtitleText = this.scene.add.text(toastX, toastY + 35, 'Your influence grows...', {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            fontStyle: 'italic'
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Initial state - invisible
+        toastBg.setAlpha(0);
+        headerText.setAlpha(0);
+        oldRankText.setAlpha(0);
+        arrowText.setAlpha(0);
+        newRankText.setAlpha(0);
+        subtitleText.setAlpha(0);
+        
+        // Pop-in animation
+        this.scene.tweens.add({
+            targets: [toastBg, headerText, oldRankText, arrowText, newRankText, subtitleText],
+            alpha: 1,
+            scale: { from: 0.8, to: 1 },
+            duration: 400,
+            ease: 'Back.easeOut'
+        });
+        
+        // Auto-dismiss after 3.5 seconds
+        this.scene.time.delayedCall(3500, () => {
+            this.scene.tweens.add({
+                targets: [toastBg, headerText, oldRankText, arrowText, newRankText, subtitleText],
+                alpha: 0,
+                y: toastY - 30,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    toastBg.destroy();
+                    headerText.destroy();
+                    oldRankText.destroy();
+                    arrowText.destroy();
+                    newRankText.destroy();
+                    subtitleText.destroy();
+                }
+            });
+        });
+    }
+    
     create() {
         const { width } = this.scene.scale;
         

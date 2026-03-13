@@ -564,16 +564,17 @@ export default class QuestSystem {
         if (questIndex === -1) return false;
         
         const quest = this.activeQuests[questIndex];
-        const questDef = this.questDefinitions[questId];
+        // Use quest.rewards directly - it's already copied when quest was accepted
+        const rewards = quest.rewards;
         
         // Grant rewards
-        if (questDef.rewards.money) {
-            this.scene.playerState.money += questDef.rewards.money;
-            this.scene.showFloatingText(`+$${questDef.rewards.money}`, '#00ff00');
+        if (rewards.money) {
+            this.scene.playerState.money += rewards.money;
+            this.scene.showFloatingText(`+$${rewards.money}`, '#00ff00');
         }
         
-        if (questDef.rewards.reputation) {
-            this.addReputation(questDef.rewards.reputation);
+        if (rewards.reputation) {
+            this.addReputation(rewards.reputation);
         }
         
         // NEW: Grant XP for side quest completion
@@ -583,10 +584,10 @@ export default class QuestSystem {
         }
         
         // Update faction relationship if applicable
-        if (questDef.faction) {
-            const currentRel = this.getFactionRelationship(questDef.faction);
+        if (quest.faction) {
+            const currentRel = this.getFactionRelationship(quest.faction);
             if (currentRel === 'neutral') {
-                this.setFactionRelationship(questDef.faction, 'allied');
+                this.setFactionRelationship(quest.faction, 'allied');
             }
         }
         
@@ -594,7 +595,7 @@ export default class QuestSystem {
         this.completedQuests.push(quest);
         this.activeQuests.splice(questIndex, 1);
         
-        this.showQuestNotification(`✅ Quest Complete: ${quest.title}`, `Reward: $${questDef.rewards.money}`);
+        this.showQuestNotification(`✅ Quest Complete: ${quest.title}`, `Reward: $${rewards.money}`);
         
         return true;
     }

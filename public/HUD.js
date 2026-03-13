@@ -100,6 +100,95 @@ export default class HUD {
         });
     }
     
+    /**
+     * Show a celebration notification when player ranks up
+     */
+    showRankChangeNotification(newRank, oldRank) {
+        const { width, height } = this.scene.scale;
+        
+        // Create celebration container
+        const toastX = width / 2;
+        const toastY = height / 2;
+        
+        // Background panel - gold border for celebration
+        const toastBg = this.scene.add.rectangle(toastX, toastY, 650, 120, 0x000000, 0.95);
+        toastBg.setScrollFactor(0);
+        toastBg.setDepth(1100);
+        toastBg.setStrokeStyle(4, 0xffd700); // Gold border
+        
+        // Celebration header
+        const headerText = this.scene.add.text(toastX, toastY - 40, '🎉 RANK UP! 🎉', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '24px',
+            color: 0xffd700 // Gold
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Old rank
+        const oldRankText = this.scene.add.text(toastX - 150, toastY + 5, oldRank, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.textDark
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Arrow
+        const arrowText = this.scene.add.text(toastX, toastY + 5, '→', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: CONFIG.COLORS.success
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // New rank (highlighted)
+        const newRankText = this.scene.add.text(toastX + 150, toastY + 5, newRank, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '18px',
+            color: 0xffd700 // Gold
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Subtitle
+        const subtitleText = this.scene.add.text(toastX, toastY + 35, 'Your influence grows...', {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            fontStyle: 'italic'
+        }).setScrollFactor(0).setDepth(1101).setOrigin(0.5);
+        
+        // Initial state - invisible
+        toastBg.setAlpha(0);
+        headerText.setAlpha(0);
+        oldRankText.setAlpha(0);
+        arrowText.setAlpha(0);
+        newRankText.setAlpha(0);
+        subtitleText.setAlpha(0);
+        
+        // Pop-in animation
+        this.scene.tweens.add({
+            targets: [toastBg, headerText, oldRankText, arrowText, newRankText, subtitleText],
+            alpha: 1,
+            scale: { from: 0.8, to: 1 },
+            duration: 400,
+            ease: 'Back.easeOut'
+        });
+        
+        // Auto-dismiss after 3.5 seconds
+        this.scene.time.delayedCall(3500, () => {
+            this.scene.tweens.add({
+                targets: [toastBg, headerText, oldRankText, arrowText, newRankText, subtitleText],
+                alpha: 0,
+                y: toastY - 30,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    toastBg.destroy();
+                    headerText.destroy();
+                    oldRankText.destroy();
+                    arrowText.destroy();
+                    newRankText.destroy();
+                    subtitleText.destroy();
+                }
+            });
+        });
+    }
+    
     create() {
         const { width } = this.scene.scale;
         
@@ -161,11 +250,11 @@ export default class HUD {
             color: CONFIG.COLORS.success
         }).setScrollFactor(0).setDepth(502);
         
-        // NEW: Pistol Ammo indicator
-        this.pistolAmmoText = this.scene.add.text(leftMargin + 600, topY + 30, '', {
+        // Pistol Ammo indicator
+        this.ammoText = this.scene.add.text(leftMargin + 400, topY + 58, '', {
             fontFamily: 'Press Start 2P',
-            fontSize: '12px',
-            color: CONFIG.COLORS.primary
+            fontSize: '9px',
+            color: CONFIG.COLORS.secondary
         }).setScrollFactor(0).setDepth(502);
         
         // Runner indicator
@@ -302,18 +391,65 @@ export default class HUD {
         // Event indicators (active events shown here)
         this.eventTexts = [];
         
+        // ============ MENU/SETTINGS BUTTON ============
+        const menuX = width - 30;
+        const menuY = 30;
+        
+        this.menuBtn = this.scene.add.rectangle(menuX, menuY, 70, 50, 0x2a2a2a);
+        this.menuBtn.setOrigin(1, 0);
+        this.menuBtn.setScrollFactor(0);
+        this.menuBtn.setDepth(502);
+        this.menuBtn.setStrokeStyle(2, 0x44aaff);
+        this.menuBtn.setInteractive({ useHandCursor: true });
+        
+        this.menuBtnText = this.scene.add.text(menuX - 35, menuY + 25, '☰', {
+            fontSize: '24px',
+            color: '#44aaff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(503);
+        
+        this.menuBtn.on('pointerover', () => {
+            this.menuBtn.setFillStyle(0x444444);
+        });
+        
+        this.menuBtn.on('pointerout', () => {
+            this.menuBtn.setFillStyle(0x2a2a2a);
+        });
+        
+        this.menuBtn.on('pointerdown', () => {
+            this.menuBtn.setScale(0.95);
+            // Open pause/menu screen
+            if (this.scene.openPauseMenu) {
+                this.scene.openPauseMenu();
+            }
+        });
+        
+        this.menuBtn.on('pointerup', () => {
+            this.menuBtn.setScale(1);
+        });
+        
+        // Touch-friendly: Also trigger on tap for mobile
+        this.scene.input.on('pointerdown', (pointer) => {
+            if (pointer.x > menuX - 80 && pointer.x < menuX + 10 && 
+                pointer.y > menuY && pointer.y < menuY + 55) {
+                if (this.scene.openPauseMenu) {
+                    this.scene.openPauseMenu();
+                }
+            }
+        });
+        // ============ END MENU BUTTON ============
+        
         // ============ HELP BUTTON ============
-        const helpX = width - 30;
+        const helpX = menuX - 90;
         const helpY = 30;
         
-        this.helpBtn = this.scene.add.rectangle(helpX, helpY, 80, 35, 0x2a2a2a);
+        this.helpBtn = this.scene.add.rectangle(helpX, helpY, 70, 50, 0x2a2a2a);
         this.helpBtn.setOrigin(1, 0);
         this.helpBtn.setScrollFactor(0);
         this.helpBtn.setDepth(502);
         this.helpBtn.setStrokeStyle(2, 0xff6600);
         this.helpBtn.setInteractive({ useHandCursor: true });
         
-        this.helpBtnText = this.scene.add.text(helpX - 40, helpY + 17, 'HELP', {
+        this.helpBtnText = this.scene.add.text(helpX - 35, helpY + 25, 'HELP', {
             fontFamily: 'Press Start 2P',
             fontSize: '12px',
             color: CONFIG.COLORS.primary
@@ -328,9 +464,14 @@ export default class HUD {
         });
         
         this.helpBtn.on('pointerdown', () => {
+            this.helpBtn.setScale(0.95);
             if (this.scene.tutorialUI) {
                 this.scene.tutorialUI.open(0);
             }
+        });
+        
+        this.helpBtn.on('pointerup', () => {
+            this.helpBtn.setScale(1);
         });
         // ============ END HELP BUTTON ============
         
@@ -473,25 +614,18 @@ export default class HUD {
         }
         this.equipmentText.setText(equipmentLabels.join(' '));
         
-        // NEW: Pistol ammo display
-        if (player.equipment.pistol) {
+        // Pistol ammo indicator
+        const hasPistol = player.equipment.pistol;
+        if (hasPistol) {
             const ammo = player.pistolAmmo || 0;
-            const maxAmmo = player.pistolMaxAmmo || 72;
-            const magazineSize = player.magazineSize || 12;
-            
-            // Show ammo in magazine / total format
-            this.pistolAmmoText.setText(`🔫 ${ammo}/${maxAmmo}`);
-            
-            // Color based on ammo level
-            if (ammo === 0) {
-                this.pistolAmmoText.setColor(CONFIG.COLORS.danger);  // Red - no ammo
-            } else if (ammo <= magazineSize / 4) {
-                this.pistolAmmoText.setColor('#ff6600');  // Orange - low ammo
-            } else {
-                this.pistolAmmoText.setColor(CONFIG.COLORS.primary);  // Normal
-            }
+            const maxAmmo = player.maxPistolAmmo || 30;
+            const ammoColor = ammo === 0 ? CONFIG.COLORS.danger : 
+                             ammo < maxAmmo * 0.3 ? CONFIG.COLORS.primary : 
+                             CONFIG.COLORS.success;
+            this.ammoText.setText(`🔫 AMMO: ${ammo}/${maxAmmo}`);
+            this.ammoText.setColor(ammoColor);
         } else {
-            this.pistolAmmoText.setText('');
+            this.ammoText.setText('');
         }
         
         // Runner indicator

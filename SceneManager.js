@@ -307,8 +307,8 @@ export default class SceneManager {
             customerPriceMult += (buyer.qualityBonus || 0.2);
         }
 
-        // Check for preferred drug bonus (20% if player sells what buyer wants)
-        if (buyer.preferredDrug) {
+        // Check for preferred drug bonus (using config value if player sells what buyer wants)
+        if (buyer.preferredDrug && buyer.preferredDrugBonus) {
             const drugs = this.playerState.drugs || {};
             let soldDrug = null;
             
@@ -326,7 +326,7 @@ export default class SceneManager {
             }
             
             if (soldDrug === buyer.preferredDrug) {
-                customerPriceMult *= 1.2; // 20% bonus
+                customerPriceMult *= (1 + buyer.preferredDrugBonus);
             }
         }
 

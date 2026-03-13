@@ -46,7 +46,7 @@ Here's who they are, where they operate, and why they'd kill you — or hire you
 
 | | |
 |---|---|
-| **Territory** | Old Town — underground gambling halls hidden behind Brownian storefronts |
+| **Territory** | Old Town — underground gambling halls hidden behind Brownstone storefronts |
 | **Specialty** | Gambling — underground casinos, high-stakes poker, sports betting |
 | **Leader** | Rook (born Marcus Thornwood), a chess prodigy who turned his mind to probability |
 | **Allies** | The Don (money laundering), Byte (fixed games) |
@@ -220,6 +220,30 @@ Here's who they are, where they operate, and why they'd kill you — or hire you
 | **Byte** | N | N | A | E | N | N | N | A | N | N | N | — |
 
 **A = Ally, E = Enemy, N = Neutral**
+
+---
+
+## Named Quest Givers
+
+These are the specific NPCs who will give you missions, errands, and opportunities throughout The Docks.
+
+### Luca Moretti — The Don's Son
+- **Affiliation:** The Old Family
+- **Role:** Operations manager
+- **Description:** The young heir to the Moretti empire. Sharp but impatient, Luca wants to prove himself to his father by any means necessary. He handles the family's legitimate businesses as cover for moving product — restaurants, import companies, shipping manifests.
+- **Quest Types:** Safe delivery runs, establishing new drop points, protecting shipments
+
+### Denny "Flick" Vance — The Crown's Collector
+- **Affiliation:** The Crown
+- **Role:** Debt collector and enforcement
+- **Description:** A former poker prodigy who lost everything and now works for Rook. Flick has a mechanical eye and a short temper. He collects debts from those who owe the Crown — and makes examples of those who don't pay.
+- **Quest Types:** Debt collection, intimidating debtors, investigating card cheaters
+
+### Junebug — Viper's Lab Assistant
+- **Affiliation:** The Serpents
+- **Role:** Procurement and field testing
+- **Description:** A gaunt young person who speaks too fast and sweats too much. Junebug has been with Viper long enough to know which experiments are safe and which will kill you. They handle sourcing rare chemicals from sketchy suppliers.
+- **Quest Types:** Sourcing chemicals, test deliveries, retrieving stolen formulas
 
 ---
 

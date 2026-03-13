@@ -9,6 +9,47 @@ export default class SupplierMeetingSystem {
         this.supplierRelations = {};  // { gangId: loyalty }
         this.availableSuppliers = [];
         this.isMeeting = false;
+        
+        // Default supplier dialogue
+        this.defaultGreetings = [
+            "You've got my attention.",
+            "I hear you've been making moves.",
+            "Let's talk business.",
+            "You wanted to meet?",
+            "Good to see you came alone."
+        ];
+        
+        this.defaultFarewells = [
+            "Don't waste my time again.",
+            "Until next time.",
+            "Watch your back out there.",
+            "Same time next cycle.",
+            "Don't get greedy."
+        ];
+        
+        this.defaultBuyDialog = [
+            "What's the order?",
+            "I can hook you up.",
+            "Quality costs, but you're worth it.",
+            "Name your price.",
+            "Let's see what you're carrying."
+        ];
+        
+        this.defaultLoyaltyDialog = [
+            "You've earned my trust.",
+            "You're one of us now.",
+            "Family treats family right.",
+            "I knew you had potential.",
+            "You're in deep now."
+        ];
+        
+        this.defaultWarningDialog = [
+            "I'm watching you.",
+            "Don't try anything stupid.",
+            "You better have the cash.",
+            "I don't trust you yet.",
+            "One wrong move and we're done."
+        ];
     }
     
     // Initialize supplier relations from save data
@@ -124,8 +165,17 @@ export default class SupplierMeetingSystem {
         const gang = this.getSupplier(gangId);
         if (!gang) return "Need supplies?";
         
-        const greetings = gang.greetings;
+        const greetings = gang.greetings || this.defaultGreetings;
         return greetings[Math.floor(Math.random() * greetings.length)];
+    }
+    
+    // Get random farewell
+    getFarewell(gangId) {
+        const gang = this.getSupplier(gangId);
+        if (!gang) return "Get out of here.";
+        
+        const farewells = gang.farewells || this.defaultFarewells;
+        return farewells[Math.floor(Math.random() * farewells.length)];
     }
     
     // Get dialog based on context
@@ -134,15 +184,17 @@ export default class SupplierMeetingSystem {
         if (!gang) return "Let's do business.";
         
         const loyalty = this.getLoyalty(gangId);
+        const dialog = gang.dialog || {};
         
         // Adjust context based on loyalty
         if (loyalty < 2 && context === 'buy') {
-            return gang.dialog.warning;
+            return dialog.warning || this.defaultWarningDialog[Math.floor(Math.random() * this.defaultWarningDialog.length)];
         } else if (loyalty >= CONFIG.LOYALTY_THRESHOLD) {
-            return gang.dialog.loyalty;
+            return dialog.loyalty || this.defaultLoyaltyDialog[Math.floor(Math.random() * this.defaultLoyaltyDialog.length)];
         }
         
-        return gang.dialog[context] || gang.dialog.buy;
+        const contextDialog = dialog[context] || this.defaultBuyDialog[Math.floor(Math.random() * this.defaultBuyDialog.length)];
+        return contextDialog;
     }
     
     // Get all supplier summaries

@@ -193,6 +193,286 @@ Don't disappoint me.
 
 ---
 
+---
+
+## Law Enforcement Arc (Parallel Quest Track)
+
+*The player begins in Riverside—a small, dying town on the outskirts of The Docks. As their operation grows, so does police attention. This parallel track runs alongside the main quest from Stage 2 onwards.*
+
+### Stage 2A: First Contact
+
+**Objective:** Establish a relationship with local law enforcement
+
+**Location:** Riverside Police Department
+
+*After expanding to three neighborhoods, the player catches the attention of Riverside's small-town police force. Officer Tommy Barrett, a weary cop who's seen too many kids go down this road, approaches the player with a warning.*
+
+**Characters:**
+- **Officer Tommy Barrett:** 15-year veteran, genuinely cares about the neighborhood, treats the player like a kid who's making bad choices rather than a hardened criminal
+- **Sergeant Linda Marsh:** Barrett's supervisor, more pragmatic, takes a "don't ask, don't tell" approach as long as things stay quiet
+
+**Dialogue (first encounter):**
+
+*The player is walking through Lower Riverside when a cruiser pulls alongside them.*
+
+> **OFFICER BARRETT:** *(leaning out window)* "Hey, kid. You're the one who's been moving product through here, right? Don't look so surprised—I know everyone in this neighborhood. Your father used to buy cigarettes from me."
+
+*(The player tenses, ready to run.)*
+
+> **OFFICER BARRETT:** "Relax. I'm not arresting you. Yet." *(pause)* "You got rivals moving in. The Serpents have eyes on this territory. They'll bump you off and take everything. I'm giving you a heads-up because... hell, because your old man was a decent man. And because I've seen what happens to kids who don't get warnings."
+
+**Objective:**
+- Meet with Officer Barrett (Riverside Police Station)
+- Receive intel about rival movements
+- Choose: maintain low profile or push through (affects future police态度)
+
+**Rewards:** $200, police intel on rival positions, "Known to Police" status (not wanted, but watched)
+
+**Dialogue (player internal monologue):**
+
+> "A cop warned me about rivals. In The Docks, that doesn't happen. Either he's stupid, or he's playing a different game."
+>
+> "Either way, I owe him. For now."
+
+---
+
+### Stage 2B: The Warning
+
+**Objective:** Deal with rival threat or evade police attention
+
+*Officer Barrett's warning proves accurate—the Serpents have sent a crew to push the player out of Riverside. The player must decide how to handle this while keeping the peace with local law enforcement.*
+
+**Branch A: Cooperate with Police**
+- Report the Serpents to Officer Barrett
+- Barrett "arrests" the rival crew on unrelated charges
+- Police favor increases, but faction reputation decreases
+
+**Branch B: Handle It Yourself**
+- Ambush the rival crew yourself
+- Police notice the violence, heat increases
+- Faction reputation increases, but police become suspicious
+
+**Branch C: Evade**
+- Discreetly move operations out of Riverside temporarily
+- Keep police happy, but lose territory and momentum
+
+**Dialogue (if player cooperates):**
+
+> **OFFICER BARRETT:** "You came to me. That's... unexpected. Most guys in your position try to fight their way out."
+>
+> **PLAYER:** "I'm not most guys."
+>
+> **OFFICER BARRETT:** *(sighing)* "No. No, you're not. That's what worries me."
+
+**Rewards:** Vary by branch, but all paths unlock access to "Police Tip" mechanic (warnings about upcoming operations)
+
+---
+
+### Stage 3A: Growing Suspicion
+
+**Objective:** Navigate increasing police scrutiny
+
+*Months pass. The player's operation has grown, and Officer Barrett's warnings can't protect them forever. Internal Affairs has started asking questions. The player must manage their visibility while continuing to expand.*
+
+**Characters:**
+- **Detective Marcus Webb:** Internal Affairs, cold and methodical. Doesn't care about the player—he cares about building a case
+- **Officer Barrett (reappears):** Now conflicted, still wants to help but his career is on the line
+
+**Dialogue (Barrett approaches, more serious):**
+
+> **OFFICER BARRETT:** "Webb's asking around. Internal Affairs. He's got a file on you—nothing damning yet, but he's patient. That worries me more than the aggressive ones."
+>
+> **PLAYER:** "What do you want me to do?"
+>
+> **OFFICER BARRETT:** *(pausing)* "I don't know anymore. Used to be simple. Bad guys go to jail, good guys go home. You're... you're not simple. You helped the neighborhood. You kept those Serpent bastards out. But you're still selling poison."
+>
+> **PLAYER:** "People would buy it regardless. At least this way—"
+
+> **OFFICER BARRETT:** *(cutting in)* "At least this way you make money. I know the logic. I've heard it a hundred times. Doesn't make it true."
+
+**Objective:**
+- Choose how to handle Detective Webb's investigation
+- Option A: Bribe Webb (costs $1,000, risky)
+- Option B: Plant evidence on a rival (costs reputation, keeps heat off)
+- Option C: Lay low and hope it passes (slows growth, keeps conscience clean)
+
+**Unlocks:** "Heat Management" system, access to corrupt officials
+
+---
+
+### Stage 3B: The Questioning
+
+**Objective:** Survive police interrogation or evade capture
+
+*The player is brought in for questioning. Detective Webb wants to build a case, but he doesn't have enough evidence—yet. The player must navigate the interview while protecting their operation.*
+
+**Dialogue (interrogation room):**
+
+> **DETECTIVE WEBB:** "You know why you're here."
+>
+> **PLAYER:** "I was taking a walk. Good exercise."
+>
+> **DETECTIVE WEBB:** *(slapping a folder on the table)* "We've got witnesses. Surveillance. And your old friend Officer Barrett? He's talking. Not much, but enough."
+>
+> **PLAYER:** "Barrett? He doesn't know anything."
+>
+> **DETECTIVE WEBB:** "Barrett's a good man. Good men crack under pressure." *(leaning forward)* "Here's the deal. You walk out of here today. But I'm watching. Every move you make. Every deal, every runner, every dollar. And someday—someday—I'll have enough to put you away for good."
+
+**Mechanics:**
+- **Persuade:** Convince Webb you're not worth pursuing (requires high reputation)
+- **Intimidate:** Threaten to expose police corruption (risky, triggers raid if failed)
+- **Silence:** Have a third party eliminate Webb (expensive, changes police behavior permanently)
+
+**Consequence:**
+- Passing the interrogation keeps heat at "Medium"
+- Failing triggers Stage 4A early (THE RAID)
+
+---
+
+### Stage 4A: THE RAID
+
+**Objective:** Survive the police raid and face the consequences
+
+*The inevitable happens. Detective Webb finally gets his warrant. But what arrives isn't just Riverside PD—it's something bigger.*
+
+**Part 1: The Small Town Raid**
+
+*2:00 AM. The player's safehouse in Riverside.*
+
+*Sirens wail in the distance—too many of them. The player wakes to the sound of helicopters. Officer Barrett's warnings weren't enough to stop this.*
+
+> **PLAYER (internal):** "Too many sirens. This isn't a local bust. Something's wrong."
+
+*The door bursts open. Riverside PD officers flood in, but they're not the locals—their uniforms are different. Heavier. More tactical.*
+
+> **OFFICER BARRETT:** *(pushing through, real fear in his voice)* "Wait! Wait, this isn't—I wasn't notified of—this is a mistake!"
+
+> **SWAT LEADER:** "Step aside, officer. This is a Federal task force operation now. Your jurisdiction ended an hour ago."
+
+**Part 2: The Metro Police Arrives**
+
+*In the chaos, the player catches a glimpse of the people who changed everything. These aren't small-town cops—they're something else entirely.*
+
+> **PLAYER (internal):** "Federal? No. These uniforms... Metro Police. The big city boys. They don't come to Riverside unless..."
+
+*It hits them. The Architect. This was his test—a trial run to see how they'd handle serious heat. Or maybe it was Webb all along, building a case that went higher than anyone expected.*
+
+**Characters (First Appearances):**
+- **Captain Diana Vance:** Metro Police Department, Chief of Organized Crime Unit. Cold, bureaucratic, views criminals as problems to be solved rather than people to be understood. Speaks in press releases even in private
+- **Sergeant First Class Marcus "Mack" Torrez:** Metro SWAT Leader. Tactical genius, former military, treats raids like surgical procedures. Has a personal code—never harms civilians, never unnecessarily escalates
+- **Detective Marcus Webb:** Now revealed as Metro PD Internal Affairs, not just local IA. He's been building this case for months. The "small town cop" act was a cover
+
+**Dialogue (first meeting with Metro PD):**
+
+*The player is cuffed, being led out. Captain Vance stands in the doorway, clipboard in hand, watching like she's inspecting a particularly uninteresting specimen.*
+
+> **CAPTAIN VANCE:** "You're a hard man to find. Started small, grew fast. Most of you—they flame out in months. You? You lasted years. Impressive, in a deplorable way."
+
+> **PLAYER:** "What do you want?"
+
+> **CAPTAIN VANCE:** "I want nothing. I want you in a cell, where you can't hurt anyone. But business is business." *(checking her watch)* "A friend of yours made some calls. Seems you matter to people I can't afford to ignore. So here's your deal: you cooperate, you talk, you give us names—and maybe, maybe, you see daylight again."
+
+> **PLAYER:** "And if I don't?"
+
+> **CAPTAIN VANCE:** *(shrugging)* "Then you rot. And your mother... well. She's got hospital bills, doesn't she? Who's going to pay those, I wonder?"
+
+**Part 3: The Arrest**
+
+*The player is loaded into an armored transport. Officer Barrett watches from the side, something broken in his eyes.*
+
+> **OFFICER BARRETT:** *(barely audible)* "I'm sorry, kid. I tried to warn you. I tried to keep this small."
+
+*The transport doors close. The world goes dark.*
+
+> **FADE TO BLACK**
+
+---
+
+> **"5 YEARS HAVE PASSED"**
+
+---
+
+**Part 4: The Wake-Up**
+
+*The player wakes in a sterile cell. Gray light filters through a high window. The room smells like antiseptic and despair. Years have passed in a blur—the trial, the conviction, the sentence. Time became meaningless.*
+
+*On the edge of the cot: a single note. Familiar handwriting.*
+
+> "You survived. Good. The game has changed while you were away. The city has new rules. New players. Come to The Docks when you get out. We have much to discuss."
+> 
+> — *M.A.*
+
+**Part 5: Release**
+
+*The player walks out of the Metro Correctional Facility into blinding daylight. A bag of personal belongings in hand. $200 in pocket. No connections, no operation, no safety net.*
+
+*But they're alive. And that means the game continues.*
+
+**Dialogue (release):**
+
+> **GUARD:** "Remember us when you're back on the street. We'll be watching. We're always watching."
+
+*The player looks up at the skyline. Different towers than they remember. The Docks has grown while they rotted. New factions, new territories, new rules.*
+
+> **PLAYER (internal):** "Five years. Everything I built... gone. But I'm still breathing. And that means I'm not done."
+
+---
+
+**New Content Unlocks:**
+- **The Docks** (big city): Full access to all 12 factions
+- **Metro Police Department** as recurring antagonist
+- **Advanced Heat System:** Federal task force now tracks the player permanently
+- **Crime Tier Increase:** Player now classified as "Major Criminal" (federal attention)
+- **New Neighborhoods:** Industrial Zone, The Commons, Uptown (previously locked)
+- **Parole System:** Regular check-ins with Metro PD, restricted movement zones
+
+---
+
+## Big City Police: Metro Police Department
+
+*After the raid, the player enters a new era of law enforcement. The small-town cops of Riverside are gone—replaced by a bureaucratic, efficient, and terrifyingly competent force.*
+
+### Organization Structure
+
+**Command:**
+- **Commissioner Howard Price:** Political appointee, rarely appears directly but sets policy. Wants "clean" arrests that look good for his re-election campaign
+- **Captain Diana Vance:** Head of Organized Crime Unit. Cold, calculating, views arrests as chess moves. Has a personal vendetta against The Architect (former mentor turned nemesis)
+- **Lieutenant Sarah Chen:** Vance's second in command. More pragmatic, believes in rehabilitation. Secretly corrupt—takes bribes from mid-level factions
+
+**Special Units:**
+- **Metro SWAT:** Sergeant First Class Mack Torrez leads. Tactical, precise,尽量避免平民伤亡. Has a personal code he won't break—not even for the Commissioner
+- **Cyber Crimes Unit:** Tracks digital footprints, financial transactions. The player must be more careful with money laundering
+- **Federal Task Force:** Joint operation with FBI/DEA. The real threat—carries federal sentences
+
+### Key Metro Police Characters
+
+| Character | Role | Personality | Secret |
+|-----------|------|-------------|--------|
+| **Captain Diana Vance** | OC Unit Chief | Cold, bureaucratic, vindictive | Formerly romantically involved with The Architect—he broke her, she wants revenge |
+| **Sergeant Mack Torrez** | SWAT Leader | Honorable, tactical, quiet | Disgusted by department corruption, may be turned into an ally |
+| **Detective Marcus Webb** | Internal Affairs | Patient, methodical, ruthless | The Architect's mole in police—has been on his payroll for years |
+| **Lieutenant Sarah Chen** | OC Unit Lieutenant | Pragmatic, pragmatic, corrupt | Taking bribes from The Serpents—will sell out anyone |
+
+### Metro Police Mechanics
+
+**Heat System Changes:**
+- **Federal Attention:** Player is now flagged at federal level—no more local deals
+- **Parole Requirements:** Weekly check-ins, GPS monitoring, restricted zones
+- **Surveillance:** New mechanics—phone taps, financial monitoring, undercover informants
+- **Raid Types:** Different raid styles (tactical SWAT vs. standard arrest teams)
+
+**Bribes Cost More:**
+- Local cops: $100-500
+- Metro detectives: $1,000-5,000
+- Federal agents: $10,000+ (if they'll even take it)
+
+**New Counter-Mechanics:**
+- **Counter-Surveillance:** New技能 to detect wiretaps, tailing, financial monitoring
+- **Witness Management:** Silence informants before they testify
+- **Legal Representation:** Hire lawyers to delay trials, challenge evidence, leverage procedural errors
+
+---
+
 ### Stage 3: The Puppet's Strings
 
 **Objective:** Choose your first faction alliance

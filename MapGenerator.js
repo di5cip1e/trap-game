@@ -89,6 +89,52 @@ export const NEIGHBORHOODS = {
         dangerLevel: 3,
         atmosphere: 'ramshackle',
         color: '#8B7355'
+    },
+    
+    // ============================================================
+    // BIG CITY - THE DOCKS PROPER
+    // ============================================================
+    // New neighborhoods for the expanded Big City (The Docks proper)
+    // These unlock after the player is arrested and transported from Riverside
+    
+    DOWNTOWN: {
+        name: 'Downtown',
+        description: "The heart of Big City. Skyscrapers, corporate headquarters, and heavy police presence. The real game begins here.",
+        tiles: { main: 'tile-concrete', border: 'tile-wall-glass', accent: 'tile-tile-floor' },
+        factions: [], // Corporate influence, not gang territory
+        dangerLevel: 3,
+        atmosphere: 'corporate',
+        color: '#1a1a3e',
+        isDowntown: true
+    },
+    DOWNTOWN_EXPANSION: {
+        name: 'Downtown East',
+        description: "Eastern business district with mixed-use developments and transit hubs.",
+        tiles: { main: 'tile-concrete', border: 'tile-wall-brick', accent: 'tile-tile-floor' },
+        factions: [],
+        dangerLevel: 2,
+        atmosphere: 'commercial',
+        color: '#2e2e5e'
+    },
+    WAREHOUSE_DISTRICT: {
+        name: 'Warehouse District',
+        description: "Old industrial area being converted to lofts and art studios. Transitional zone.",
+        tiles: { main: 'tile-concrete', border: 'tile-wall-metal', accent: 'tile-metal-floor' },
+        factions: ['Frost'],
+        dangerLevel: 3,
+        atmosphere: 'transitional',
+        color: '#4a4a6a'
+    },
+    RIVERSIDE_PRISON: {
+        name: 'State Prison',
+        description: "Big City State Penitentiary - where the player starts after arrest. Maximum security.",
+        tiles: { main: 'tile-stone-dark', border: 'tile-wall-concrete', accent: 'tile-concrete' },
+        factions: [], // No factions inside prison
+        dangerLevel: 5,
+        atmosphere: 'carceral',
+        color: '#2f2f2f',
+        isPrison: true,
+        isStartingArea: true
     }
 };
 
@@ -360,6 +406,162 @@ export const POINTS_OF_INTEREST = {
         tile: 'tile-sidewalk',
         dangerLevel: 2,
         usable: true
+    },
+
+    // ============================================================
+    // BIG CITY - THE DOCKS PROPER POIs
+    // ============================================================
+    // New locations for the expanded Big City (unlocked after raid/arrest)
+    
+    // Law Enforcement
+    'Metro Police Station': {
+        type: 'service',
+        name: 'Metro Police Station',
+        description: "Big City's main police precinct. Bureaucratic, overworked, but dangerous. Don't get on their radar.",
+        tile: 'tile-concrete',
+        dangerLevel: 3,
+        usable: true,
+        locationType: 'police',
+        hours: { open: 0, close: 24 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    'SWAT Headquarters': {
+        type: 'service',
+        name: 'SWAT Headquarters',
+        description: "Metro SWAT Division - elite tactical unit. They don't patrol; they raid. Extremely dangerous.",
+        tile: 'tile-concrete',
+        dangerLevel: 5,
+        usable: false,
+        locationType: 'police',
+        hours: { open: 0, close: 24 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    'Big City Prison': {
+        type: 'service',
+        name: 'Big City State Penitentiary',
+        description: "Maximum security prison. You wake up here after arrest. The start of your new life.",
+        tile: 'tile-stone-dark',
+        dangerLevel: 5,
+        usable: true,
+        locationType: 'prison',
+        hours: { open: 0, close: 24 },
+        isMainPlugQuestHub: false,
+        isPrison: true,
+        neighborhood: 'RIVERSIDE_PRISON'
+    },
+    
+    // Government
+    'City Hall': {
+        type: 'service',
+        name: 'City Hall',
+        description: "Big City municipal building. Permits, licenses, and corruption. The bureaucratic heart of the city.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'government',
+        hours: { open: 9, close: 17 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    'Courthouse': {
+        type: 'service',
+        name: 'Courthouse',
+        description: "Big City Courthouse - where trials happen. If you're summoned, it's bad news.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'government',
+        hours: { open: 9, close: 17 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    
+    // Downtown Services
+    'Downtown Bank': {
+        type: 'service',
+        name: 'First National Bank',
+        description: "Downtown branch of First National. High security, but they handle large transactions.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'bank',
+        hours: { open: 9, close: 16 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    'Downtown Hotel': {
+        type: 'building',
+        name: 'Grand Hotel',
+        description: "Luxury hotel in the downtown core. Expensive, but safe. Meeting place for high rollers.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'hotel',
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    'Corporate Office': {
+        type: 'building',
+        name: 'Nexus Tower',
+        description: "Major corporation headquarters. The suits don't deal with street-level criminals... officially.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'corporate',
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN'
+    },
+    
+    // Warehouse District
+    'Abandoned Warehouse Big': {
+        type: 'building',
+        name: 'Warehouse 42',
+        description: "Massive abandoned warehouse in the warehouse district. Perfect for large-scale operations.",
+        tile: 'tile-concrete',
+        dangerLevel: 3,
+        usable: true,
+        locationType: 'warehouse',
+        isMainPlugQuestHub: false,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+    'Storage Facility': {
+        type: 'service',
+        name: 'Secure Storage',
+        description: "Climate-controlled storage units. Rent one to stash your product safely.",
+        tile: 'tile-concrete',
+        dangerLevel: 2,
+        usable: true,
+        locationType: 'storage',
+        isMainPlugQuestHub: false,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+    
+    // Downtown East
+    'Transit Hub': {
+        type: 'service',
+        name: 'Central Station',
+        description: "Big City's main transit hub. Trains, buses, and crowds. Good for blending in.",
+        tile: 'tile-concrete',
+        dangerLevel: 3,
+        usable: true,
+        locationType: 'transit',
+        hours: { open: 5, close: 23 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN_EXPANSION'
+    },
+    'Food Court': {
+        type: 'service',
+        name: 'City Food Court',
+        description: "Downtown food court with multiple restaurants. Good spot for casual meetings.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 1,
+        usable: true,
+        locationType: 'food',
+        hours: { open: 10, close: 21 },
+        isMainPlugQuestHub: false,
+        neighborhood: 'DOWNTOWN_EXPANSION'
     },
 
     // ============================================================

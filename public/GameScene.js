@@ -35,10 +35,14 @@ import CombatManager from './CombatManager.js';
 import UIManager from './UIManager.js';
 // Player controller (for movement delegation)
 import PlayerController from './PlayerController.js';
+// Riverside Police System - Law enforcement and suspicion tracking
+import { RiversidePoliceSystem, RIVERSIDE_COPS, getAllCops, getCopPosition } from './RiversidePolice.js';
+import { BigCityPoliceSystem, BIG_CITY_COPS, getAllBigCityCops, getBigCityCopPosition } from './BigCityPolice.js';
 
 // Biome mapping based on neighborhood origin
 function getBiomeForNeighborhood(neighborhood) {
     const biomeMap = {
+        'Riverside': 'block',        // Starting area - simple block map
         'Old Town': 'block',
         'Skid Row': 'traphouse',
         'The Flats': 'traphouse',
@@ -46,7 +50,12 @@ function getBiomeForNeighborhood(neighborhood) {
         'The Harbor': 'waterfront',
         'The Maw': 'underground',
         'Industrial Zone': 'industrial',
-        'Salvage Yard': 'junkyard'
+        'Salvage Yard': 'junkyard',
+        // Big City neighborhoods
+        'Downtown': 'downtown',
+        'Downtown East': 'downtown',
+        'Warehouse District': 'industrial',
+        'State Prison': 'prison'
     };
     return biomeMap[neighborhood] || 'block';
 }
@@ -138,6 +147,24 @@ export default class GameScene extends Phaser.Scene {
             npcRelationships: {
                 shopOwner: 0,
                 corruptCop: 0
+            },
+            
+            // Faction reputation (new system)
+            // Format: { FACTION_NAME: repValue, ... } where repValue ranges from -100 to 100
+            // -100 = hostile, 0 = neutral, 100 = allied
+            factionReputation: {
+                THE_DON: 0,      // The Don - Old Family
+                VIPER: 0,        // Viper - The Serpents
+                ROOK: 0,         // Rook - The Crown
+                GHOST: 0,        // Ghost - The Ravens
+                IRON: 0,         // Iron - The Iron Hands
+                FANG: 0,         // Fang - The Jackals
+                FROST: 0,        // Frost - The Ice
+                BLAZE: 0,        // Blaze - The Inferno
+                RAZOR: 0,        // Razor - The Cut
+                STORM: 0,        // Storm - The Nomads
+                SHADE: 0,        // Shade - The Shadows
+                BYTE: 0          // Byte - The Network
             },
             // Daily flags
             corruptCopUsedToday: false,
@@ -233,6 +260,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Convert display name to key
         const keyMap = {
+            'Riverside': 'RIVERSIDE',
             'Old Town': 'OLD_TOWN',
             'Skid Row': 'SKID_ROW',
             'The Flats': 'THE_FLATS',
@@ -243,7 +271,7 @@ export default class GameScene extends Phaser.Scene {
             'Salvage Yard': 'SALVAGE_YARD'
         };
         
-        return keyMap[neighborhood] || 'OLD_TOWN';
+        return keyMap[neighborhood] || 'RIVERSIDE';
     }
     
     /**
@@ -644,9 +672,24 @@ export default class GameScene extends Phaser.Scene {
         this.questUI = new QuestUI(this);
         this.questUI.create();
         
+        // Setup quest completion callback for police suspicion tracking
+        this.questSystem.onQuestComplete = (questId) => {
+            // Riverside police tracks suspicion in starting area
+            if (this.riversidePolice) {
+                this.riversidePolice.onQuestComplete(questId);
+            }
+            // Big City police tracks suspicion in The Docks proper
+            if (this.bigCityPolice) {
+                this.bigCityPolice.onQuestComplete(questId);
+            }
+        };
+        
         // NEW: Level & Skill Systems
         this.levelSystem = new LevelSystem(this);
         this.skillTree = new SkillTree(this);
+        
+        // NEW: Player Controller for movement delegation (eliminates duplicate tryMove)
+        this.playerController = new PlayerController(this, this.playerState);
         
         // Initialize class type and starting skills based on highest stat
         this.initializeClassAndSkills();
@@ -682,6 +725,22 @@ export default class GameScene extends Phaser.Scene {
         // Police system
         this.police = null;
         this.policeState = 'none'; // 'none', 'patrol', 'chase'
+        
+        // Riverside Police System - Suspicion tracking and law enforcement interactions
+        this.riversidePolice = null;
+        if (this.playerState.neighborhood === 'RIVERSIDE' || 
+            this.playerState.neighborhood === 'riverside') {
+            this.riversidePolice = new RiversidePoliceSystem(this);
+        }
+        
+        // Big City Police System - Metro PD, SWAT, and Federal law enforcement
+        this.bigCityPolice = null;
+        const bigCityNeighborhoods = ['DOWNTOWN', 'DOWNTOWN_EXPANSION', 'WAREHOUSE_DISTRICT', 'RIVERSIDE_PRISON', 
+                                       'OLD_TOWN', 'SKID_ROW', 'THE_FLATS', 'IRONWORKS', 'THE_HARBOR',
+                                       'THE_MAW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'];
+        if (bigCityNeighborhoods.includes(this.playerState.neighborhood)) {
+            this.bigCityPolice = new BigCityPoliceSystem(this);
+        }
         this.policePatrolPath = [];
         this.policePatrolIndex = 0;
         
@@ -782,8 +841,10 @@ export default class GameScene extends Phaser.Scene {
                 sprite.setScale(CONFIG.SCALE.DUMPSTER);
                 sprite.setDepth(50);
                 
-                // Mark as non-walkable
-                this.worldMap[obj.y][obj.x].walkable = false;
+                // Mark as non-walkable (with bounds check)
+                if (this.worldMap[obj.y] && this.worldMap[obj.y][obj.x]) {
+                    this.worldMap[obj.y][obj.x].walkable = false;
+                }
             } else if (obj.type === 'workstation') {
                 sprite = this.add.image(
                     obj.x * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2,
@@ -1270,9 +1331,10 @@ export default class GameScene extends Phaser.Scene {
     unlockNeighborNeighborhoods(neighborhood) {
         // Define neighborhood adjacency (who connects to whom)
         const adjacency = {
-            'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
+            'RIVERSIDE': ['OLD_TOWN', 'THE_FLATS'], // Starting area - gateway
+            'OLD_TOWN': ['RIVERSIDE', 'THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
             'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+            'THE_FLATS': ['RIVERSIDE', 'OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
             'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
             'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
             'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
@@ -1336,9 +1398,10 @@ export default class GameScene extends Phaser.Scene {
         
         // Get neighboring neighborhoods based on direction
         const adjacency = {
-            'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
+            'RIVERSIDE': ['OLD_TOWN', 'THE_FLATS'], // Starting area - gateway
+            'OLD_TOWN': ['RIVERSIDE', 'THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
             'SKID_ROW': ['THE_FLATS'],
-            'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
+            'THE_FLATS': ['RIVERSIDE', 'OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'],
             'INDUSTRIAL_ZONE': ['OLD_TOWN', 'THE_FLATS', 'THE_HARBOR', 'THE_MAW'],
             'THE_MAW': ['OLD_TOWN', 'INDUSTRIAL_ZONE'],
             'SALVAGE_YARD': ['THE_FLATS', 'IRONWORKS'],
@@ -1468,7 +1531,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Move in the predominant direction
         if (dx !== 0 || dy !== 0) {
-            this.tryMove(dx, dy);
+            this.playerController.tryMove(dx, dy);
         }
     }
     
@@ -1491,9 +1554,9 @@ export default class GameScene extends Phaser.Scene {
         // Determine primary movement direction (like keyboard input)
         // Move one tile in the predominant direction (for grid-based movement)
         if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) {
-            this.tryMove(dx > 0 ? 1 : -1, 0);
+            this.playerController.tryMove(dx > 0 ? 1 : -1, 0);
         } else if (dy !== 0) {
-            this.tryMove(0, dy > 0 ? 1 : -1);
+            this.playerController.tryMove(0, dy > 0 ? 1 : -1);
         }
     }
     
@@ -1592,23 +1655,72 @@ export default class GameScene extends Phaser.Scene {
         // Check keyboard input
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left) || 
             Phaser.Input.Keyboard.JustDown(this.wasd.left)) {
-            this.tryMove(-1, 0);
+            this.playerController.tryMove(-1, 0);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.right)) {
-            this.tryMove(1, 0);
+            this.playerController.tryMove(1, 0);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
-            this.tryMove(0, -1);
+            this.playerController.tryMove(0, -1);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || 
                    Phaser.Input.Keyboard.JustDown(this.wasd.down)) {
-            this.tryMove(0, 1);
+            this.playerController.tryMove(0, 1);
         }
+    }
+    
+    /**
+     * Check if an NPC is available based on their schedule
+     * @param {Object} obj - The NPC object with optional schedule property
+     * @returns {boolean} - True if NPC is available, false otherwise
+     */
+    isNPCScheduleAvailable(obj) {
+        // If no schedule property, NPC is always available
+        if (!obj.schedule) return true;
+        
+        // Check current time of day
+        const currentHour = this.timeSystem ? this.timeSystem.getHour() : 12;
+        const isNight = currentHour >= CONFIG.NIGHT_START_HOUR || currentHour < CONFIG.DAY_START_HOUR;
+        
+        if (obj.schedule === 'day') {
+            return !isNight;
+        } else if (obj.schedule === 'night') {
+            return isNight;
+        }
+        
+        return true; // Default to available if schedule is unknown
+    }
+    
+    /**
+     * Get schedule status text for NPC
+     * @param {Object} obj - The NPC object
+     * @returns {string} - Status message or empty string
+     */
+    getNPCScheduleStatus(obj) {
+        if (!obj.schedule) return '';
+        
+        const currentHour = this.timeSystem ? this.timeSystem.getHour() : 12;
+        const isNight = currentHour >= CONFIG.NIGHT_START_HOUR || currentHour < CONFIG.DAY_START_HOUR;
+        
+        if (obj.schedule === 'day' && isNight) {
+            return ' (Closed - opens at 6 AM)';
+        } else if (obj.schedule === 'night' && !isNight) {
+            return ' (Sleeping - active at 10 PM)';
+        }
+        
+        return '';
     }
     
     checkInteractionProximity() {
         // Check all interactive objects
         this.worldObjects.forEach(obj => {
             if (!obj.indicator) return;
+            
+            // Check NPC schedule - hide indicator if NPC isn't available
+            if ((obj.type === 'shopOwner' || obj.type === 'corruptCop') && 
+                !this.isNPCScheduleAvailable(obj)) {
+                obj.indicator.setAlpha(0);
+                return;
+            }
             
             const dist = Phaser.Math.Distance.Between(
                 this.playerState.gridX, this.playerState.gridY,
@@ -1660,12 +1772,23 @@ export default class GameScene extends Phaser.Scene {
                     this.sellToBuyer(obj);
                     return;
                 } else if (obj.type === 'shopOwner' || obj.type === 'corruptCop') {
+                    // Check NPC schedule before allowing interaction
+                    if (!this.isNPCScheduleAvailable(obj)) {
+                        const status = this.getNPCScheduleStatus(obj);
+                        this.showFloatingText(`NPC not available${status}`, CONFIG.COLORS.warning);
+                        return;
+                    }
                     this.relationshipUI.open(obj);
                     return;
                 } else if (obj.type === 'supplier') {
                     this.openSupplierMeeting(obj.supplierId);
                     return;
                 } else if (obj.type === 'poi' && obj.interactive) {
+                    // Check if it's the police station
+                    if (obj.isLawEnforcement) {
+                        this.interactWithPoliceStation(obj);
+                        return;
+                    }
                     this.enterBuilding(obj);
                     return;
                 }
@@ -1693,6 +1816,122 @@ export default class GameScene extends Phaser.Scene {
         
         // Open the supplier UI
         this.supplierUI.open(supplier);
+    }
+    
+    /**
+     * Interact with the Riverside Police Station
+     */
+    interactWithPoliceStation(policeStationObj) {
+        // Check if player is in Riverside and has police system
+        if (!this.riversidePolice) {
+            this.showFloatingText('Nothing to do here', CONFIG.COLORS.text);
+            return;
+        }
+        
+        const suspLevel = this.riversidePolice.getSuspicionLevel();
+        const suspValue = this.riversidePolice.getSuspicion();
+        
+        // Show police interaction UI
+        this.showPoliceStationUI(suspLevel, suspValue);
+    }
+    
+    /**
+     * Show the police station interaction UI
+     */
+    showPoliceStationUI(suspicionLevel, suspicionValue) {
+        const { width, height } = this.scale;
+        
+        // Create container
+        const container = this.add.container(0, 0).setScrollFactor(0).setDepth(2000);
+        
+        // Dark overlay
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+        container.add(overlay);
+        
+        // Title panel
+        const titlePanel = this.add.rectangle(width / 2, 120, 700, 80, 0x1a3a5c);
+        titlePanel.setStrokeStyle(4, 0x4488cc);
+        container.add(titlePanel);
+        
+        const titleText = this.add.text(width / 2, 120, 'RIVERSIDE POLICE STATION', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: '#4488cc'
+        }).setOrigin(0.5);
+        container.add(titleText);
+        
+        // Suspicion display
+        const suspColors = {
+            'none': '#44cc44',
+            'low': '#88cc44',
+            'medium': '#ccaa44',
+            'high': '#cc6644',
+            'critical': '#cc4444'
+        };
+        
+        const suspPanel = this.add.rectangle(width / 2, 200, 700, 60, 0x2a2a2a);
+        suspPanel.setStrokeStyle(2, suspColors[suspicionLevel] || '#ffffff');
+        container.add(suspPanel);
+        
+        const suspText = this.add.text(width / 2, 200, 
+            `Police Interest: ${suspicionLevel.toUpperCase()} (${suspicionValue}%)`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: suspColors[suspicionLevel] || '#ffffff'
+        }).setOrigin(0.5);
+        container.add(suspText);
+        
+        // Info panel
+        const infoPanel = this.add.rectangle(width / 2, 320, 700, 180, 0x1a1a1a);
+        infoPanel.setStrokeStyle(2, 0x333333);
+        container.add(infoPanel);
+        
+        let infoMessage = '';
+        if (suspicionLevel === 'none') {
+            infoMessage = "Chief Thompson nods as you enter.\n\n\"Stay out of trouble, citizen.\"\n\nThe station is quiet. No one suspects anything.";
+        } else if (suspicionLevel === 'low') {
+            infoMessage = "Officer Jenkins glances at you.\n\n\"Heard some rumors lately.\nNothing specific, though.\"\n\nBetter be more careful.";
+        } else if (suspicionLevel === 'medium') {
+            infoMessage = "The Chief looks at you sternly.\n\n\"We've been getting tips about\nsome activity in town.\"\n\nThey're getting suspicious.";
+        } else if (suspicionLevel === 'high') {
+            infoMessage = "\"Sit down.\" The Chief is serious.\n\n\"We know about your operations.\nDon't think we haven't been watching.\"\n\nThis is bad. Very bad.";
+        } else {
+            infoMessage = "They're ready to pounce.\n\n\"We've got enough evidence.\nYou're going down.\"\n\nA raid is imminent!";
+        }
+        
+        const infoText = this.add.text(width / 2, 320, infoMessage, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5);
+        container.add(infoText);
+        
+        // Close button
+        const closeButton = this.add.rectangle(width / 2, height - 100, 300, 60, 0x2a2a2a);
+        closeButton.setStrokeStyle(3, 0x4488cc);
+        closeButton.setInteractive({ useHandCursor: true });
+        container.add(closeButton);
+        
+        const closeText = this.add.text(width / 2, height - 100, 'LEAVE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '18px',
+            color: '#4488cc'
+        }).setOrigin(0.5);
+        container.add(closeText);
+        
+        closeButton.on('pointerover', () => {
+            closeButton.setFillStyle(0x3a3a3a);
+        });
+        
+        closeButton.on('pointerout', () => {
+            closeButton.setFillStyle(0x2a2a2a);
+        });
+        
+        closeButton.on('pointerdown', () => {
+            container.destroy();
+        });
     }
     
     placeVendor() {
@@ -2168,8 +2407,9 @@ export default class GameScene extends Phaser.Scene {
             
             attempts++;
             
-            // Valid if walkable, not occupied, and far enough from player and safehouse
-            if (this.worldMap[rivalY][rivalX].walkable &&
+            // Valid if walkable (with bounds check), not occupied, and far enough from player and safehouse
+            const rivalTile = this.worldMap[rivalY]?.[rivalX];
+            if (rivalTile?.walkable &&
                 !this.worldObjects.some(obj => obj.x === rivalX && obj.y === rivalY) &&
                 distFromPlayer > 8 &&
                 distFromSafehouse > 5) {
@@ -2462,6 +2702,13 @@ export default class GameScene extends Phaser.Scene {
         this.playerState.heat = Math.min(CONFIG.MAX_HEAT, 
             this.playerState.heat + heatGain);
         
+        // Riverside Police: Add suspicion from sale
+        // Being seen making deals increases police interest
+        if (this.riversidePolice) {
+            const actionType = this.playerState.heat > 50 ? 'witnessed_sale' : 'high_heat';
+            this.riversidePolice.addSuspicionFromAction(actionType, 3);
+        }
+        
         // Remove buyer after transaction
         this.removeBuyer(buyer);
         
@@ -2509,6 +2756,11 @@ export default class GameScene extends Phaser.Scene {
                     this.playerState.product -= productLost;
                     this.playerState.money -= cashLost;
                     this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 30);
+                    
+                    // Riverside Police: Major suspicion increase from being busted
+                    if (this.riversidePolice) {
+                        this.riversidePolice.addSuspicionFromAction('high_heat', 15);
+                    }
                     
                     this.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, CONFIG.COLORS.danger);
                     if (this.hud) this.hud.update();
@@ -3249,97 +3501,6 @@ export default class GameScene extends Phaser.Scene {
         }
     }
     
-    tryMove(dx, dy) {
-        // Check for status effects that prevent movement
-        const statuses = this.playerState.activeStatuses;
-        
-        // Paralyzed: Cannot move at all
-        if (statuses.paralyzed) {
-            this.showFloatingText('Paralyzed! Cannot move!', '#ffcc00');
-            return;
-        }
-        
-        // Frozen: Cannot move
-        if (statuses.frozen) {
-            this.showFloatingText('Frozen! Cannot move!', '#00ccff');
-            return;
-        }
-        
-        // Stunned: Cannot act (already handled separately, but double-check)
-        if (statuses.stunned) {
-            this.showFloatingText('Stunned! Cannot act!', '#ff6600');
-            return;
-        }
-        
-        // Asleep: Cannot move
-        if (statuses.asleep) {
-            this.showFloatingText('Asleep! Wake up first!', '#6666ff');
-            return;
-        }
-        
-        // Confused: Random movement instead of intended
-        if (statuses.confused) {
-            const confuseRoll = Math.random();
-            if (confuseRoll < 0.4) {
-                // 40% chance to move in random wrong direction
-                const directions = [
-                    { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
-                    { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
-                ];
-                const randomDir = directions[Math.floor(Math.random() * directions.length)];
-                dx = randomDir.dx;
-                dy = randomDir.dy;
-                this.showFloatingText('🌀 Confused! Moving randomly!', '#ff66ff');
-            } else {
-                // Show indicator that player is confused even on normal movement
-                this.showFloatingText('🌀 Confused...', '#ff66ff');
-            }
-        }
-        
-        // Slowed: 50% chance to fail movement (simulates slow speed)
-        if (statuses.slowed) {
-            if (Math.random() < 0.5) {
-                this.showFloatingText('Slowed! Too slow to move!', '#9966ff');
-                return;
-            }
-        }
-        
-        const newX = this.playerState.gridX + dx;
-        const newY = this.playerState.gridY + dy;
-        
-        // Check bounds
-        if (newX < 0 || newX >= CONFIG.GRID_WIDTH || 
-            newY < 0 || newY >= CONFIG.GRID_HEIGHT) {
-            return;
-        }
-        
-        // Check if tile is walkable
-        if (!this.worldMap[newY][newX].walkable) {
-            return;
-        }
-        
-        // Start movement
-        this.playerState.isMoving = true;
-        this.playerState.gridX = newX;
-        this.playerState.gridY = newY;
-        
-        const targetX = newX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
-        const targetY = newY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
-        
-        // Animate movement
-        this.tweens.add({
-            targets: this.player,
-            x: targetX,
-            y: targetY,
-            duration: 150,
-            ease: 'Linear',
-            onComplete: () => {
-                this.playerState.isMoving = false;
-                this.events.emit('playerMoved');
-            }
-        });
-    }
-    
     onPlayerMove() {
         // Update status effects (tick down duration, apply damage)
         this.updateStatusEffects();
@@ -3379,6 +3540,11 @@ export default class GameScene extends Phaser.Scene {
             const baseHeatGain = CONFIG.HEAT_GAIN_PASSOUT;
             heatGained = Math.floor(baseHeatGain * (1 - heatResistance));
             this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + heatGained);
+            
+            // Riverside Police: Being caught unconscious with product increases suspicion
+            if (this.riversidePolice) {
+                this.riversidePolice.addSuspicionFromAction('high_heat', 8);
+            }
         }
         
         // Show passout message
@@ -4112,16 +4278,26 @@ export default class GameScene extends Phaser.Scene {
         // Get neighborhood bonus for police spawn reduction
         const neighborhoodBonus = this.playerState.neighborhoodBonus;
         const policeSpawnReduction = neighborhoodBonus?.policeSpawnReduction || 0;
-        // Increase heat threshold (harder to spawn police) - e.g., 50 * 1.10 = 55
-        const adjustedHeatThreshold = Math.floor(CONFIG.HEAT_THRESHOLD_POLICE * (1 + policeSpawnReduction));
         
-        // Check if police should spawn
+        // Check if Riverside police system is active
+        const hasRiversidePolice = this.riversidePolice !== null;
+        
+        // Adjust heat threshold based on suspicion if Riverside police is active
+        let adjustedHeatThreshold = Math.floor(CONFIG.HEAT_THRESHOLD_POLICE * (1 + policeSpawnReduction));
+        if (hasRiversidePolice) {
+            // Higher suspicion = lower heat threshold needed to spawn police
+            const suspMod = this.riversidePolice.getPatrolFrequencyModifier();
+            const suspReduction = (suspMod - 1) * 0.3; // Up to 60% reduction at max suspicion
+            adjustedHeatThreshold = Math.floor(adjustedHeatThreshold * (1 - suspReduction));
+        }
+        
+        // Check if police should spawn (or if suspicion triggers raid warning)
         if (!this.police && this.playerState.heat >= adjustedHeatThreshold) {
             this.spawnPolice();
         }
         
         // Despawn police if heat drops below threshold
-        if (this.police && this.playerState.heat < adjustedHeatThreshold) {
+        if (this.police && this.playerState.heat < adjustedHeatThreshold * 0.7) {
             this.despawnPolice();
             return;
         }
@@ -4131,10 +4307,122 @@ export default class GameScene extends Phaser.Scene {
             if (this.policeState === 'patrol') {
                 this.updatePolicePatrol();
                 this.checkPoliceLineOfSight();
+                
+                // Riverside Police: Check for suspicion-based patrol adjustments
+                if (hasRiversidePolice) {
+                    this.handleRiversidePatrolBehavior();
+                }
             } else if (this.policeState === 'chase') {
                 this.updatePoliceChase();
             }
         }
+        
+        // Riverside Police: Check for cop contact with player
+        if (hasRiversidePolice) {
+            this.checkRiversideCopContact();
+        }
+    }
+    
+    /**
+     * Handle Riverside Police-specific patrol behavior based on suspicion
+     */
+    handleRiversidePatrolBehavior() {
+        if (!this.riversidePolice || !this.police) return;
+        
+        const suspicion = this.riversidePolice.getSuspicion();
+        const patrolMod = this.riversidePolice.getPatrolFrequencyModifier();
+        
+        // At high suspicion, police move more aggressively
+        if (patrolMod >= 2.0 && suspicion >= 50) {
+            // Get player position for surveillance
+            const playerX = this.playerState.gridX;
+            const playerY = this.playerState.gridY;
+            
+            // Move police gradually toward player at high suspicion
+            const moveChance = (patrolMod - 1) * 0.2; // 20% at 2x, higher at 3x
+            if (Math.random() < moveChance) {
+                const dx = playerX - this.police.gridX;
+                const dy = playerY - this.police.gridY;
+                
+                // Move one step toward player
+                const moveX = dx !== 0 ? (dx > 0 ? 1 : -1) : 0;
+                const moveY = dy !== 0 ? (dy > 0 ? 1 : -1) : 0;
+                
+                // Try to move
+                const targetX = this.police.gridX + moveX;
+                const targetY = this.police.gridY + moveY;
+                
+                const targetTile = this.worldMap[targetY]?.[targetX];
+                if (targetTile?.walkable && !this.worldObjects.some(obj => obj.x === targetX && obj.y === targetY)) {
+                    this.movePolice(targetX - this.police.gridX, targetY - this.police.gridY);
+                }
+            }
+        }
+        
+        // At critical suspicion, show surveillance message
+        if (patrolMod >= 3.0 && suspicion >= 75 && Math.random() < 0.02) {
+            this.showFloatingText('👀 You\'re being watched...', CONFIG.COLORS.warning);
+        }
+    }
+    
+    /**
+     * Check if cops should contact player based on suspicion
+     */
+    checkRiversideCopContact() {
+        if (!this.riversidePolice) return;
+        
+        const contact = this.riversidePolice.checkForCopContact();
+        if (!contact) return;
+        
+        // Only trigger contact occasionally (not every frame)
+        if (Math.random() > 0.001) return;
+        
+        // Get dialogue
+        const dialogues = this.riversidePolice.getCopDialogue(contact.copKey, contact.dialogueType);
+        const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+        
+        // Show dialogue
+        const { width, height } = this.scale;
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        overlay.setScrollFactor(0).setDepth(1500);
+        
+        const copName = this.riversidePolice.cops[contact.copKey]?.name || 'Officer';
+        
+        const nameText = this.add.text(width / 2, height / 2 - 60, copName, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '16px',
+            color: '#4488cc'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        const dialogText = this.add.text(width / 2, height / 2, `"${dialogue}"`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            fontStyle: 'italic'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        const continueText = this.add.text(width / 2, height / 2 + 60, '[Press E to continue]', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: '#888888'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        // Allow player to close
+        this.input.keyboard.once('keydown-E', () => {
+            overlay.destroy();
+            nameText.destroy();
+            dialogText.destroy();
+            continueText.destroy();
+        });
+        
+        // Auto-close after delay
+        this.time.delayedCall(4000, () => {
+            if (overlay) overlay.destroy();
+            if (nameText) nameText.destroy();
+            if (dialogText) dialogText.destroy();
+            if (continueText) continueText.destroy();
+        });
     }
     
     spawnPolice() {
@@ -4153,7 +4441,8 @@ export default class GameScene extends Phaser.Scene {
             
             attempts++;
             
-            if (this.worldMap[policeY][policeX].walkable &&
+            const policeTile = this.worldMap[policeY]?.[policeX];
+            if (policeTile?.walkable &&
                 !this.worldObjects.some(obj => obj.x === policeX && obj.y === policeY) &&
                 distFromPlayer > 10) {
                 break;
@@ -4279,10 +4568,11 @@ export default class GameScene extends Phaser.Scene {
         const newX = this.police.gridX + moveX;
         const newY = this.police.gridY + moveY;
         
-        // Check if new position is walkable
+        // Check if new position is walkable (with bounds check)
+        const policeMoveTile = this.worldMap[newY]?.[newX];
         if (newX >= 0 && newX < CONFIG.GRID_WIDTH &&
             newY >= 0 && newY < CONFIG.GRID_HEIGHT &&
-            this.worldMap[newY][newX].walkable) {
+            policeMoveTile?.walkable) {
             
             this.police.gridX = newX;
             this.police.gridY = newY;
@@ -4427,10 +4717,11 @@ export default class GameScene extends Phaser.Scene {
         const newX = this.police.gridX + moveX;
         const newY = this.police.gridY + moveY;
         
-        // Check if new position is walkable
+        // Check if new position is walkable (with bounds check)
+        const chaseTile = this.worldMap[newY]?.[newX];
         if (newX >= 0 && newX < CONFIG.GRID_WIDTH &&
             newY >= 0 && newY < CONFIG.GRID_HEIGHT &&
-            this.worldMap[newY][newX].walkable) {
+            chaseTile?.walkable) {
             
             this.police.gridX = newX;
             this.police.gridY = newY;

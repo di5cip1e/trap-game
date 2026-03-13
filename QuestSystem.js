@@ -110,6 +110,25 @@ export default class QuestSystem {
                 chapter: 4
             },
             
+            // ============================================================
+            // RIVERSIDE FINAL QUEST - Triggers the raid and transition to Big City
+            // ============================================================
+            riverside_final_quest: {
+                id: 'riverside_final_quest',
+                title: 'The Last Deal',
+                description: 'Make one final deal that attracts federal attention. Your operation is too big to hide anymore.',
+                objectives: [
+                    { id: 'final_delivery', text: 'Complete a major delivery to any faction', complete: false },
+                    { id: 'big_score', text: 'Earn $100,000 from a single transaction', complete: false }
+                ],
+                rewards: { money: 50000, reputation: 100, unlock: 'Transfer to Big City' },
+                chapter: 0, // Special quest not tied to chapters
+                isFinalQuest: true,
+                triggersRaid: true,
+                isMainPlugQuestHub: true,
+                availableIn: ['RIVERSIDE']
+            },
+            
             // Side quests by faction
             side_don_delivery: {
                 id: 'side_don_delivery',

@@ -37,6 +37,7 @@ import UIManager from './UIManager.js';
 import PlayerController from './PlayerController.js';
 // Riverside Police System - Law enforcement and suspicion tracking
 import { RiversidePoliceSystem, RIVERSIDE_COPS, getAllCops, getCopPosition } from './RiversidePolice.js';
+import { BigCityPoliceSystem, BIG_CITY_COPS, getAllBigCityCops, getBigCityCopPosition } from './BigCityPolice.js';
 
 // Biome mapping based on neighborhood origin
 function getBiomeForNeighborhood(neighborhood) {
@@ -49,7 +50,12 @@ function getBiomeForNeighborhood(neighborhood) {
         'The Harbor': 'waterfront',
         'The Maw': 'underground',
         'Industrial Zone': 'industrial',
-        'Salvage Yard': 'junkyard'
+        'Salvage Yard': 'junkyard',
+        // Big City neighborhoods
+        'Downtown': 'downtown',
+        'Downtown East': 'downtown',
+        'Warehouse District': 'industrial',
+        'State Prison': 'prison'
     };
     return biomeMap[neighborhood] || 'block';
 }
@@ -668,8 +674,13 @@ export default class GameScene extends Phaser.Scene {
         
         // Setup quest completion callback for police suspicion tracking
         this.questSystem.onQuestComplete = (questId) => {
+            // Riverside police tracks suspicion in starting area
             if (this.riversidePolice) {
                 this.riversidePolice.onQuestComplete(questId);
+            }
+            // Big City police tracks suspicion in The Docks proper
+            if (this.bigCityPolice) {
+                this.bigCityPolice.onQuestComplete(questId);
             }
         };
         
@@ -720,6 +731,15 @@ export default class GameScene extends Phaser.Scene {
         if (this.playerState.neighborhood === 'RIVERSIDE' || 
             this.playerState.neighborhood === 'riverside') {
             this.riversidePolice = new RiversidePoliceSystem(this);
+        }
+        
+        // Big City Police System - Metro PD, SWAT, and Federal law enforcement
+        this.bigCityPolice = null;
+        const bigCityNeighborhoods = ['DOWNTOWN', 'DOWNTOWN_EXPANSION', 'WAREHOUSE_DISTRICT', 'RIVERSIDE_PRISON', 
+                                       'OLD_TOWN', 'SKID_ROW', 'THE_FLATS', 'IRONWORKS', 'THE_HARBOR',
+                                       'THE_MAW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD'];
+        if (bigCityNeighborhoods.includes(this.playerState.neighborhood)) {
+            this.bigCityPolice = new BigCityPoliceSystem(this);
         }
         this.policePatrolPath = [];
         this.policePatrolIndex = 0;
@@ -2682,6 +2702,13 @@ export default class GameScene extends Phaser.Scene {
         this.playerState.heat = Math.min(CONFIG.MAX_HEAT, 
             this.playerState.heat + heatGain);
         
+        // Riverside Police: Add suspicion from sale
+        // Being seen making deals increases police interest
+        if (this.riversidePolice) {
+            const actionType = this.playerState.heat > 50 ? 'witnessed_sale' : 'high_heat';
+            this.riversidePolice.addSuspicionFromAction(actionType, 3);
+        }
+        
         // Remove buyer after transaction
         this.removeBuyer(buyer);
         
@@ -2729,6 +2756,11 @@ export default class GameScene extends Phaser.Scene {
                     this.playerState.product -= productLost;
                     this.playerState.money -= cashLost;
                     this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 30);
+                    
+                    // Riverside Police: Major suspicion increase from being busted
+                    if (this.riversidePolice) {
+                        this.riversidePolice.addSuspicionFromAction('high_heat', 15);
+                    }
                     
                     this.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, CONFIG.COLORS.danger);
                     if (this.hud) this.hud.update();
@@ -3508,6 +3540,11 @@ export default class GameScene extends Phaser.Scene {
             const baseHeatGain = CONFIG.HEAT_GAIN_PASSOUT;
             heatGained = Math.floor(baseHeatGain * (1 - heatResistance));
             this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + heatGained);
+            
+            // Riverside Police: Being caught unconscious with product increases suspicion
+            if (this.riversidePolice) {
+                this.riversidePolice.addSuspicionFromAction('high_heat', 8);
+            }
         }
         
         // Show passout message
@@ -4241,16 +4278,26 @@ export default class GameScene extends Phaser.Scene {
         // Get neighborhood bonus for police spawn reduction
         const neighborhoodBonus = this.playerState.neighborhoodBonus;
         const policeSpawnReduction = neighborhoodBonus?.policeSpawnReduction || 0;
-        // Increase heat threshold (harder to spawn police) - e.g., 50 * 1.10 = 55
-        const adjustedHeatThreshold = Math.floor(CONFIG.HEAT_THRESHOLD_POLICE * (1 + policeSpawnReduction));
         
-        // Check if police should spawn
+        // Check if Riverside police system is active
+        const hasRiversidePolice = this.riversidePolice !== null;
+        
+        // Adjust heat threshold based on suspicion if Riverside police is active
+        let adjustedHeatThreshold = Math.floor(CONFIG.HEAT_THRESHOLD_POLICE * (1 + policeSpawnReduction));
+        if (hasRiversidePolice) {
+            // Higher suspicion = lower heat threshold needed to spawn police
+            const suspMod = this.riversidePolice.getPatrolFrequencyModifier();
+            const suspReduction = (suspMod - 1) * 0.3; // Up to 60% reduction at max suspicion
+            adjustedHeatThreshold = Math.floor(adjustedHeatThreshold * (1 - suspReduction));
+        }
+        
+        // Check if police should spawn (or if suspicion triggers raid warning)
         if (!this.police && this.playerState.heat >= adjustedHeatThreshold) {
             this.spawnPolice();
         }
         
         // Despawn police if heat drops below threshold
-        if (this.police && this.playerState.heat < adjustedHeatThreshold) {
+        if (this.police && this.playerState.heat < adjustedHeatThreshold * 0.7) {
             this.despawnPolice();
             return;
         }
@@ -4260,10 +4307,122 @@ export default class GameScene extends Phaser.Scene {
             if (this.policeState === 'patrol') {
                 this.updatePolicePatrol();
                 this.checkPoliceLineOfSight();
+                
+                // Riverside Police: Check for suspicion-based patrol adjustments
+                if (hasRiversidePolice) {
+                    this.handleRiversidePatrolBehavior();
+                }
             } else if (this.policeState === 'chase') {
                 this.updatePoliceChase();
             }
         }
+        
+        // Riverside Police: Check for cop contact with player
+        if (hasRiversidePolice) {
+            this.checkRiversideCopContact();
+        }
+    }
+    
+    /**
+     * Handle Riverside Police-specific patrol behavior based on suspicion
+     */
+    handleRiversidePatrolBehavior() {
+        if (!this.riversidePolice || !this.police) return;
+        
+        const suspicion = this.riversidePolice.getSuspicion();
+        const patrolMod = this.riversidePolice.getPatrolFrequencyModifier();
+        
+        // At high suspicion, police move more aggressively
+        if (patrolMod >= 2.0 && suspicion >= 50) {
+            // Get player position for surveillance
+            const playerX = this.playerState.gridX;
+            const playerY = this.playerState.gridY;
+            
+            // Move police gradually toward player at high suspicion
+            const moveChance = (patrolMod - 1) * 0.2; // 20% at 2x, higher at 3x
+            if (Math.random() < moveChance) {
+                const dx = playerX - this.police.gridX;
+                const dy = playerY - this.police.gridY;
+                
+                // Move one step toward player
+                const moveX = dx !== 0 ? (dx > 0 ? 1 : -1) : 0;
+                const moveY = dy !== 0 ? (dy > 0 ? 1 : -1) : 0;
+                
+                // Try to move
+                const targetX = this.police.gridX + moveX;
+                const targetY = this.police.gridY + moveY;
+                
+                const targetTile = this.worldMap[targetY]?.[targetX];
+                if (targetTile?.walkable && !this.worldObjects.some(obj => obj.x === targetX && obj.y === targetY)) {
+                    this.movePolice(targetX - this.police.gridX, targetY - this.police.gridY);
+                }
+            }
+        }
+        
+        // At critical suspicion, show surveillance message
+        if (patrolMod >= 3.0 && suspicion >= 75 && Math.random() < 0.02) {
+            this.showFloatingText('👀 You\'re being watched...', CONFIG.COLORS.warning);
+        }
+    }
+    
+    /**
+     * Check if cops should contact player based on suspicion
+     */
+    checkRiversideCopContact() {
+        if (!this.riversidePolice) return;
+        
+        const contact = this.riversidePolice.checkForCopContact();
+        if (!contact) return;
+        
+        // Only trigger contact occasionally (not every frame)
+        if (Math.random() > 0.001) return;
+        
+        // Get dialogue
+        const dialogues = this.riversidePolice.getCopDialogue(contact.copKey, contact.dialogueType);
+        const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+        
+        // Show dialogue
+        const { width, height } = this.scale;
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        overlay.setScrollFactor(0).setDepth(1500);
+        
+        const copName = this.riversidePolice.cops[contact.copKey]?.name || 'Officer';
+        
+        const nameText = this.add.text(width / 2, height / 2 - 60, copName, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '16px',
+            color: '#4488cc'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        const dialogText = this.add.text(width / 2, height / 2, `"${dialogue}"`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            fontStyle: 'italic'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        const continueText = this.add.text(width / 2, height / 2 + 60, '[Press E to continue]', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: '#888888'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1501);
+        
+        // Allow player to close
+        this.input.keyboard.once('keydown-E', () => {
+            overlay.destroy();
+            nameText.destroy();
+            dialogText.destroy();
+            continueText.destroy();
+        });
+        
+        // Auto-close after delay
+        this.time.delayedCall(4000, () => {
+            if (overlay) overlay.destroy();
+            if (nameText) nameText.destroy();
+            if (dialogText) dialogText.destroy();
+            if (continueText) continueText.destroy();
+        });
     }
     
     spawnPolice() {

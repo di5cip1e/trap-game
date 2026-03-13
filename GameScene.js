@@ -122,23 +122,21 @@ export default class GameScene extends Phaser.Scene {
             isMoving: false,
             safehouseTier: 0, // Index in CONFIG.SAFEHOUSE_TIERS
             equipment: {
-                // Storage
-                backpack: false,
-                // Weapons
-                brassKnucks: false,
-                switchblade: false,
-                pistol: false,
-                // Armor
-                bulletproofVest: false,
-                heavyCoat: false,
-                // Utility
-                runningShoes: false,
-                binoculars: false,
-                lockpick: false,
-                burnerPhone: false,
-                // Accessories
-                goldChain: false,
-                designerSunglasses: false
+                // Slot-based equipment system
+                // Each slot holds the equipment ID or null
+                hat: null,
+                shirt: null,
+                jacket: null,
+                pants: null,
+                shoes: null,
+                accessory1: null,
+                accessory2: null,
+                weapon1: null,
+                weapon2: null,
+                storage: null,
+                
+                // Owned equipment (all items player has purchased)
+                owned: {}
             },
             // Inventory capacities
             rawCapacity: CONFIG.DEFAULT_RAW_CAPACITY,

@@ -131,6 +131,50 @@ export const SKILL_TREES = {
         }
     },
     
+    // WEAPON TREE (Combat Mastery)
+    weapons: {
+        name: 'Combat Master',
+        description: 'Advanced combat techniques and weapon proficiency',
+        skills: {
+            // Tier 1
+            dual_wield: {
+                name: 'Dual Wield',
+                description: 'Master the art of fighting with two weapons',
+                tier: 1,
+                passive: true,
+                effect: 'secondWeaponSlot: true',
+                bonus: 'Unlocks second weapon slot (pistol only)'
+            },
+            // Tier 2
+            quick_draw: {
+                name: 'Quick Draw',
+                description: 'Draw weapons faster in combat',
+                tier: 2,
+                passive: true,
+                effect: 'attackSpeedBonus: 0.2',
+                bonus: '+20% attack speed'
+            },
+            // Tier 3
+            automatic_weapons: {
+                name: 'Automatic Weapons',
+                description: 'Proficiency with automatic and machine weapons',
+                tier: 3,
+                passive: true,
+                effect: 'automaticWeapons: true',
+                bonus: 'Unlocks machine guns and automatic weapons'
+            },
+            // Tier 3 (additional)
+            dead_eye: {
+                name: 'Dead Eye',
+                description: 'Precision aiming for maximum damage',
+                tier: 3,
+                passive: true,
+                effect: 'damageBonus: 0.3, critChance: 0.1',
+                bonus: '+30% damage, +10% crit chance'
+            }
+        }
+    },
+    
     // LUCK TREE (Con Artist/Gambler)
     luck: {
         name: 'Con Artist',
@@ -198,7 +242,8 @@ export const SKILL_TREES = {
 export const DEFAULT_SKILL_TREES = {
     intuition: ['lockpick', 'street_sense'],
     ability: ['iron_fist', 'toughness'],
-    luck: ['fast_talk', 'lucky_break']
+    luck: ['fast_talk', 'lucky_break'],
+    weapons: ['dual_wield']  // Start with dual wield skill available
 };
 
 export default class SkillTree {

@@ -565,6 +565,99 @@ export const POINTS_OF_INTEREST = {
     },
 
     // ============================================================
+    // BIG CITY - MULTI-FLOOR LABS (Downtown & Warehouse District)
+    // ============================================================
+    
+    // Multi-floor Meth Lab
+    'Meth Lab (Big City)': {
+        type: 'lab',
+        name: 'Meth Lab',
+        description: "Multi-floor meth synthesis operation. 4 floors of industrial-scale production. HIGH DANGER.",
+        tile: 'tile-concrete',
+        dangerLevel: 5,
+        usable: true,
+        labType: 'Meth Lab (Big City)',
+        yieldsBonus: 0.65,
+        color: '#B71C1C',
+        floors: 4,
+        combatEncounter: true,
+        experienceReward: 150,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+    
+    // Chemical Processing Facility
+    'Chemical Processing': {
+        type: 'lab',
+        name: 'Chemical Processing Facility',
+        description: "Chemical processing operation for control substances. 3 floors. Guarded.",
+        tile: 'tile-metal-floor',
+        dangerLevel: 4,
+        usable: true,
+        labType: 'Chemical Processing',
+        yieldsBonus: 0.45,
+        color: '#FF6F00',
+        floors: 3,
+        combatEncounter: true,
+        experienceReward: 120,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+    
+    // Research Lab - Advanced Drugs
+    'Research Lab': {
+        type: 'lab',
+        name: 'Research Laboratory',
+        description: "Underground research facility developing advanced synthetic drugs. High-tech. Guarded.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 4,
+        usable: true,
+        labType: 'Research Lab',
+        yieldsBonus: 0.55,
+        color: '#00BCD4',
+        floors: 3,
+        combatEncounter: true,
+        experienceReward: 175,
+        neighborhood: 'DOWNTOWN'
+    },
+
+    // ============================================================
+    // BIG CITY - GROW OPERATIONS (Downtown & Warehouse District)
+    // ============================================================
+    
+    // Indoor Grow House
+    'Indoor Grow House': {
+        type: 'grow_operation',
+        name: 'Indoor Grow House',
+        description: "Large-scale indoor marijuana operation. 3 floors with grow lights and plants.",
+        tile: 'tile-wood-floor',
+        dangerLevel: 2,
+        usable: true,
+        labType: 'Indoor Grow House',
+        yieldsBonus: 0.40,
+        color: '#66BB6A',
+        floors: 3,
+        combatEncounter: true,
+        experienceReward: 80,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+    
+    // Hydroponics Facility
+    'Hydroponics Facility': {
+        type: 'grow_operation',
+        name: 'Hydroponics Facility',
+        description: "High-tech hydroponics in converted warehouse. 4 floors of climate-controlled perfection.",
+        tile: 'tile-tile-floor',
+        dangerLevel: 2,
+        usable: true,
+        labType: 'Hydroponics Facility',
+        yieldsBonus: 0.50,
+        color: '#26A69A',
+        floors: 4,
+        combatEncounter: true,
+        experienceReward: 100,
+        neighborhood: 'WAREHOUSE_DISTRICT'
+    },
+
+    // ============================================================
     // RIVERSIDE - Starting Area POIs
     // ============================================================
     
@@ -847,7 +940,20 @@ export const LAB_POI_TYPES = [
     'Cocaine Lab',
     'Crack House',
     'Meth Lab',
-    'MDMA Lab'
+    'MDMA Lab',
+    // Big City facilities
+    'Meth Lab (Big City)',
+    'Chemical Processing',
+    'Research Lab',
+    'Indoor Grow House',
+    'Hydroponics Facility'
+];
+
+// Grow operation types (subset of labs for filtering)
+export const GROW_OPERATION_TYPES = [
+    'Weed Grow House',
+    'Indoor Grow House',
+    'Hydroponics Facility'
 ];
 
 // Map lab types to their preferred neighborhoods
@@ -857,7 +963,13 @@ export const LAB_NEIGHBORHOOD_MAP = {
     'Cocaine Lab': ['OLD_TOWN', 'THE_HARBOR', 'INDUSTRIAL_ZONE'],
     'Crack House': ['SKID_ROW', 'THE_FLATS'],
     'Meth Lab': ['INDUSTRIAL_ZONE', 'SKID_ROW', 'THE_MAW'],
-    'MDMA Lab': ['OLD_TOWN', 'THE_HARBOR', 'INDUSTRIAL_ZONE']
+    'MDMA Lab': ['OLD_TOWN', 'THE_HARBOR', 'INDUSTRIAL_ZONE'],
+    // Big City facilities - Downtown and Warehouse District
+    'Meth Lab (Big City)': ['DOWNTOWN', 'WAREHOUSE_DISTRICT'],
+    'Chemical Processing': ['DOWNTOWN', 'WAREHOUSE_DISTRICT'],
+    'Research Lab': ['DOWNTOWN', 'WAREHOUSE_DISTRICT'],
+    'Indoor Grow House': ['DOWNTOWN', 'WAREHOUSE_DISTRICT'],
+    'Hydroponics Facility': ['DOWNTOWN', 'WAREHOUSE_DISTRICT']
 };
 
 // Contested zones - areas where factions fight for control
@@ -1573,7 +1685,13 @@ export default class MapGenerator {
                 yieldBonus: labConfig.yieldBonus,
                 heatGain: labConfig.heatGain,
                 sprite: labConfig.sprite,
-                color: labConfig.color
+                color: labConfig.color,
+                // Big City facility properties
+                floors: labConfig.floors || 1,
+                isBigCity: labConfig.isBigCity || false,
+                // Combat encounter properties
+                combatEncounter: labConfig.combatEncounter || null,
+                experienceReward: labConfig.experienceReward || 0
             };
             
             objects.push(labPOI);
@@ -1581,6 +1699,7 @@ export default class MapGenerator {
             // Mark the tile
             map[y][x].poi = labTypeName;
             map[y][x].lab = labTypeName;
+            map[y][x].combatEncounter = labConfig.combatEncounter ? true : false;
         }
     }
     
@@ -1597,10 +1716,15 @@ export default class MapGenerator {
             'THE_HARBOR': ['waterfront', 'passage', 'building'],
             'THE_MAW': ['passage', 'building'],
             'INDUSTRIAL_ZONE': ['building', 'danger', 'waterfront'],
-            'SALVAGE_YARD': ['building', 'service', 'danger']
+            'SALVAGE_YARD': ['building', 'service', 'danger'],
+            // Big City neighborhoods
+            'DOWNTOWN': ['building', 'passage', 'service', 'lab', 'grow_operation'],
+            'DOWNTOWN_EXPANSION': ['building', 'passage', 'service'],
+            'WAREHOUSE_DISTRICT': ['building', 'lab', 'grow_operation', 'service', 'danger'],
+            'RIVERSIDE_PRISON': ['building', 'service']
         };
         
-        return typeMap[this.neighborhood] || ['building', 'passage', 'service', 'danger'];
+        return typeMap[this.neighborhood] || ['building', 'passage', 'service', 'danger', 'lab', 'grow_operation'];
     }
     
     /**

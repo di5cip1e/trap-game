@@ -72,6 +72,75 @@ export const ENEMY_TYPES = {
                 message: 'BOSS CALLS FOR REINFORCEMENTS!'
             }
         }
+    },
+    
+    // ============================================================
+    // BIG CITY FACILITY ENEMIES
+    // ============================================================
+    
+    labGuard: {
+        name: 'Lab Guard',
+        hp: 70,
+        maxHp: 70,
+        damage: 12,
+        xpValue: 40,
+        attackSpeed: 1300,
+        color: 0x555555,
+        description: 'Security guard at an illegal lab'
+    },
+    chemist: {
+        name: 'Chemist',
+        hp: 40,
+        maxHp: 40,
+        damage: 20,
+        xpValue: 60,
+        attackSpeed: 1600,
+        color: 0x00ff88,
+        description: 'Lab technician with chemical knowledge',
+        specialAttacks: {
+            chemicalSpray: {
+                chance: 0.3,
+                damageMultiplier: 1.5,
+                message: 'CHEMIST THROWS A CHEMICAL BOMB!'
+            }
+        }
+    },
+    runner: {
+        name: 'Drug Runner',
+        hp: 35,
+        maxHp: 35,
+        damage: 8,
+        xpValue: 25,
+        attackSpeed: 900,
+        color: 0xff8844,
+        description: 'Quick-footed drug courier'
+    },
+    grower: {
+        name: 'Grower',
+        hp: 50,
+        maxHp: 50,
+        damage: 10,
+        xpValue: 35,
+        attackSpeed: 1400,
+        color: 0x44aa44,
+        description: 'Marijuana cultivator'
+    },
+    researcher: {
+        name: 'Researcher',
+        hp: 45,
+        maxHp: 45,
+        damage: 18,
+        xpValue: 55,
+        attackSpeed: 1500,
+        color: 0x4488ff,
+        description: 'Research scientist with advanced knowledge',
+        specialAttacks: {
+            stunGrenade: {
+                chance: 0.25,
+                damageMultiplier: 1.2,
+                message: 'RESEARCHER USES STUN DEVICE!'
+            }
+        }
     }
 };
 
@@ -194,15 +263,34 @@ export default class CombatScene {
         
         let damage = 15; // Base damage
         
-        // Equipment bonuses
+        // Equipment bonuses - Melee Weapons
         if (playerState.equipment.brassKnucks) {
             damage += CONFIG.EQUIPMENT.brassKnucks.attackBonus || 5;
         }
         if (playerState.equipment.switchblade) {
             damage += CONFIG.EQUIPMENT.switchblade.attackBonus || 10;
         }
+        
+        // Equipment bonuses - Ranged Weapons (Slot 1)
         if (playerState.equipment.pistol) {
             damage += CONFIG.EQUIPMENT.pistol.attackBonus || 25;
+        }
+        if (playerState.equipment.machinePistol) {
+            damage += CONFIG.EQUIPMENT.machinePistol.attackBonus || 30;
+        }
+        if (playerState.equipment.smg) {
+            damage += CONFIG.EQUIPMENT.smg.attackBonus || 35;
+        }
+        if (playerState.equipment.assaultRifle) {
+            damage += CONFIG.EQUIPMENT.assaultRifle.attackBonus || 45;
+        }
+        if (playerState.equipment.machineGun) {
+            damage += CONFIG.EQUIPMENT.machineGun.attackBonus || 60;
+        }
+        
+        // Equipment bonuses - Secondary Weapons (Slot 2 - Dual Wield)
+        if (playerState.equipment.secondaryPistol) {
+            damage += CONFIG.EQUIPMENT.secondaryPistol.attackBonus || 15;
         }
         
         // Level bonus
@@ -213,6 +301,14 @@ export default class CombatScene {
         // Skill bonuses
         if (this.scene.skillTree?.hasSkill('iron_fist')) {
             damage = Math.floor(damage * 1.25); // +25%
+        }
+        
+        // Weapon Mastery bonuses
+        if (this.scene.skillTree?.hasSkill('quick_draw')) {
+            damage = Math.floor(damage * 1.1); // +10% damage from Quick Draw
+        }
+        if (this.scene.skillTree?.hasSkill('dead_eye')) {
+            damage = Math.floor(damage * 1.3); // +30% damage from Dead Eye skill
         }
         
         // Last Stand bonus (when low HP)

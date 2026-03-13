@@ -735,22 +735,159 @@ export const CONFIG = {
     
     // Equipment
     EQUIPMENT: {
-        // Storage
+        // ============================================================
+        // EQUIPMENT SLOT SYSTEM
+        // Slots: hat, shirt, jacket, pants, shoes, accessory1, accessory2, weapon1, weapon2
+        // ============================================================
+        
+        // === STORAGE ===
         backpack: {
             name: 'Backpack',
             description: 'Carry more Raw Materials',
             cost: 200,
             type: 'storage',
+            slot: 'storage',
             rawCapacityBonus: 5,
             productCapacityBonus: 3
         },
         
-        // Weapons
+        // === HEAD (Hat) ===
+        baseCap: {
+            name: 'Base Cap',
+            description: 'Basic head protection. Blends in.',
+            cost: 50,
+            type: 'hat',
+            slot: 'hat',
+            detectionReduction: 0.05
+        },
+        fedora: {
+            name: 'Fedora',
+            description: 'Classy and subtle. -10% detection.',
+            cost: 300,
+            type: 'hat',
+            slot: 'hat',
+            detectionReduction: 0.10,
+            priceBonus: 0.05
+        },
+        
+        // === TORSO (Shirt) ===
+        bulletproofVest: {
+            name: 'Bulletproof Vest',
+            description: 'Reduces damage from police encounters',
+            cost: 500,
+            type: 'armor',
+            slot: 'shirt',
+            damageReduction: 0.3
+        },
+        leatherJacket: {
+            name: 'Leather Jacket',
+            description: 'Tough outer layer. -15% damage.',
+            cost: 350,
+            type: 'armor',
+            slot: 'shirt',
+            damageReduction: 0.15,
+            heatReduction: 0.10
+        },
+        
+        // === OUTER TORSO (Jacket) ===
+        heavyCoat: {
+            name: 'Heavy Coat',
+            description: 'Reduces heat gain from exposure',
+            cost: 250,
+            type: 'armor',
+            slot: 'jacket',
+            heatReduction: 0.25
+        },
+        trenchCoat: {
+            name: 'Trench Coat',
+            description: 'Professional look. +10% prices, -10% detection.',
+            cost: 450,
+            type: 'armor',
+            slot: 'jacket',
+            priceBonus: 0.10,
+            detectionReduction: 0.10
+        },
+        
+        // === LEGS (Pants) ===
+        cargoPants: {
+            name: 'Cargo Pants',
+            description: 'Extra storage for supplies.',
+            cost: 150,
+            type: 'pants',
+            slot: 'pants',
+            rawCapacityBonus: 2,
+            productCapacityBonus: 1
+        },
+        
+        // === FEET (Shoes) ===
+        runningShoes: {
+            name: 'Running Shoes',
+            description: 'Move faster across the city',
+            cost: 300,
+            type: 'utility',
+            slot: 'shoes',
+            speedBonus: 1.5
+        },
+        combatBoots: {
+            name: 'Combat Boots',
+            description: 'Heavy duty. +25% movement speed.',
+            cost: 500,
+            type: 'utility',
+            slot: 'shoes',
+            speedBonus: 1.25
+        },
+        
+        // === ACCESSORY 1 ===
+        binoculars: {
+            name: 'Binoculars',
+            description: 'See further on the minimap',
+            cost: 200,
+            type: 'utility',
+            slot: 'accessory1',
+            visionRangeBonus: 3
+        },
+        burnerPhone: {
+            name: 'Burner Phone',
+            description: 'Faster buyer spawns',
+            cost: 100,
+            type: 'utility',
+            slot: 'accessory1',
+            buyerSpawnBonus: 0.5
+        },
+        goldChain: {
+            name: 'Gold Chain',
+            description: '+10% to buyer prices',
+            cost: 400,
+            type: 'accessory',
+            slot: 'accessory1',
+            priceBonus: 0.10
+        },
+        
+        // === ACCESSORY 2 ===
+        lockpick: {
+            name: 'Lockpick Set',
+            description: 'Faster safehouse entry',
+            cost: 150,
+            type: 'utility',
+            slot: 'accessory2',
+            safehouseEntrySpeed: 2
+        },
+        designerSunglasses: {
+            name: 'Designer Sunglasses',
+            description: 'Reduces police detection chance',
+            cost: 350,
+            type: 'accessory',
+            slot: 'accessory2',
+            detectionReduction: 0.2
+        },
+        
+        // === WEAPON SLOT 1 (Primary) ===
         brassKnucks: {
             name: 'Brass Knuckles',
             description: 'Fight better in street confrontations',
             cost: 150,
             type: 'weapon',
+            slot: 'weapon1',
             attackBonus: 2
         },
         switchblade: {
@@ -758,78 +895,88 @@ export const CONFIG = {
             description: 'Deadly in close-quarters combat',
             cost: 350,
             type: 'weapon',
+            slot: 'weapon1',
             attackBonus: 4
         },
         pistol: {
             name: 'Pistol',
-            description: 'Ranged weapon. Requires ammo to use.',
+            description: 'Reliable semi-auto pistol. Requires ammo.',
             cost: 800,
             type: 'weapon',
+            slot: 'weapon1',
             attackBonus: 8,
             rangeAttack: true,
-            ammoCost: 25  // Cost per shot
+            ammoCost: 25,
+            fireRate: 'semi-auto'
         },
         
-        // Armor/Defense
-        bulletproofVest: {
-            name: 'Bulletproof Vest',
-            description: 'Reduces damage from police encounters',
-            cost: 500,
-            type: 'armor',
-            damageReduction: 0.3  // 30% damage reduction
+        // === AUTOMATIC WEAPONS (Requires automatic_weapons Skill) ===
+        machinePistol: {
+            name: 'Machine Pistol',
+            description: 'Compact automatic weapon. High fire rate.',
+            cost: 1500,
+            type: 'weapon',
+            slot: 'weapon1',
+            weaponClass: 'automatic',
+            attackBonus: 12,
+            rangeAttack: true,
+            ammoCost: 35,
+            fireRate: 'automatic',
+            automaticOnly: true
         },
-        heavyCoat: {
-            name: 'Heavy Coat',
-            description: 'Reduces heat gain from exposure',
-            cost: 250,
-            type: 'armor',
-            heatReduction: 0.25  // 25% less heat gain
+        smg: {
+            name: 'SMG',
+            description: 'Submachine gun. Excellent for close quarters.',
+            cost: 2500,
+            type: 'weapon',
+            slot: 'weapon1',
+            weaponClass: 'automatic',
+            attackBonus: 15,
+            rangeAttack: true,
+            ammoCost: 40,
+            fireRate: 'automatic',
+            automaticOnly: true
+        },
+        assaultRifle: {
+            name: 'Assault Rifle',
+            description: 'Full-auto assault rifle. Balanced damage and rate.',
+            cost: 4000,
+            type: 'weapon',
+            slot: 'weapon1',
+            weaponClass: 'automatic',
+            attackBonus: 20,
+            rangeAttack: true,
+            ammoCost: 50,
+            fireRate: 'automatic',
+            automaticOnly: true
+        },
+        machineGun: {
+            name: 'Machine Gun',
+            description: 'Heavy machine gun. Devastating but slow.',
+            cost: 6000,
+            type: 'weapon',
+            slot: 'weapon1',
+            weaponClass: 'automatic',
+            attackBonus: 30,
+            rangeAttack: true,
+            ammoCost: 75,
+            fireRate: 'automatic',
+            automaticOnly: true
         },
         
-        // Utility
-        runningShoes: {
-            name: 'Running Shoes',
-            description: 'Move faster across the city',
-            cost: 300,
-            type: 'utility',
-            speedBonus: 1.5  // 50% faster movement
-        },
-        binoculars: {
-            name: 'Binoculars',
-            description: 'See further on the minimap',
-            cost: 200,
-            type: 'utility',
-            visionRangeBonus: 3  // +3 tiles to minimap
-        },
-        lockpick: {
-            name: 'Lockpick Set',
-            description: 'Faster safehouse entry',
-            cost: 150,
-            type: 'utility',
-            safehouseEntrySpeed: 2  // 2x faster
-        },
-        burnerPhone: {
-            name: 'Burner Phone',
-            description: 'Faster buyer spawns',
-            cost: 100,
-            type: 'utility',
-            buyerSpawnBonus: 0.5  // 50% faster
-        },
-        
-        // Accessories
-        goldChain: {
-            name: 'Gold Chain',
-            description: '+10% to buyer prices',
-            cost: 400,
-            type: 'accessory',
-            priceBonus: 0.10  // 10% more money
-        },
-        designerSunglasses: {
-            name: 'Designer Sunglasses',
-            description: 'Reduces police detection chance',
-            cost: 350,
-            type: 'accessory',
-            detectionReduction: 0.2  // 20% harder to detect
+        // === WEAPON SLOT 2 (Secondary - Locked by default) ===
+        secondaryPistol: {
+            name: 'Secondary Pistol',
+            description: 'Backup pistol for dual wield. Requires Dual Wield skill.',
+            cost: 600,
+            type: 'weapon',
+            slot: 'weapon2',
+            weaponClass: 'pistol',
+            attackBonus: 5,
+            rangeAttack: true,
+            ammoCost: 20,
+            fireRate: 'semi-auto',
+            requiresSkill: 'dual_wield'
         }
     },
     
@@ -1473,7 +1620,9 @@ export const CONFIG = {
             processingSpeed: 1.0,   // Normal speed
             sprite: 'lab-weed',
             tile: 'tile-wood-floor',
-            color: '#4CAF50'        // Green
+            color: '#4CAF50',        // Green
+            floors: 1,
+            isBigCity: false
         },
         'Mushroom Room': {
             description: 'Climate-controlled room for psychedelic mushroom cultivation',
@@ -1486,7 +1635,9 @@ export const CONFIG = {
             processingSpeed: 1.2,   // Slightly faster
             sprite: 'lab-mushroom',
             tile: 'tile-stone-dark',
-            color: '#9C27B0'        // Purple
+            color: '#9C27B0',        // Purple
+            floors: 1,
+            isBigCity: false
         },
         'Cocaine Lab': {
             description: 'Hidden lab for processing coca leaves into cocaine powder',
@@ -1499,7 +1650,9 @@ export const CONFIG = {
             processingSpeed: 0.9,   // Slightly slower (careful work)
             sprite: 'lab-cocaine',
             tile: 'tile-concrete',
-            color: '#FFFFFF'        // White
+            color: '#FFFFFF',        // White
+            floors: 1,
+            isBigCity: false
         },
         'Crack House': {
             description: 'Improvised cooking operation for turning cocaine into crack',
@@ -1512,7 +1665,9 @@ export const CONFIG = {
             processingSpeed: 1.3,   // Fast but dangerous
             sprite: 'lab-crack',
             tile: 'tile-concrete-cracked',
-            color: '#FF9800'        // Orange/brown
+            color: '#FF9800',        // Orange/brown
+            floors: 1,
+            isBigCity: false
         },
         'Meth Lab': {
             description: 'Secretive meth synthesis operation with chemical equipment',
@@ -1525,7 +1680,9 @@ export const CONFIG = {
             processingSpeed: 0.8,   // Slower (complex chemistry)
             sprite: 'lab-meth',
             tile: 'tile-metal-floor',
-            color: '#F44336'        // Red
+            color: '#F44336',        // Red
+            floors: 1,
+            isBigCity: false
         },
         'MDMA Lab': {
             description: 'Synthesis lab for creating MDMA in tablet or crystal form',
@@ -1538,7 +1695,126 @@ export const CONFIG = {
             processingSpeed: 1.1,   // Slightly faster
             sprite: 'lab-mdma',
             tile: 'tile-concrete',
-            color: '#E91E63'        // Pink
+            color: '#E91E63',        // Pink
+            floors: 1,
+            isBigCity: false
+        },
+        
+        // ============================================================
+        // BIG CITY FACILITIES - Multi-floor labs and grow operations
+        // ============================================================
+        
+        'Meth Lab (Big City)': {
+            description: 'Multi-floor meth synthesis operation in an abandoned office building. Industrial-scale production.',
+            produces: 'Meth',
+            preferredNeighborhoods: ['Downtown', 'Warehouse District'],
+            riskLevel: 5,
+            yieldBonus: 0.65,       // +65% yield bonus - highest in game
+            heatGain: 18,
+            requiredMaterials: ['Precursor A', 'Precursor B'],
+            processingSpeed: 0.7,   // Fast with multiple floors
+            sprite: 'lab-meth-multi',
+            tile: 'tile-concrete',
+            color: '#B71C1C',        // Dark red
+            floors: 4,               // Multi-floor building
+            isBigCity: true,
+            combatEncounter: {
+                enemies: [
+                    { type: 'lab-guard', count: 3 },
+                    { type: 'chemist', count: 2 },
+                    { type: 'runner', count: 1 }
+                ],
+                experienceReward: 150
+            }
+        },
+        'Chemical Processing': {
+            description: 'Chemical processing facility for control substances and precursors. Multi-floor operation.',
+            produces: 'Precursor A',
+            preferredNeighborhoods: ['Downtown', 'Warehouse District'],
+            riskLevel: 4,
+            yieldBonus: 0.45,       // +45% yield bonus
+            heatGain: 12,
+            requiredMaterials: ['Chemicals'],
+            processingSpeed: 0.85,
+            sprite: 'lab-chemical',
+            tile: 'tile-metal-floor',
+            color: '#FF6F00',        // Amber
+            floors: 3,
+            isBigCity: true,
+            combatEncounter: {
+                enemies: [
+                    { type: 'lab-guard', count: 2 },
+                    { type: 'chemist', count: 2 }
+                ],
+                experienceReward: 120
+            }
+        },
+        'Research Lab': {
+            description: 'Underground research facility developing advanced synthetic drugs. High-tech equipment.',
+            produces: 'MDMA',
+            preferredNeighborhoods: ['Downtown', 'Warehouse District'],
+            riskLevel: 4,
+            yieldBonus: 0.55,       // +55% yield bonus
+            heatGain: 11,
+            requiredMaterials: ['Research Chemicals'],
+            processingSpeed: 0.9,
+            sprite: 'lab-research',
+            tile: 'tile-tile-floor',
+            color: '#00BCD4',        // Cyan
+            floors: 3,
+            isBigCity: true,
+            combatEncounter: {
+                enemies: [
+                    { type: 'lab-guard', count: 2 },
+                    { type: 'researcher', count: 2 },
+                    { type: 'runner', count: 2 }
+                ],
+                experienceReward: 175
+            }
+        },
+        'Indoor Grow House': {
+            description: 'Large-scale indoor marijuana operation. Multiple floors of grow lights and plants.',
+            produces: 'Weed',
+            preferredNeighborhoods: ['Downtown', 'Warehouse District'],
+            riskLevel: 2,
+            yieldBonus: 0.40,       // +40% yield bonus
+            heatGain: 5,
+            requiredMaterials: ['Weed Plants'],
+            processingSpeed: 1.1,
+            sprite: 'lab-grow-house',
+            tile: 'tile-wood-floor',
+            color: '#66BB6A',        // Light green
+            floors: 3,
+            isBigCity: true,
+            combatEncounter: {
+                enemies: [
+                    { type: 'grower', count: 2 },
+                    { type: 'runner', count: 1 }
+                ],
+                experienceReward: 80
+            }
+        },
+        'Hydroponics Facility': {
+            description: 'High-tech hydroponics facility in a converted warehouse. Climate-controlled perfection.',
+            produces: 'Weed',
+            preferredNeighborhoods: ['Downtown', 'Warehouse District'],
+            riskLevel: 2,
+            yieldBonus: 0.50,       // +50% yield bonus
+            heatGain: 4,
+            requiredMaterials: ['Weed Plants'],
+            processingSpeed: 1.3,   // Fast with technology
+            sprite: 'lab-hydroponics',
+            tile: 'tile-tile-floor',
+            color: '#26A69A',        // Teal
+            floors: 4,
+            isBigCity: true,
+            combatEncounter: {
+                enemies: [
+                    { type: 'lab-guard', count: 1 },
+                    { type: 'grower', count: 3 }
+                ],
+                experienceReward: 100
+            }
         }
     },
 
@@ -1548,5 +1824,81 @@ export const CONFIG = {
         baseYieldIncrease: 0.10,   // 10% base yield for any lab
         // Stacking bonuses per lab type discovered
         stackingBonusPerLab: 0.05  // +5% additional per unique lab type
+    },
+    
+    // ==========================================
+    // WEAPON SKILL SYSTEM
+    // ==========================================
+    WEAPON_SKILLS: {
+        // Skill requirements for weapon slots
+        SECOND_WEAPON_SLOT_SKILL: 'dual_wield',
+        AUTOMATIC_WEAPONS_SKILL: 'automatic_weapons',
+        
+        // Weapon slot constraints
+        SLOT_RESTRICTIONS: {
+            1: { maxFireRate: 'any', allowedClasses: ['melee', 'pistol', 'automatic'] },
+            2: { maxFireRate: 'semi-auto', allowedClasses: ['melee', 'pistol'] }
+        },
+        
+        // Which weapons require which skill
+        SKILL_REQUIREMENTS: {
+            machinePistol: 'automatic_weapons',
+            smg: 'automatic_weapons',
+            assaultRifle: 'automatic_weapons',
+            machineGun: 'automatic_weapons'
+        }
+    },
+    
+    // Helper: Check if player can use second weapon slot
+    canUseSecondSlot(unlockedSkills = []) {
+        return unlockedSkills.includes(this.WEAPON_SKILLS.SECOND_WEAPON_SLOT_SKILL);
+    },
+    
+    // Helper: Check if player can equip automatic weapons
+    canUseAutomaticWeapons(unlockedSkills = []) {
+        return unlockedSkills.includes(this.WEAPON_SKILLS.AUTOMATIC_WEAPONS_SKILL);
+    },
+    
+    // Helper: Check if player can equip a specific weapon
+    canEquipWeapon(weaponId, unlockedSkills = [], currentSlot1Weapon = null) {
+        const weapon = this.EQUIPMENT[weaponId];
+        if (!weapon) return { canEquip: false, reason: 'Weapon not found' };
+        
+        // Check skill requirements for automatic weapons
+        if (weapon.automaticOnly && !this.canUseAutomaticWeapons(unlockedSkills)) {
+            return { canEquip: false, reason: 'Requires Automatic Weapons skill' };
+        }
+        
+        // Check slot 2 restrictions
+        if (weapon.slot === 2) {
+            if (!this.canUseSecondSlot(unlockedSkills)) {
+                return { canEquip: false, reason: 'Requires Dual Wield skill' };
+            }
+            // Slot 2 only allows semi-auto pistols
+            if (weapon.fireRate && weapon.fireRate !== 'semi-auto') {
+                return { canEquip: false, reason: 'Slot 2 only supports semi-auto pistols' };
+            }
+        }
+        
+        return { canEquip: true, reason: '' };
+    },
+    
+    // Helper: Get all available weapons based on player skills
+    getAvailableWeapons(unlockedSkills = []) {
+        const available = [];
+        const canDualWield = this.canUseSecondSlot(unlockedSkills);
+        const canAuto = this.canUseAutomaticWeapons(unlockedSkills);
+        
+        for (const [id, weapon] of Object.entries(this.EQUIPMENT)) {
+            if (weapon.type !== 'weapon') continue;
+            
+            // Filter based on skill availability
+            if (weapon.automaticOnly && !canAuto) continue;
+            if (weapon.slot === 2 && !canDualWield) continue;
+            
+            available.push({ id, ...weapon });
+        }
+        
+        return available;
     }
 };

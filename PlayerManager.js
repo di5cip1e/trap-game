@@ -163,7 +163,80 @@ export default class PlayerManager {
     // ============================================================
     // EQUIPMENT
     // ============================================================
+    // EQUIPMENT SYSTEM (Slot-based)
+    // ============================================================
 
+    /**
+     * Check if player owns equipment
+     */
+    ownsEquipment(equipmentId) {
+        return this.playerState.equipment?.owned?.[equipmentId] === true;
+    }
+
+    /**
+     * Check if equipment is currently equipped
+     */
+    isEquipped(equipmentId) {
+        const equipment = CONFIG.EQUIPMENT[equipmentId];
+        if (!equipment) return false;
+        return this.playerState.equipment?.[equipment.slot] === equipmentId;
+    }
+
+    /**
+     * Check if player has skill to use equipment
+     */
+    hasSkillToUseEquipment(equipment) {
+        if (!equipment.requiresSkill) return true;
+        return this.playerState.unlockedSkills?.includes(equipment.requiresSkill);
+    }
+
+    /**
+     * Check if weapon slot 2 is unlocked
+     */
+    isWeaponSlot2Unlocked() {
+        return this.playerState.unlockedSkills?.includes('dual_wield');
+    }
+
+    /**
+     * Check if automatic weapons are unlocked (can use weapon1 slot for automatics)
+     */
+    isAutomaticWeaponsUnlocked() {
+        return this.playerState.unlockedSkills?.includes('automatic_weapons');
+    }
+
+    /**
+     * Can equip this item (checks skill requirements and slot availability)
+     */
+    canEquip(equipmentId) {
+        const equipment = CONFIG.EQUIPMENT[equipmentId];
+        if (!equipment) return { valid: false, reason: 'Not found' };
+
+        // Check if player owns it
+        if (!this.ownsEquipment(equipmentId)) {
+            return { valid: false, reason: 'Not owned' };
+        }
+
+        // Check skill requirement
+        if (!this.hasSkillToUseEquipment(equipment)) {
+            return { valid: false, reason: `Requires ${equipment.requiresSkill} skill` };
+        }
+
+        // Check weapon slot 2 is unlocked for secondary weapons
+        if (equipment.slot === 'weapon2' && !this.isWeaponSlot2Unlocked()) {
+            return { valid: false, reason: 'Requires Dual Wield skill' };
+        }
+
+        // Check automatic weapons skill for automatic-only weapons in weapon1
+        if (equipment.automaticOnly && !this.isAutomaticWeaponsUnlocked()) {
+            return { valid: false, reason: 'Requires Automatic Weapons skill' };
+        }
+
+        return { valid: true };
+    }
+
+    /**
+     * Purchase equipment (adds to owned, doesn't auto-equip)
+     */
     purchaseEquipment(equipmentId) {
         const equipment = CONFIG.EQUIPMENT[equipmentId];
         if (!equipment) {
@@ -176,15 +249,20 @@ export default class PlayerManager {
             return false;
         }
 
-        // Check slot availability
-        const slot = equipment.slot;
-        if (this.playerState.equipment[slot]) {
-            this.scene.showFloatingText('Slot occupied!', CONFIG.COLORS.warning);
+        // Check if already owned
+        if (this.ownsEquipment(equipmentId)) {
+            this.scene.showFloatingText('Already owned!', CONFIG.COLORS.warning);
             return false;
         }
 
+        // Initialize owned object if needed
+        if (!this.playerState.equipment.owned) {
+            this.playerState.equipment.owned = {};
+        }
+
+        // Deduct money and mark as owned
         this.playerState.money -= equipment.cost;
-        this.playerState.equipment[slot] = equipmentId;
+        this.playerState.equipment.owned[equipmentId] = true;
 
         // Track achievement
         if (typeof trackEquipmentPurchase === 'function') {
@@ -196,6 +274,54 @@ export default class PlayerManager {
         return true;
     }
 
+    /**
+     * Equip an item to its slot
+     */
+    equipItem(equipmentId) {
+        const equipment = CONFIG.EQUIPMENT[equipmentId];
+        if (!equipment) {
+            console.warn(`Equipment ${equipmentId} not found`);
+            return false;
+        }
+
+        // Check if player owns it
+        if (!this.ownsEquipment(equipmentId)) {
+            this.scene.showFloatingText('Not owned!', CONFIG.COLORS.danger);
+            return false;
+        }
+
+        // Check skill requirement
+        if (!this.hasSkillToUseEquipment(equipment)) {
+            this.scene.showFloatingText(`Requires ${equipment.requiresSkill} skill!`, CONFIG.COLORS.danger);
+            return false;
+        }
+
+        // Check weapon slot 2 unlock
+        if (equipment.slot === 'weapon2' && !this.isWeaponSlot2Unlocked()) {
+            this.scene.showFloatingText('Weapon Slot 2 locked! Requires Dual Wield skill.', CONFIG.COLORS.warning);
+            return false;
+        }
+
+        // Check automatic weapons
+        if (equipment.automaticOnly && !this.isAutomaticWeaponsUnlocked()) {
+            this.scene.showFloatingText('Automatic weapons require Automatic Weapons skill!', CONFIG.COLORS.warning);
+            return false;
+        }
+
+        const slot = equipment.slot;
+        const currentlyEquipped = this.playerState.equipment[slot];
+
+        // Equip to slot (overwrite what's there)
+        this.playerState.equipment[slot] = equipmentId;
+
+        this.scene.showFloatingText(`Equipped ${equipment.name}!`, CONFIG.COLORS.success);
+        this.scene.hud?.update();
+        return true;
+    }
+
+    /**
+     * Unequip an item from its slot
+     */
     unequipEquipment(equipmentId) {
         const equipment = CONFIG.EQUIPMENT[equipmentId];
         if (!equipment) return false;
@@ -205,31 +331,115 @@ export default class PlayerManager {
             return false;
         }
 
-        delete this.playerState.equipment[slot];
-        this.playerState.money += Math.floor(equipment.cost * 0.7);
-        this.scene.showFloatingText(`Sold ${equipment.name}!`, CONFIG.COLORS.text);
+        // Unequip from slot
+        this.playerState.equipment[slot] = null;
+        
+        this.scene.showFloatingText(`Unequipped ${equipment.name}!`, CONFIG.COLORS.text);
         this.scene.hud?.update();
         return true;
     }
 
+    /**
+     * Sell equipment (remove from owned, unequip if equipped)
+     */
     sellEquipment(equipmentId) {
-        return this.unequipEquipment(equipmentId);
+        const equipment = CONFIG.EQUIPMENT[equipmentId];
+        if (!equipment) return false;
+
+        // Check if owned
+        if (!this.ownsEquipment(equipmentId)) {
+            return false;
+        }
+
+        // Unequip if equipped
+        if (this.isEquipped(equipmentId)) {
+            this.unequipEquipment(equipmentId);
+        }
+
+        // Remove from owned
+        delete this.playerState.equipment.owned[equipmentId];
+        
+        // Refund partial value
+        const sellValue = Math.floor(equipment.cost * 0.5);
+        this.playerState.money += sellValue;
+        
+        this.scene.showFloatingText(`Sold ${equipment.name} for $${sellValue}!`, CONFIG.COLORS.success);
+        this.scene.hud?.update();
+        return sellValue;
     }
 
-    // Equipment bonuses
-    getEquipmentAttackBonus() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.attackBonus) bonus += eq.attackBonus;
+    /**
+     * Get all equipped items
+     */
+    getEquippedItems() {
+        const equipped = [];
+        const slots = ['hat', 'shirt', 'jacket', 'pants', 'shoes', 'accessory1', 'accessory2', 'weapon1', 'weapon2', 'storage'];
+        
+        for (const slot of slots) {
+            const equipmentId = this.playerState.equipment?.[slot];
+            if (equipmentId) {
+                const eq = CONFIG.EQUIPMENT[equipmentId];
+                if (eq) {
+                    equipped.push({ slot, ...eq });
+                }
+            }
         }
-        return bonus;
+        return equipped;
+    }
+
+    /**
+     * Get total stat bonuses from equipped items
+     */
+    getEquipmentStats() {
+        const stats = {
+            rawCapacityBonus: 0,
+            productCapacityBonus: 0,
+            attackBonus: 0,
+            damageReduction: 0,
+            heatReduction: 0,
+            speedBonus: 0,
+            visionRangeBonus: 0,
+            safehouseEntrySpeed: 0,
+            buyerSpawnBonus: 0,
+            priceBonus: 0,
+            detectionReduction: 0
+        };
+
+        const equipped = this.getEquippedItems();
+        for (const eq of equipped) {
+            if (eq.rawCapacityBonus) stats.rawCapacityBonus += eq.rawCapacityBonus;
+            if (eq.productCapacityBonus) stats.productCapacityBonus += eq.productCapacityBonus;
+            if (eq.attackBonus) stats.attackBonus += eq.attackBonus;
+            if (eq.damageReduction) stats.damageReduction += eq.damageReduction;
+            if (eq.heatReduction) stats.heatReduction += eq.heatReduction;
+            if (eq.speedBonus) stats.speedBonus += eq.speedBonus;
+            if (eq.visionRangeBonus) stats.visionRangeBonus += eq.visionRangeBonus;
+            if (eq.safehouseEntrySpeed) stats.safehouseEntrySpeed += eq.safehouseEntrySpeed;
+            if (eq.buyerSpawnBonus) stats.buyerSpawnBonus += eq.buyerSpawnBonus;
+            if (eq.priceBonus) stats.priceBonus += eq.priceBonus;
+            if (eq.detectionReduction) stats.detectionReduction += eq.detectionReduction;
+        }
+
+        return stats;
+    }
+
+    // Legacy compatibility methods
+    getOwnedEquipment() {
+        return this.playerState.equipment?.owned || {};
+    }
+
+    // Equipment bonuses (updated for slot-based system)
+    getEquipmentAttackBonus() {
+        return this.getEquipmentStats().attackBonus;
     }
 
     hasRangeAttack() {
-        return Object.values(this.playerState.equipment || {}).some(
-            id => CONFIG.EQUIPMENT[id]?.range > 0
-        );
+        const weapon1 = this.playerState.equipment?.weapon1;
+        if (weapon1) {
+            const eq = CONFIG.EQUIPMENT[weapon1];
+            return eq?.rangeAttack === true;
+        }
+        return false;
     }
 
     getPistolAmmoCost() {
@@ -237,66 +447,37 @@ export default class PlayerManager {
     }
 
     getDamageReduction() {
-        let reduction = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.damageReduction) reduction += eq.damageReduction;
-        }
-        return Math.min(reduction, 0.8); // Cap at 80%
+        return Math.min(this.getEquipmentStats().damageReduction, 0.8);
     }
 
     getHeatReduction() {
-        let reduction = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.heatReduction) reduction += eq.heatReduction;
-        }
-        return Math.min(reduction, 0.9);
+        return Math.min(this.getEquipmentStats().heatReduction, 0.9);
     }
 
     getMovementSpeedBonus() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.speedBonus) bonus += eq.speedBonus;
-        }
-        return bonus;
+        const speedBonus = this.getEquipmentStats().speedBonus;
+        return speedBonus > 0 ? speedBonus : 1;
     }
 
     getVisionRangeBonus() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.visionBonus) bonus += eq.visionBonus;
-        }
-        return bonus;
+        return this.getEquipmentStats().visionRangeBonus;
     }
 
     getSafehouseEntrySpeed() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.safehouseSpeed) bonus += eq.safehouseSpeed;
-        }
-        return bonus;
+        const stats = this.getEquipmentStats();
+        return stats.safehouseEntrySpeed > 0 ? stats.safehouseEntrySpeed : 1;
     }
 
     getBuyerSpawnBonus() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.buyerSpawnBonus) bonus += eq.buyerSpawnBonus;
-        }
-        return bonus;
+        return this.getEquipmentStats().buyerSpawnBonus;
     }
 
     getPriceBonus() {
-        let bonus = 0;
-        for (const equipmentId of Object.values(this.playerState.equipment || {})) {
-            const eq = CONFIG.EQUIPMENT[equipmentId];
-            if (eq?.priceBonus) bonus += eq.priceBonus;
-        }
-        return bonus;
+        return this.getEquipmentStats().priceBonus;
+    }
+
+    getDetectionReduction() {
+        return this.getEquipmentStats().detectionReduction;
     }
 
     // ============================================================

@@ -77,6 +77,14 @@ export default class PlayerController {
             return;
         }
         
+        // Check for NPC collision - players cannot walk through NPCs
+        if (this.scene.worldObjects) {
+            const hasCollision = this.scene.worldObjects.some(obj => 
+                obj.x === newX && obj.y === newY && obj.walkable === false
+            );
+            if (hasCollision) return;
+        }
+        
         // Check if tile exists and is walkable (with safety check)
         const targetTile = this.scene.worldMap[newY]?.[newX];
         if (!targetTile || !targetTile.walkable) {

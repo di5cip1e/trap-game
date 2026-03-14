@@ -351,23 +351,6 @@ export default class EquipmentUI {
         
         return bonuses.join(' | ');
     }
-        this.createCategoryTabs(width / 2, height / 2 - 220);
-        
-        // Equipment items container
-        this.equipmentContainer = this.scene.add.container(0, 0);
-        this.equipmentContainer.setScrollFactor(0);
-        this.equipmentContainer.setDepth(903);
-        this.container.add(this.equipmentContainer);
-        
-        // Render equipment
-        this.renderEquipment();
-        
-        // Close button
-        const closeButton = this.createButton(width / 2, height / 2 + 290, 200, 50, 'LEAVE', () => {
-            this.close();
-        });
-        this.container.add(closeButton);
-    }
     
     createCategoryTabs(centerX, y) {
         const categories = [
@@ -470,7 +453,7 @@ export default class EquipmentUI {
         const equipment = CONFIG.EQUIPMENT[equipmentId];
         if (!equipment) return;
         
-        const owned = this.scene.playerState.equipment[equipmentId];
+        const owned = this.scene.playerState?.equipment?.[equipmentId];
         const canAfford = this.scene.playerState.money >= equipment.cost;
         
         // Check skill requirements for weapons
@@ -719,7 +702,7 @@ export default class EquipmentUI {
         });
         
         // Iterate through all owned equipment
-        const equipment = this.scene.playerState.equipment;
+        const equipment = this.scene.playerState?.equipment || {};
         for (const [id, isEquipped] of Object.entries(equipment)) {
             if (isEquipped && CONFIG.EQUIPMENT[id]) {
                 const item = CONFIG.EQUIPMENT[id];
@@ -746,7 +729,7 @@ export default class EquipmentUI {
         const itemType = newEquipment.type;
         
         // Subtract stats from currently equipped items of the same type
-        const equipment = this.scene.playerState.equipment;
+        const equipment = this.scene.playerState?.equipment || {};
         for (const [id, isEquipped] of Object.entries(equipment)) {
             if (isEquipped && CONFIG.EQUIPMENT[id]) {
                 const equippedItem = CONFIG.EQUIPMENT[id];

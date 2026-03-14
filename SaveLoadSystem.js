@@ -436,6 +436,9 @@ export default class SaveLoadSystem {
                 ngpMoneyCarriedOver: gameScene.playerState.ngpMoneyCarriedOver || 0,
                 ngpUnlockedItems: gameScene.playerState.ngpUnlockedItems || [],
                 
+                // Game mode (Normal vs Hardcore)
+                hardcoreMode: gameScene.playerState.hardcoreMode,
+                
                 // Timestamps
                 savedAt: new Date().toISOString()
             };
@@ -1060,6 +1063,27 @@ export default class SaveLoadSystem {
             }
             if (saveData.ngpUnlockedItems) {
                 gameScene.playerState.ngpUnlockedItems = saveData.ngpUnlockedItems;
+            }
+
+            // Game mode (Normal vs Hardcore)
+            if (saveData.hardcoreMode !== undefined) {
+                gameScene.playerState.hardcoreMode = saveData.hardcoreMode;
+                // Also update CONFIG if it exists
+                if (typeof CONFIG !== 'undefined') {
+                    CONFIG.HARDCORE_MODE = saveData.hardcoreMode;
+                }
+            }
+
+            // Pistol ammo
+            if (saveData.pistolAmmo !== undefined) {
+                gameScene.playerState.pistolAmmo = saveData.pistolAmmo;
+            } else {
+                gameScene.playerState.pistolAmmo = 0;
+            }
+            if (saveData.maxPistolAmmo !== undefined) {
+                gameScene.playerState.maxPistolAmmo = saveData.maxPistolAmmo;
+            } else {
+                gameScene.playerState.maxPistolAmmo = 30;
             }
 
                         return true;

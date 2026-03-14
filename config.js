@@ -160,6 +160,10 @@ export const CONFIG = {
     HUSTLE_DRAIN_PER_MOVE: 0.5,
     HUSTLE_PASSOUT_PENALTY: 0.1, // 10% of cash
     
+    // Game mode - set dynamically via in-game prompts
+    // Players choose at: 1) Game start, 2) After arrest/release in Big City
+    HARDCORE_MODE: false,  // Default (overridden by playerState.hardcoreMode after selection)
+    
     // Level system
     MAX_LEVEL: 20,
     
@@ -1900,5 +1904,38 @@ export const CONFIG = {
         }
         
         return available;
+    },
+    
+    // ==========================================
+    // FACTION REPUTATION SYSTEM
+    // ==========================================
+    FACTION_REPUTATION: {
+        // Reputation levels
+        LEVELS: {
+            HOSTILE: { min: -100, max: -50, label: 'HOSTILE', color: '#ff0000' },
+            UNFRIENDLY: { min: -49, max: -10, label: 'UNFRIENDLY', color: '#ff6600' },
+            NEUTRAL: { min: -9, max: 9, label: 'NEUTRAL', color: '#aaaaaa' },
+            FRIENDLY: { min: 10, max: 49, label: 'FRIENDLY', color: '#66ff66' },
+            ALLIED: { min: 50, max: 100, label: 'ALLIED', color: '#00ffff' }
+        },
+        
+        // Factions in the game
+        FACTIONS: {
+            THE_DON: { name: 'The Don', territory: ['OLD_TOWN'] },
+            THE_VIPER: { name: 'Viper', territory: ['SKID_ROW'] },
+            THE_ROOK: { name: 'Rook', territory: ['OLD_TOWN'] },
+            THE_ICE: { name: 'The Ice', territory: ['INDUSTRIAL_ZONE'] },
+            THE_SHADOWS: { name: 'The Shadows', territory: ['THE_MAW'] }
+        },
+        
+        // Action modifiers
+        REP_GAIN_SELL: 2,
+        REP_GAIN_QUEST: 10,
+        REP_LOSS_COMPETE: -5,
+        REP_LOSS_KILL: -20,
+        
+        // Enemy spawn multipliers
+        HOSTILE_SPAWN_MULT: 2.0,
+        UNFRIENDLY_SPAWN_MULT: 1.5
     }
 };

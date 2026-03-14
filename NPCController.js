@@ -22,6 +22,379 @@ export default class NPCController {
         this.shopOwner = null;
         this.corruptCop = null;
         this.travelingSalesman = null;
+        
+        // Schedule tracking
+        this.scheduleListenersAdded = false;
+        this.lastScheduleCheckHour = -1;
+        
+        // Define NPC schedules
+        this.NPC_SCHEDULES = {
+            // Shop Owner - operates during day, sleeps at night
+            shopOwner: {
+                type: 'shop',
+                displayName: 'SHOP OWNER',
+                openHour: 8,
+                closeHour: 20,
+                sleepHour: 22,
+                wakeHour: 7,
+                locations: {
+                    default: { x: null, y: null }, // Set during placement
+                    home: { x: 5, y: 25 }
+                },
+                homeLocation: { x: 5, y: 25 }
+            },
+            
+            // Corrupt Cop - operates at night, sleeps during day
+            corruptCop: {
+                type: 'vendor',
+                displayName: 'OFFICER',
+                openHour: 18,
+                closeHour: 4,
+                sleepHour: 8,
+                wakeHour: 17,
+                locations: {
+                    default: { x: null, y: null },
+                    home: { x: 70, y: 30 }
+                },
+                homeLocation: { x: 70, y: 30 }
+            },
+            
+            // Vendor - long hours, some rest
+            vendor: {
+                type: 'shop',
+                displayName: 'SUPPLIER',
+                openHour: 7,
+                closeHour: 23,
+                sleepHour: 0,
+                wakeHour: 6,
+                locations: {
+                    default: { x: null, y: null },
+                    home: { x: 20, y: 20 }
+                },
+                homeLocation: { x: 20, y: 20 }
+            },
+            
+            // Traveling Salesman - random hours, appears briefly
+            travelingSalesman: {
+                type: 'vendor',
+                displayName: 'TRAVELER',
+                openHour: 10,
+                closeHour: 18,
+                sleepHour: 19,
+                wakeHour: 9,
+                locations: {
+                    default: { x: null, y: null },
+                    home: { x: 50, y: 50 }
+                },
+                homeLocation: { x: 50, y: 50 }
+            }
+        };
+        
+        // Track schedule states
+        this.npcScheduleStates = {};
+    }
+
+    // ============================================================
+    // SCHEDULE SYSTEM
+    // ============================================================
+
+    /**
+     * Setup time-based schedule listeners
+     */
+    setupScheduleListeners() {
+        if (this.scheduleListenersAdded) return;
+        
+        // Listen for time changes
+        EventBus.on(EVENTS.TIME_ADVANCED, (data) => {
+            this.checkSchedules(data.hour);
+        });
+        
+        // Listen for day changes
+        EventBus.on(EVENTS.DAY_CHANGED, (data) => {
+            this.onNewDay();
+        });
+        
+        this.scheduleListenersAdded = true;
+    }
+
+    /**
+     * Check if NPC schedule allows them to be available at current hour
+     * @param {number} hour - Current hour (0-23)
+     * @param {object} schedule - NPC schedule configuration
+     * @returns {boolean} - Whether NPC is available
+     */
+    isNPCAvailable(hour, schedule) {
+        const { openHour, closeHour, sleepHour, wakeHour } = schedule;
+        
+        // Handle schedules that cross midnight (e.g., openHour: 18, closeHour: 4)
+        if (closeHour <= openHour) {
+            // Schedule crosses midnight
+            if (hour >= openHour || hour < closeHour) {
+                return true;
+            }
+        } else {
+            // Normal schedule
+            if (hour >= openHour && hour < closeHour) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if NPC is sleeping (not available and should be at home)
+     * @param {number} hour - Current hour
+     * @param {object} schedule - NPC schedule configuration  
+     * @returns {boolean} - Whether NPC is sleeping
+     */
+    isNPCSleeping(hour, schedule) {
+        // If not available, they're either sleeping or off-work
+        if (!this.isNPCAvailable(hour, schedule)) {
+            // Check if it's their sleep hours
+            const { sleepHour, wakeHour } = schedule;
+            
+            if (sleepHour <= wakeHour) {
+                return hour >= sleepHour && hour < wakeHour;
+            } else {
+                // Sleep hours cross midnight
+                return hour >= sleepHour || hour < wakeHour;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check and update all NPC schedules
+     * @param {number} currentHour - Current game hour
+     */
+    checkSchedules(currentHour) {
+        // Only check when hour changes
+        if (currentHour === this.lastScheduleCheckHour) return;
+        this.lastScheduleCheckHour = currentHour;
+        
+        // Check shop owner schedule
+        if (this.shopOwner && this.NPC_SCHEDULES.shopOwner) {
+            this.updateNPCSchedule(this.shopOwner, 'shopOwner', currentHour);
+        }
+        
+        // Check corrupt cop schedule  
+        if (this.corruptCop && this.NPC_SCHEDULES.corruptCop) {
+            this.updateNPCSchedule(this.corruptCop, 'corruptCop', currentHour);
+        }
+        
+        // Check vendor schedule
+        const vendorNPC = this.scene.worldObjects.find(obj => obj.type === 'vendor');
+        if (vendorNPC && this.NPC_SCHEDULES.vendor) {
+            this.updateNPCSchedule(vendorNPC, 'vendor', currentHour);
+        }
+        
+        // Check traveling salesman schedule
+        if (this.travelingSalesman && this.NPC_SCHEDULES.travelingSalesman) {
+            this.updateNPCSchedule(this.travelingSalesman, 'travelingSalesman', currentHour);
+        }
+    }
+
+    /**
+     * Update a single NPC based on their schedule
+     * @param {object} npc - NPC object
+     * @param {string} scheduleKey - Key in NPC_SCHEDULES
+     * @param {number} hour - Current hour
+     */
+    updateNPCSchedule(npc, scheduleKey, hour) {
+        const schedule = this.NPC_SCHEDULES[scheduleKey];
+        if (!schedule || !npc) return;
+        
+        const isAvailable = this.isNPCAvailable(hour, schedule);
+        const wasAvailable = this.npcScheduleStates[npc.type]?.available !== false;
+        
+        // Store current state
+        const prevState = this.npcScheduleStates[npc.type] || { available: true, wasAtHome: false };
+        this.npcScheduleStates[npc.type] = { 
+            available: isAvailable,
+            wasAtHome: prevState.wasAtHome 
+        };
+        
+        // Handle state changes
+        if (isAvailable && !wasAvailable) {
+            // NPC waking up - move to default location
+            this.showNPC(npc, schedule, false);
+        } else if (!isAvailable && wasAvailable) {
+            // NPC going to sleep/home
+            const isSleeping = this.isNPCSleeping(hour, schedule);
+            if (isSleeping) {
+                this.hideNPC(npc, schedule, true);
+            }
+        }
+    }
+
+    /**
+     * Show NPC at their default location (waking up / starting work)
+     * @param {object} npc - NPC object
+     * @param {object} schedule - Schedule config
+     * @param {boolean} atHome - Whether returning home
+     */
+    showNPC(npc, schedule, atHome) {
+        if (!npc || !npc.sprite) return;
+        
+        const state = this.npcScheduleStates[npc.type];
+        state.wasAtHome = atHome;
+        
+        // Set NPC to visible
+        npc.sprite.setAlpha(1);
+        npc.sprite.setVisible(true);
+        
+        if (npc.indicator) {
+            npc.indicator.setAlpha(1);
+            npc.indicator.setVisible(true);
+        }
+        
+        // Show appropriate indicator
+        if (atHome) {
+            if (npc.indicator) {
+                npc.indicator.setText('[E] ASLEEP');
+                npc.indicator.setColor('#666666');
+            }
+        } else {
+            if (npc.indicator) {
+                npc.indicator.setText(`[E] ${schedule.displayName}`);
+                npc.indicator.setColor(npc.type === 'corruptCop' ? '#6699ff' : '#00ff00');
+            }
+        }
+        
+        // Move back to work location if returning from home
+        if (atHome && npc.originalX !== undefined && npc.originalY !== undefined) {
+            this.moveNPCTo(npc, npc.originalX, npc.originalY);
+        }
+        
+        console.log(`${schedule.displayName} is now AVAILABLE (hour: ${this.scene.timeSystem?.getHour()})`);
+    }
+
+    /**
+     * Hide NPC (sleeping / off work)
+     * @param {object} npc - NPC object
+     * @param {object} schedule - Schedule config
+     * @param {boolean} goHome - Whether NPC is going home to sleep
+     */
+    hideNPC(npc, schedule, goHome) {
+        if (!npc || !npc.sprite) return;
+        
+        const state = this.npcScheduleStates[npc.type];
+        
+        if (goHome && schedule.homeLocation) {
+            // NPC is sleeping - move to home location first, then hide
+            npc.originalX = npc.x;
+            npc.originalY = npc.y;
+            
+            this.moveNPCTo(npc, schedule.homeLocation.x, schedule.homeLocation.y, () => {
+                // After arriving home, hide NPC
+                npc.sprite.setAlpha(0.3);
+                npc.sprite.setVisible(false);
+                
+                if (npc.indicator) {
+                    npc.indicator.setText('[E] ASLEEP');
+                    npc.indicator.setColor('#666666');
+                    npc.indicator.setAlpha(0.5);
+                }
+                
+                state.wasAtHome = true;
+            });
+        } else {
+            // Simple hide (not at home)
+            npc.sprite.setAlpha(0);
+            npc.sprite.setVisible(false);
+            
+            if (npc.indicator) {
+                npc.indicator.setAlpha(0);
+                npc.indicator.setVisible(false);
+            }
+        }
+        
+        console.log(`${schedule.displayName} is now UNAVAILABLE - ${goHome ? 'sleeping at home' : 'closed'} (hour: ${this.scene.timeSystem?.getHour()})`);
+    }
+
+    /**
+     * Move NPC to a specific location
+     * @param {object} npc - NPC object
+     * @param {number} targetX - Target grid X
+     * @param {number} targetY - Target grid Y
+     * @param {function} callback - Called when movement completes
+     */
+    moveNPCTo(npc, targetX, targetY, callback) {
+        if (!npc || !this.scene) return;
+        
+        const { CONFIG } = this.scene;
+        
+        // Validate target position
+        if (!this.scene.worldMap || 
+            targetY < 0 || targetY >= CONFIG.GRID_HEIGHT ||
+            targetX < 0 || targetX >= CONFIG.GRID_WIDTH ||
+            !this.scene.worldMap[targetY] ||
+            !this.scene.worldMap[targetY][targetX] ||
+            !this.scene.worldMap[targetY][targetX].walkable) {
+            // Invalid position - just hide without moving
+            if (callback) callback();
+            return;
+        }
+        
+        // Store original if not set
+        if (npc.originalX === undefined) {
+            npc.originalX = npc.x;
+            npc.originalY = npc.y;
+        }
+        
+        // Update grid position
+        npc.x = targetX;
+        npc.y = targetY;
+        
+        // Animate sprite to new position
+        const targetPixelX = targetX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+        const targetPixelY = targetY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+        
+        this.scene.tweens.add({
+            targets: npc.sprite,
+            x: targetPixelX,
+            y: targetPixelY,
+            duration: 1000,
+            ease: 'Power2',
+            onComplete: () => {
+                if (npc.indicator) {
+                    this.scene.tweens.add({
+                        targets: npc.indicator,
+                        x: targetPixelX,
+                        y: targetPixelY - 15,
+                        duration: 1000,
+                        ease: 'Power2',
+                        onComplete: callback
+                    });
+                } else if (callback) {
+                    callback();
+                }
+            }
+        });
+    }
+
+    /**
+     * Get NPC availability status for UI display
+     * @param {string} npcType - Type of NPC
+     * @returns {object} - Status object with available, schedule info
+     */
+    getNPCStatus(npcType) {
+        const schedule = this.NPC_SCHEDULES[npcType];
+        if (!schedule) return null;
+        
+        const hour = this.scene.timeSystem ? this.scene.timeSystem.getHour() : 12;
+        const isAvailable = this.isNPCAvailable(hour, schedule);
+        const isSleeping = this.isNPCSleeping(hour, schedule);
+        
+        return {
+            available: isAvailable,
+            sleeping: isSleeping,
+            currentHour: hour,
+            openHour: schedule.openHour,
+            closeHour: schedule.closeHour,
+            displayName: schedule.displayName
+        };
     }
 
     // ============================================================
@@ -71,7 +444,7 @@ export default class NPCController {
             type: 'vendor',
             x: vendorX,
             y: vendorY,
-            walkable: true
+            walkable: false
         };
         
         const sprite = this.scene.add.image(
@@ -113,7 +486,7 @@ export default class NPCController {
             type: 'workstation',
             x: workstationX,
             y: workstationY,
-            walkable: true
+            walkable: false
         };
         
         const sprite = this.scene.add.image(
@@ -157,7 +530,7 @@ export default class NPCController {
             npcId: 'shopOwner',
             x: shopX,
             y: shopY,
-            walkable: true,
+            walkable: false,
             schedule: 'day' // Available during day (6 AM - 10 PM)
         };
         
@@ -196,7 +569,7 @@ export default class NPCController {
             npcId: 'corruptCop',
             x: copX,
             y: copY,
-            walkable: true,
+            walkable: false,
             schedule: 'night' // Available during night (10 PM - 6 AM)
         };
         

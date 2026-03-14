@@ -22,6 +22,12 @@ export default class LevelSystem {
         playerState.xpToNextLevel = this.getXpForLevel(2);
         playerState.abilityPoints = 2; // Starting AP
         playerState.statPoints = 1; // Starting stat points
+        
+        // Ensure stats exist
+        if (!playerState.stats) {
+            playerState.stats = { intuition: 5, ability: 5, luck: 5 };
+        }
+        
         playerState.classType = playerState.stats.intuition >= playerState.stats.ability && 
                                 playerState.stats.intuition >= playerState.stats.luck ? 'intuition' :
                                 playerState.stats.ability >= playerState.stats.intuition &&
@@ -30,13 +36,13 @@ export default class LevelSystem {
 
     /**
      * Calculate XP needed for a given level
-     * Formula: level * 500
-     * Level 2 = 1000, Level 3 = 1500, etc.
+     * Curve: 400 base, increases 15% per level
+     * Level 2 = 460, Level 5 = 804, Level 10 = 1,612, Level 20 = 6,520
      * @param {number} level - Target level
      * @returns {number} XP needed
      */
     getXpForLevel(level) {
-        return level * 500;
+        return Math.floor(400 * Math.pow(1.15, level - 1));
     }
 
     /**
@@ -45,6 +51,12 @@ export default class LevelSystem {
      */
     canLevelUp() {
         const { playerState } = this.scene;
+        
+        // Ensure playerState and required properties exist
+        if (!playerState || playerState.level == null || playerState.xp == null || playerState.xpToNextLevel == null) {
+            return false;
+        }
+        
         return playerState.level < CONFIG.MAX_LEVEL && 
                playerState.xp >= playerState.xpToNextLevel;
     }

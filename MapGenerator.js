@@ -1057,12 +1057,12 @@ export function generateNeighborhoodGrid(gridWidth, gridHeight) {
     // Starting Area: Riverside (gateway to The Docks, player starts here)
     
     const layout = [
-        // Row 0 (top) - Entry from Riverside
-        ['RIVERSIDE', 'OLD_TOWN', 'OLD_TOWN', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
-        // Row 1
-        ['RIVERSIDE', 'OLD_TOWN', 'THE_MAW', 'INDUSTRIAL_ZONE', 'INDUSTRIAL_ZONE'],
-        // Row 2
-        ['RIVERSIDE', 'SKID_ROW', 'THE_FLATS', 'INDUSTRIAL_ZONE', 'THE_HARBOR'],
+        // Row 0 (top) - Big City area
+        ['RIVERSIDE_PRISON', 'DOWNTOWN', 'DOWNTOWN', 'WAREHOUSE_DISTRICT', 'WAREHOUSE_DISTRICT'],
+        // Row 1 - Big City + transition
+        ['RIVERSIDE_PRISON', 'DOWNTOWN', 'DOWNTOWN_EXPANSION', 'WAREHOUSE_DISTRICT', 'INDUSTRIAL_ZONE'],
+        // Row 2 - Original Docks (Riverside entry)
+        ['RIVERSIDE', 'OLD_TOWN', 'THE_FLATS', 'INDUSTRIAL_ZONE', 'THE_MAW'],
         // Row 3
         ['RIVERSIDE', 'SKID_ROW', 'THE_FLATS', 'SALVAGE_YARD', 'THE_HARBOR'],
         // Row 4
@@ -1633,13 +1633,13 @@ export default class MapGenerator {
         
         if (numLabs === 0) return;
         
-        // Get lab types from CONFIG
-        const labTypes = Object.keys(CONFIG.LAB_TYPES);
+        // Get lab types from local exports
+        const labTypes = Object.keys(LAB_POI_TYPES);
         
         for (let i = 0; i < numLabs; i++) {
             // Pick a random lab type
             const labTypeName = labTypes[Math.floor(this.seededRandom(0, labTypes.length))];
-            const labConfig = CONFIG.LAB_TYPES[labTypeName];
+            const labConfig = LAB_POI_TYPES[labTypeName];
             
             // Check neighborhood compatibility if specified
             if (neighborhood) {

@@ -90,6 +90,16 @@ export default class GameScene extends Phaser.Scene {
             visitedNeighborhoods: [GameScene.convertNeighborhoodToKeyStatic(this.characterData.neighborhood)],
             money: 100, // Starting money for tutorial
             hustle: CONFIG.MAX_HUSTLE,
+            hardcoreMode: undefined, // Set via in-game prompt (Normal vs Hardcore)
+            
+            // Faction reputation (factionKey -> reputation score)
+            factionReputation: {
+                THE_DON: 0,
+                THE_VIPER: 0,
+                THE_ROOK: 0,
+                THE_ICE: 0,
+                THE_SHADOWS: 0
+            },
             rawMaterials: 0,
             product: 0,
             // Specific drug inventory (legacy)
@@ -606,6 +616,83 @@ export default class GameScene extends Phaser.Scene {
         // Load icons
         this.load.image('icon-raw', 'assets/icon-raw-materials.png');
         this.load.image('icon-product', 'assets/icon-product.png');
+        
+        // === NEW AI-GENERATED SPRITES ===
+        // Equipment slots
+        this.load.image('equip-hat', 'assets/sprites/equipment/hat_slot.png');
+        this.load.image('equip-shirt', 'assets/sprites/equipment/shirt_slot.png');
+        this.load.image('equip-jacket', 'assets/sprites/equipment/jacket_slot.png');
+        this.load.image('equip-pants', 'assets/sprites/equipment/pants_slot.png');
+        this.load.image('equip-shoes', 'assets/sprites/equipment/shoes_slot.png');
+        this.load.image('equip-weapon', 'assets/sprites/equipment/weapon_slot.png');
+        this.load.image('equip-accessory1', 'assets/sprites/equipment/accessory1_slot.png');
+        this.load.image('equip-accessory2', 'assets/sprites/equipment/accessory2_slot.png');
+        
+        // UI elements
+        this.load.image('ui-health', 'assets/sprites/ui/health_bar_fill.png');
+        this.load.image('ui-heat', 'assets/sprites/ui/heat_bar_fill.png');
+        this.load.image('ui-money', 'assets/sprites/ui/money_icon.png');
+        
+        // Characters
+        this.load.image('char-male', 'assets/sprites/characters/player_male_base.png');
+        this.load.image('char-female', 'assets/sprites/characters/player_female_base.png');
+        
+        // NPCs
+        this.load.image('npc-guard-basic', 'assets/sprites/npcs/npc_guard_basic.png');
+        this.load.image('npc-guard-armed', 'assets/sprites/npcs/npc_guard_armed.png');
+        this.load.image('npc-chemist', 'assets/sprites/npcs/npc_chemist.png');
+        this.load.image('npc-runner', 'assets/sprites/npcs/npc_runner.png');
+        this.load.image('npc-grower', 'assets/sprites/npcs/npc_grower.png');
+        this.load.image('npc-dealer', 'assets/sprites/npcs/npc_dealer.png');
+        
+        // Weapons
+        this.load.image('weapon-knife', 'assets/sprites/weapons/kitchen_knife.png');
+        this.load.image('weapon-bat', 'assets/sprites/weapons/baseball_bat.png');
+        this.load.image('weapon-crowbar', 'assets/sprites/weapons/crowbar.png');
+        this.load.image('weapon-pistol', 'assets/sprites/weapons/pistol_9mm.png');
+        this.load.image('weapon-ak47', 'assets/sprites/weapons/ak47.png');
+        this.load.image('weapon-machete', 'assets/sprites/weapons/machete.png');
+        this.load.image('weapon-revolver', 'assets/sprites/weapons/revolver.png');
+        this.load.image('weapon-m4', 'assets/sprites/weapons/m4_rifle.png');
+        this.load.image('weapon-pocketknife', 'assets/sprites/weapons/pocket_knife.png');
+        
+        // Armor
+        this.load.image('armor-cap', 'assets/sprites/armor/01_light_baseball_cap.png');
+        this.load.image('armor-shirt', 'assets/sprites/armor/02_light_cotton_shirt.png');
+        this.load.image('armor-denim', 'assets/sprites/armor/03_light_denim_jacket.png');
+        this.load.image('armor-jeans', 'assets/sprites/armor/04_light_jeans.png');
+        this.load.image('armor-sneakers', 'assets/sprites/armor/05_light_sneakers.png');
+        this.load.image('armor-leather', 'assets/sprites/armor/06_medium_leather_jacket.png');
+        this.load.image('armor-kevlar', 'assets/sprites/armor/07_medium_kevlar_vest.png');
+        this.load.image('armor-combat-boots', 'assets/sprites/armor/08_medium_combat_boots.png');
+        this.load.image('armor-tactical-pants', 'assets/sprites/armor/09_medium_tactical_pants.png');
+        this.load.image('armor-swat', 'assets/sprites/armor/10_heavy_swat_gear.png');
+        this.load.image('armor-steel', 'assets/sprites/armor/11_heavy_steel_carrier.png');
+        this.load.image('armor-military', 'assets/sprites/armor/12_heavy_military_jacket.png');
+        this.load.image('armor-gas-mask', 'assets/sprites/armor/13_heavy_gas_mask.png');
+        
+        // Accessories
+        this.load.image('acc-chain', 'assets/sprites/accessories/accessory_chain_32.png');
+        this.load.image('acc-watch', 'assets/sprites/accessories/accessory_watch_32.png');
+        this.load.image('acc-ring', 'assets/sprites/accessories/accessory_ring_32.png');
+        
+        // FX
+        this.load.image('fx-bullet', 'assets/sprites/fx/fx_bullet_hit.png');
+        this.load.image('fx-melee', 'assets/sprites/fx/fx_melee_swing.png');
+        this.load.image('fx-blood', 'assets/sprites/fx/fx_blood_splat.png');
+        this.load.image('fx-muzzle', 'assets/sprites/fx/fx_muzzle_flash.png');
+        this.load.image('fx-crit', 'assets/sprites/fx/fx_critical_hit.png');
+        this.load.image('fx-siren', 'assets/sprites/fx/fx_siren.png');
+        this.load.image('fx-explosion', 'assets/sprites/fx/fx_explosion.png');
+        this.load.image('fx-smoke', 'assets/sprites/fx/fx_smoke.png');
+        this.load.image('fx-fire', 'assets/sprites/fx/fx_fire.png');
+        
+        // Interiors
+        this.load.image('interior-meth-lab', 'assets/sprites/interiors/interior_meth_lab.png');
+        this.load.image('interior-grow', 'assets/sprites/interiors/interior_grow_house.png');
+        this.load.image('interior-hydro', 'assets/sprites/interiors/interior_hydroponics.png');
+        this.load.image('interior-police', 'assets/sprites/interiors/interior_police_station.png');
+        this.load.image('interior-jail', 'assets/sprites/interiors/interior_jail_cell.png');
     }
     
     create() {
@@ -761,6 +848,21 @@ export default class GameScene extends Phaser.Scene {
         
         // Show biome intro
         this.showBiomeIntro();
+        
+        // Game mode selection for new games (not loaded)
+        // Only show if hardcoreMode hasn't been set yet
+        if (this.playerState.hardcoreMode === undefined) {
+            // Delay slightly to let the scene fully initialize
+            this.time.delayedCall(500, () => {
+                this.showGameModeSelection(() => {
+                    // Callback after mode selected - game continues normally
+                    console.log('Game mode selected:', this.playerState.hardcoreMode ? 'HARDCORE' : 'NORMAL');
+                });
+            });
+        } else {
+            // Restore the mode from loaded game
+            CONFIG.HARDCORE_MODE = this.playerState.hardcoreMode;
+        }
     }
     
     createWorld(mapData, objects) {
@@ -972,7 +1074,8 @@ export default class GameScene extends Phaser.Scene {
     showBiomeIntro() {
         const { width, height } = this.scale;
         
-        const biomeName = this.biomeType === 'block' ? 'THE BLOCK' : 'TRAP HOUSE';
+        // Get the actual neighborhood name from config
+        const neighborhoodName = CONFIG.getNeighborhoodName(this.playerState.neighborhood);
         const biomeDesc = this.biomeType === 'block' ? 
             'Dark alleys and concrete streets.\nThis is your territory now.' :
             'A dilapidated safehouse.\nYour operation starts here.';
@@ -981,9 +1084,9 @@ export default class GameScene extends Phaser.Scene {
         overlay.setScrollFactor(0);
         overlay.setDepth(1000);
         
-        const title = this.add.text(width / 2, height / 2 - 30, biomeName, {
+        const title = this.add.text(width / 2, height / 2 - 30, neighborhoodName.toUpperCase(), {
             fontFamily: 'Press Start 2P',
-            fontSize: '42px',
+            fontSize: '36px',
             color: CONFIG.COLORS.primary,
             stroke: '#000000',
             strokeThickness: 6
@@ -3585,6 +3688,195 @@ export default class GameScene extends Phaser.Scene {
             if (this.hud) this.hud.update();
             this.playerState.isMoving = false;
         });
+    }
+    
+    /**
+     * Trigger game over - called from CombatScene in hardcore mode
+     */
+    triggerGameOver() {
+        // In hardcore mode, combat death = game over
+        // Show game over screen with option to load saved game or start new
+        this.playerState.isMoving = true;
+        
+        const { width, height } = this.scale;
+        
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.95);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(1000);
+        
+        const titleText = this.add.text(width / 2, height / 2 - 100, 'GAME OVER', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '48px',
+            color: CONFIG.COLORS.danger,
+            stroke: '#000000',
+            strokeThickness: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        const reasonText = this.add.text(width / 2, height / 2 - 30, 'You were defeated in combat.\nYour empire has fallen.', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        const statsText = this.add.text(width / 2, height / 2 + 30, 
+            `Day: ${this.timeSystem?.day || 1} | Money: $${this.playerState.money}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.textDark
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+        
+        const optionsContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(1002);
+        
+        // Load Game button
+        const loadBtnBg = this.add.rectangle(width / 2 - 130, height / 2 + 120, 220, 60, 0x2a4a2a);
+        loadBtnBg.setStrokeStyle(2, 0x00ff00);
+        loadBtnBg.setInteractive({ useHandCursor: true });
+        optionsContainer.add(loadBtnBg);
+        
+        const loadBtnText = this.add.text(width / 2 - 130, height / 2 + 120, 'LOAD SAVE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: '#00ff00'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(loadBtnText);
+        
+        loadBtnBg.on('pointerover', () => loadBtnBg.setFillStyle(0x3a5a3a));
+        loadBtnBg.on('pointerout', () => loadBtnBg.setFillStyle(0x2a4a2a));
+        loadBtnBg.on('pointerup', () => {
+            overlay.destroy();
+            titleText.destroy();
+            reasonText.destroy();
+            statsText.destroy();
+            optionsContainer.destroy();
+            this.saveLoadSystem.showLoadMenu();
+        });
+        
+        // New Game button
+        const newBtnBg = this.add.rectangle(width / 2 + 130, height / 2 + 120, 220, 60, 0x4a2a2a);
+        newBtnBg.setStrokeStyle(2, 0xff4444);
+        newBtnBg.setInteractive({ useHandCursor: true });
+        optionsContainer.add(newBtnBg);
+        
+        const newBtnText = this.add.text(width / 2 + 130, height / 2 + 120, 'NEW GAME', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: '#ff4444'
+        }).setOrigin(0.5).setScrollFactor(0);
+        optionsContainer.add(newBtnText);
+        
+        newBtnBg.on('pointerover', () => newBtnBg.setFillStyle(0x6a4a4a));
+        newBtnBg.on('pointerout', () => newBtnBg.setFillStyle(0x4a2a2a));
+        newBtnBg.on('pointerup', () => {
+            this.scene.start('TitleScene');
+        });
+    }
+    
+    /**
+     * Show game mode selection UI (Normal vs Hardcore)
+     * Called at: 1) New game start, 2) After arrest/release in Big City
+     */
+    showGameModeSelection(onComplete) {
+        this.playerState.isMoving = true;
+        
+        const { width, height } = this.scale;
+        
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(3000);
+        
+        const container = this.add.container(0, 0).setScrollFactor(0).setDepth(3001);
+        
+        // Title
+        const titleText = this.add.text(width / 2, height / 2 - 180, 'CHOOSE YOUR PATH', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '28px',
+            color: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(titleText);
+        
+        // Subtitle
+        const subText = this.add.text(width / 2, height / 2 - 120, 'Select your difficulty', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(subText);
+        
+        // Normal Mode button
+        const normalBtn = this.add.rectangle(width / 2 - 180, height / 2 + 20, 300, 180, 0x1a3a1a);
+        normalBtn.setStrokeStyle(3, 0x00ff00);
+        normalBtn.setInteractive({ useHandCursor: true });
+        container.add(normalBtn);
+        
+        const normalTitle = this.add.text(width / 2 - 180, height / 2 - 40, 'NORMAL', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: '#00ff00'
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(normalTitle);
+        
+        const normalDesc = this.add.text(width / 2 - 180, height / 2 + 20, 'Death in combat\n= pass out only\n\nContinue playing\nwithout penalty', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 4
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(normalDesc);
+        
+        // Hardcore Mode button
+        const hardcoreBtn = this.add.rectangle(width / 2 + 180, height / 2 + 20, 300, 180, 0x3a1a1a);
+        hardcoreBtn.setStrokeStyle(3, 0xff4444);
+        hardcoreBtn.setInteractive({ useHandCursor: true });
+        container.add(hardcoreBtn);
+        
+        const hardcoreTitle = this.add.text(width / 2 + 180, height / 2 - 40, 'HARDCORE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: '#ff4444'
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(hardcoreTitle);
+        
+        const hardcoreDesc = this.add.text(width / 2 + 180, height / 2 + 20, 'Death in combat\n= GAME OVER\n\nHigh stakes,\nbig rewards', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.text,
+            align: 'center',
+            lineSpacing: 4
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(hardcoreDesc);
+        
+        // Hover effects
+        normalBtn.on('pointerover', () => normalBtn.setFillStyle(0x2a5a2a));
+        normalBtn.on('pointerout', () => normalBtn.setFillStyle(0x1a3a1a));
+        normalBtn.on('pointerup', () => {
+            this.playerState.hardcoreMode = false;
+            CONFIG.HARDCORE_MODE = false;
+            this.closeGameModeSelection(container, overlay);
+            if (onComplete) onComplete(false);
+        });
+        
+        hardcoreBtn.on('pointerover', () => hardcoreBtn.setFillStyle(0x5a2a2a));
+        hardcoreBtn.on('pointerout', () => hardcoreBtn.setFillStyle(0x3a1a1a));
+        hardcoreBtn.on('pointerup', () => {
+            this.playerState.hardcoreMode = true;
+            CONFIG.HARDCORE_MODE = true;
+            this.closeGameModeSelection(container, overlay);
+            if (onComplete) onComplete(true);
+        });
+    }
+    
+    /**
+     * Close game mode selection
+     */
+    closeGameModeSelection(container, overlay) {
+        container.destroy();
+        overlay.destroy();
+        this.playerState.isMoving = false;
     }
     
     /**

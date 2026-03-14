@@ -882,6 +882,10 @@ export class RiversidePoliceSystem {
         // Mark player as having been released from prison
         this.scene.playerState.justReleasedFromPrison = true;
         
+        // Reset hardcore mode choice after prison - player chooses again!
+        // (This gives them a chance to switch difficulty after the time skip)
+        this.scene.playerState.hardcoreMode = undefined;
+        
         // Show welcome message for new area
         this.scene.showFloatingText('Welcome to Big City!', CONFIG.COLORS.success);
         

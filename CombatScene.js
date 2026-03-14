@@ -197,7 +197,9 @@ export default class CombatScene {
             damage: enemyData.damage || enemyType.damage,
             xpValue: enemyType.xpValue,
             attackSpeed: enemyType.attackSpeed,
-            color: enemyType.color
+            color: enemyType.color,
+            isBoss: enemyType.isBoss || false,
+            specialAttacks: enemyType.specialAttacks || null
         };
         this.enemyHP = this.enemy.hp;
         this.enemyMaxHP = this.enemy.maxHp;
@@ -1133,20 +1135,31 @@ export default class CombatScene {
         }).setOrigin(0.5);
         defeatContainer.add(btnText);
         
-        btn.on('pointerover', () => btn.setFillStyle(0x6a4a4a));
-        btn.on('pointerout', () => btn.setFillStyle(0x4a2a2a));
-        btn.on('pointerup', () => {
+        // Handle defeat based on game mode
+        const handleDefeat = (isHardcore = false) => {
             defeatContainer.destroy();
             this.close();
-            if (this.onDefeat) this.onDefeat(false);
-        });
+            if (isHardcore) {
+                // Hardcore mode: trigger game over
+                if (this.scene.triggerGameOver) {
+                    this.scene.triggerGameOver();
+                } else if (this.onDefeat) {
+                    this.onDefeat(true); // true = death/game over
+                }
+            } else {
+                // Normal mode: just pass out
+                if (this.onDefeat) this.onDefeat(false);
+            }
+        };
+        
+        btn.on('pointerover', () => btn.setFillStyle(0x6a4a4a));
+        btn.on('pointerout', () => btn.setFillStyle(0x4a2a2a));
+        btn.on('pointerup', () => handleDefeat(CONFIG.HARDCORE_MODE));
         
         // Auto close after 5 seconds
         this.scene.time.delayedCall(5000, () => {
             if (defeatContainer) {
-                defeatContainer.destroy();
-                this.close();
-                if (this.onDefeat) this.onDefeat(false);
+                handleDefeat(CONFIG.HARDCORE_MODE);
             }
         });
     }

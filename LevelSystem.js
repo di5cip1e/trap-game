@@ -36,13 +36,13 @@ export default class LevelSystem {
 
     /**
      * Calculate XP needed for a given level
-     * Curve: 400 base, increases 15% per level
-     * Level 2 = 460, Level 5 = 804, Level 10 = 1,612, Level 20 = 6,520
+     * Curve: 350 base, increases 12% per level (slightly faster for better pacing)
+     * Level 2 = 392, Level 5 = 616, Level 10 = 1,094, Level 20 = 3,406
      * @param {number} level - Target level
      * @returns {number} XP needed
      */
     getXpForLevel(level) {
-        return Math.floor(400 * Math.pow(1.15, level - 1));
+        return Math.floor(350 * Math.pow(1.12, level - 1));
     }
 
     /**

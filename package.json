@@ -7,8 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "start": "npx serve -l 3000 -s .",
-    "dev": "npx serve -l 3000 -s .",
+    "start": "npx http-server public -p 3000",
+    "dev": "npx http-server public -p 3000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

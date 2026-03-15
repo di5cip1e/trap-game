@@ -562,8 +562,8 @@ export default class GameScene extends Phaser.Scene {
         // NOTE: Legacy single-image loading preserved for compatibility.
         // When atlas files are generated, switch to atlas loading below.
         
-        // --- ATLAS LOADING (recommended when atlas files exist) ---
-        // Uncomment these once atlas JSON files are generated:
+        // --- ATLAS LOADING (disabled - using individual images instead) ---
+        // These require atlas JSON files that don't exist yet
         /*
         this.load.atlas('tiles', 'assets/atlases/tiles.png', 'assets/atlases/tiles.json');
         this.load.atlas('ui-hud', 'assets/atlases/ui-hud.png', 'assets/atlases/ui-hud.json');
@@ -575,8 +575,8 @@ export default class GameScene extends Phaser.Scene {
         this.load.atlas('status-effects', 'assets/atlases/status-effects.png', 'assets/atlases/status-effects.json');
         */
         
-        // --- LEGACY SINGLE-IMAGE LOADING (current) ---
-        // Load game assets
+        // --- INDIVIDUAL IMAGE LOADING (using local assets) ---
+        // All these files exist in public/assets/
         this.load.image('player-top', 'assets/player-top-down.png');
         this.load.image('tile-street', 'assets/tile-street.png');
         this.load.image('tile-sidewalk', 'assets/tile-sidewalk.png');
@@ -608,6 +608,60 @@ export default class GameScene extends Phaser.Scene {
         // Load icons
         this.load.image('icon-raw', 'assets/icon-raw-materials.png');
         this.load.image('icon-product', 'assets/icon-product.png');
+        
+        // === NEW AI-GENERATED SPRITES ===
+        // Equipment slots
+        this.load.image('equip-hat', 'assets/sprites/equipment/hat_slot.png');
+        this.load.image('equip-shirt', 'assets/sprites/equipment/shirt_slot.png');
+        this.load.image('equip-jacket', 'assets/sprites/equipment/jacket_slot.png');
+        this.load.image('equip-pants', 'assets/sprites/equipment/pants_slot.png');
+        this.load.image('equip-shoes', 'assets/sprites/equipment/shoes_slot.png');
+        this.load.image('equip-weapon', 'assets/sprites/equipment/weapon_slot.png');
+        this.load.image('equip-accessory1', 'assets/sprites/equipment/accessory1_slot.png');
+        this.load.image('equip-accessory2', 'assets/sprites/equipment/accessory2_slot.png');
+        
+        // UI elements
+        this.load.image('ui-health', 'assets/sprites/ui/health_bar_fill.png');
+        this.load.image('ui-heat', 'assets/sprites/ui/heat_bar_fill.png');
+        this.load.image('ui-money', 'assets/sprites/ui/money_icon.png');
+        
+        // Characters
+        this.load.image('char-male', 'assets/sprites/characters/player_male_base.png');
+        this.load.image('char-female', 'assets/sprites/characters/player_female_base.png');
+        
+        // NPCs
+        this.load.image('npc-guard-basic', 'assets/sprites/npcs/npc_guard_basic.png');
+        this.load.image('npc-guard-armed', 'assets/sprites/npcs/npc_guard_armed.png');
+        this.load.image('npc-chemist', 'assets/sprites/npcs/npc_chemist.png');
+        this.load.image('npc-runner', 'assets/sprites/npcs/npc_runner.png');
+        this.load.image('npc-grower', 'assets/sprites/npcs/npc_grower.png');
+        this.load.image('npc-dealer', 'assets/sprites/npcs/npc_dealer.png');
+        
+        // Weapons
+        this.load.image('weapon-knife', 'assets/sprites/weapons/kitchen_knife.png');
+        this.load.image('weapon-bat', 'assets/sprites/weapons/baseball_bat.png');
+        this.load.image('weapon-crowbar', 'assets/sprites/weapons/crowbar.png');
+        this.load.image('weapon-pistol', 'assets/sprites/weapons/pistol_9mm.png');
+        this.load.image('weapon-ak47', 'assets/sprites/weapons/ak47.png');
+        this.load.image('weapon-machete', 'assets/sprites/weapons/machete.png');
+        this.load.image('weapon-revolver', 'assets/sprites/weapons/revolver.png');
+        this.load.image('weapon-m4', 'assets/sprites/weapons/m4_rifle.png');
+        
+        // Armor
+        this.load.image('armor-cap', 'assets/sprites/armor/01_light_baseball_cap.png');
+        this.load.image('armor-shirt', 'assets/sprites/armor/02_light_cotton_shirt.png');
+        this.load.image('armor-leather', 'assets/sprites/armor/06_medium_leather_jacket.png');
+        this.load.image('armor-kevlar', 'assets/sprites/armor/07_medium_kevlar_vest.png');
+        this.load.image('armor-combat-boots', 'assets/sprites/armor/08_medium_combat_boots.png');
+        this.load.image('armor-swat', 'assets/sprites/armor/10_heavy_swat_gear.png');
+        
+        // FX
+        this.load.image('fx-bullet', 'assets/sprites/fx/fx_bullet_hit.png');
+        this.load.image('fx-blood', 'assets/sprites/fx/fx_blood_splat.png');
+        this.load.image('fx-muzzle', 'assets/sprites/fx/fx_muzzle_flash.png');
+        this.load.image('fx-explosion', 'assets/sprites/fx/fx_explosion.png');
+        this.load.image('fx-fire', 'assets/sprites/fx/fx_fire.png');
+        this.load.image('fx-smoke', 'assets/sprites/fx/fx_smoke.png');
     }
     
     create() {

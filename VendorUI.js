@@ -1,6 +1,45 @@
 import Phaser from 'phaser';
 import { CONFIG } from './config.js';
 
+// Faction reputation pricing tiers
+const FACTION_PRICING = {
+    // Discounts for good reputation
+    ALLIED: { threshold: 50, multiplier: 0.80 },      // 20% discount
+    FRIENDLY: { threshold: 10, multiplier: 0.90 },    // 10% discount
+    // Markups for bad reputation
+    UNFRIENDLY: { threshold: -10, multiplier: 1.25 }, // 25% markup
+    HOSTILE: { threshold: -50, multiplier: 1.50 }     // 50% markup
+};
+
+/**
+ * Get price multiplier based on faction reputation
+ * @param {number} reputation - Faction reputation value (-100 to 100)
+ * @returns {number} Price multiplier (e.g., 0.8 for 20% off, 1.5 for 50% markup)
+ */
+function getFactionPriceMultiplier(reputation) {
+    if (reputation >= FACTION_PRICING.ALLIED.threshold) {
+        return FACTION_PRICING.ALLIED.multiplier;
+    } else if (reputation >= FACTION_PRICING.FRIENDLY.threshold) {
+        return FACTION_PRICING.FRIENDLY.multiplier;
+    } else if (reputation <= FACTION_PRICING.HOSTILE.threshold) {
+        return FACTION_PRICING.HOSTILE.multiplier;
+    } else if (reputation <= FACTION_PRICING.UNFRIENDLY.threshold) {
+        return FACTION_PRICING.UNFRIENDLY.multiplier;
+    }
+    return 1.0; // Neutral - no discount or markup
+}
+
+/**
+ * Get reputation tier label for display
+ */
+function getReputationTierLabel(reputation) {
+    if (reputation >= FACTION_PRICING.ALLIED.threshold) return 'ALLIED';
+    if (reputation >= FACTION_PRICING.FRIENDLY.threshold) return 'FRIENDLY';
+    if (reputation <= FACTION_PRICING.HOSTILE.threshold) return 'HOSTILE';
+    if (reputation <= FACTION_PRICING.UNFRIENDLY.threshold) return 'UNFRIENDLY';
+    return 'NEUTRAL';
+}
+
 export default class VendorUI {
     constructor(scene) {
         this.scene = scene;
@@ -285,17 +324,49 @@ export default class VendorUI {
         this.updateDisplay();
     }
     
+    /**
+     * Get the faction key for this vendor (for reputation-based pricing)
+     * Override this in subclasses or set vendorFaction before opening
+     */
+    getVendorFaction() {
+        // Default to THE_DON faction for generic supplier
+        // Can be overridden when opening the vendor
+        return this.vendorFaction || 'THE_DON';
+    }
+    
     getCurrentDrugPrice() {
         const selectedDrug = this.drugTypes[this.selectedDrugIndex];
         if (!selectedDrug) return 0;
         const [, drug] = selectedDrug;
         const isDrought = this.scene.calendarSystem ? this.scene.calendarSystem.isDroughtActive() : false;
-        return drug.buyPrice * (isDrought ? 2 : 1);
+        
+        // Base price with drought multiplier
+        let price = drug.buyPrice * (isDrought ? 2 : 1);
+        
+        // Apply faction reputation discount/markup
+        const factionKey = this.getVendorFaction();
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const factionMultiplier = getFactionPriceMultiplier(reputation);
+            price = Math.floor(price * factionMultiplier);
+        }
+        
+        return price;
     }
     
     getCurrentRawPrice() {
         const multiplier = this.scene.calendarSystem ? this.scene.calendarSystem.getRawMaterialCostMultiplier() : 1;
-        return CONFIG.RAW_MATERIAL_COST * multiplier;
+        let price = CONFIG.RAW_MATERIAL_COST * multiplier;
+        
+        // Apply faction reputation discount/markup
+        const factionKey = this.getVendorFaction();
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const factionMultiplier = getFactionPriceMultiplier(reputation);
+            price = Math.floor(price * factionMultiplier);
+        }
+        
+        return price;
     }
     
     updateDisplay() {
@@ -314,7 +385,22 @@ export default class VendorUI {
         const hasInventorySpace = afterPurchase <= this.scene.playerState.rawCapacity;
         
         this.qtyText.setText(this.quantity.toString());
-        this.totalText.setText(`Total: $${total}`);
+        
+        // Show faction pricing info
+        const factionKey = this.getVendorFaction();
+        let factionInfo = '';
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const tierLabel = getReputationTierLabel(reputation);
+            const multiplier = getFactionPriceMultiplier(reputation);
+            if (multiplier !== 1.0) {
+                const discountText = multiplier < 1.0 
+                    ? `${Math.round((1 - multiplier) * 100)}% OFF`
+                    : `${Math.round((multiplier - 1) * 100)}% UP`;
+                factionInfo = ` [${tierLabel} ${discountText}]`;
+            }
+        }
+        this.totalText.setText(`Total: $${total}${factionInfo}`);
         
         // Update buy button state - must have both money AND inventory space
         if (canAfford && hasInventorySpace) {
@@ -475,7 +561,15 @@ export default class VendorUI {
      */
     buyAmmo() {
         const player = this.scene.playerState;
-        const ammoCost = CONFIG.EQUIPMENT.pistol?.ammoCost || 25; // Default to 25 if not defined
+        let ammoCost = CONFIG.EQUIPMENT.pistol?.ammoCost || 25; // Default to 25 if not defined
+        
+        // Apply faction reputation discount/markup
+        const factionKey = this.getVendorFaction();
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const factionMultiplier = getFactionPriceMultiplier(reputation);
+            ammoCost = Math.floor(ammoCost * factionMultiplier);
+        }
         
         // Check if player has a pistol
         if (!player.equipment.pistol) {

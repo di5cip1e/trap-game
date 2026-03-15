@@ -752,6 +752,9 @@ export default class GameScene extends Phaser.Scene {
         this.supplierUI = new SupplierUI(this);
         this.tutorialUI = new TutorialUI(this);
         
+        // Player Manager (for faction reputation, etc.)
+        this.playerManager = new PlayerManager(this, this.playerState);
+        
         // Quest System
         this.questSystem = new QuestSystem(this);
         this.questUI = new QuestUI(this);

@@ -18,7 +18,8 @@ export const ENEMY_TYPES = {
         xpValue: 30,
         attackSpeed: 1500,
         color: 0xaa6644,
-        description: 'A basic street thug'
+        description: 'A basic street thug',
+        faction: 'THE_DON'
     },
     gangster: {
         name: 'Gangster',
@@ -28,7 +29,8 @@ export const ENEMY_TYPES = {
         xpValue: 50,
         attackSpeed: 1200,
         color: 0x8844aa,
-        description: 'Organized crime member'
+        description: 'Organized crime member',
+        faction: 'THE_DON'
     },
     enforcer: {
         name: 'Enforcer',
@@ -38,7 +40,8 @@ export const ENEMY_TYPES = {
         xpValue: 80,
         attackSpeed: 1000,
         color: 0xaa4444,
-        description: 'Muscle for the organization'
+        description: 'Muscle for the organization',
+        faction: 'THE_DON'
     },
     boss: {
         name: 'Boss',
@@ -49,6 +52,7 @@ export const ENEMY_TYPES = {
         attackSpeed: 800,
         color: 0xffcc00,
         description: 'Major crime figure',
+        faction: 'THE_DON',
         isBoss: true,
         specialAttacks: {
             // Area attack: hits harder, described as powerful blow
@@ -1021,6 +1025,19 @@ export default class CombatScene {
         
         // Grant XP
         const leveledUp = this.scene.levelSystem?.grantBattleXP(this.enemy);
+        
+        // NEW: Apply faction reputation penalty for killing faction members
+        if (this.enemy.faction && this.scene.playerManager) {
+            const faction = this.enemy.faction;
+            const repLoss = -20; // CONFIG.FACTION_REPUTATION.REP_LOSS_KILL
+            this.scene.playerManager.changeFactionReputation(faction, repLoss, 'Killed: ' + this.enemy.name);
+            
+            // Check if player became hostile (spawn rate increases)
+            const currentRep = this.scene.playerManager.getFactionReputation(faction);
+            if (currentRep <= -50) {
+                this.scene.showFloatingText(`WARNING: ${faction} now HOSTILE!`, '#ff0000');
+            }
+        }
         
         // Show victory screen
         const { width, height } = this.scene.scale;

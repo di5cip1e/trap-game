@@ -139,6 +139,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 1000, reputation: 15 },
                 faction: 'The Don',
+                factionReward: { faction: 'THE_DON', amount: 10 },
                 difficulty: 'medium'
             },
             
@@ -151,6 +152,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 2000, reputation: 20 },
                 faction: 'The Don',
+                factionReward: { faction: 'THE_DON', amount: 15 },
                 difficulty: 'hard'
             },
             
@@ -163,6 +165,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 500, reputation: 10 },
                 faction: 'Viper',
+                factionReward: { faction: 'THE_VIPER', amount: 5 },
                 difficulty: 'easy'
             },
             
@@ -175,6 +178,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 1500, reputation: 15 },
                 faction: 'Viper',
+                factionReward: { faction: 'THE_VIPER', amount: 10 },
                 difficulty: 'medium'
             },
             
@@ -187,6 +191,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 1500, reputation: 15 },
                 faction: 'Rook',
+                factionReward: { faction: 'THE_ROOK', amount: 10 },
                 difficulty: 'medium'
             },
             
@@ -199,6 +204,7 @@ export default class QuestSystem {
                 ],
                 rewards: { money: 1000, reputation: 10 },
                 faction: 'Rook',
+                factionReward: { faction: 'THE_ROOK', amount: 8 },
                 difficulty: 'easy'
             },
             
@@ -608,6 +614,13 @@ export default class QuestSystem {
             if (currentRel === 'neutral') {
                 this.setFactionRelationship(quest.faction, 'allied');
             }
+        }
+        
+        // NEW: Grant faction reputation from quest
+        if (quest.factionReward && this.scene.playerManager) {
+            const { faction, amount } = quest.factionReward;
+            this.scene.playerManager.changeFactionReputation(faction, amount, 'Quest: ' + quest.title);
+            this.scene.showFloatingText(`+${amount} ${faction} Rep`, '#00ffff');
         }
         
         // Mark complete

@@ -1,6 +1,56 @@
 import Phaser from 'phaser';
 import { CONFIG } from './config.js';
 
+// Faction reputation pricing tiers
+const FACTION_PRICING = {
+    // Discounts for good reputation
+    ALLIED: { threshold: 50, multiplier: 0.80 },      // 20% discount
+    FRIENDLY: { threshold: 10, multiplier: 0.90 },    // 10% discount
+    // Markups for bad reputation
+    UNFRIENDLY: { threshold: -10, multiplier: 1.25 }, // 25% markup
+    HOSTILE: { threshold: -50, multiplier: 1.50 }     // 50% markup
+};
+
+/**
+ * Get price multiplier based on faction reputation
+ * @param {number} reputation - Faction reputation value (-100 to 100)
+ * @returns {number} Price multiplier (e.g., 0.8 for 20% off, 1.5 for 50% markup)
+ */
+function getFactionPriceMultiplier(reputation) {
+    if (reputation >= FACTION_PRICING.ALLIED.threshold) {
+        return FACTION_PRICING.ALLIED.multiplier;
+    } else if (reputation >= FACTION_PRICING.FRIENDLY.threshold) {
+        return FACTION_PRICING.FRIENDLY.multiplier;
+    } else if (reputation <= FACTION_PRICING.HOSTILE.threshold) {
+        return FACTION_PRICING.HOSTILE.multiplier;
+    } else if (reputation <= FACTION_PRICING.UNFRIENDLY.threshold) {
+        return FACTION_PRICING.UNFRIENDLY.multiplier;
+    }
+    return 1.0; // Neutral - no discount or markup
+}
+
+/**
+ * Get reputation tier label for display
+ */
+function getReputationTierLabel(reputation) {
+    if (reputation >= FACTION_PRICING.ALLIED.threshold) return 'ALLIED';
+    if (reputation >= FACTION_PRICING.FRIENDLY.threshold) return 'FRIENDLY';
+    if (reputation <= FACTION_PRICING.HOSTILE.threshold) return 'HOSTILE';
+    if (reputation <= FACTION_PRICING.UNFRIENDLY.threshold) return 'UNFRIENDLY';
+    return 'NEUTRAL';
+}
+
+/**
+ * Convert supplier gang ID to faction key
+ * e.g., 'theDon' -> 'THE_DON', 'viper' -> 'THE_VIPER'
+ */
+function getSupplierFactionKey(supplierId) {
+    if (!supplierId) return 'THE_DON';
+    // Convert camelCase to UPPER_SNAKE_CASE with THE_ prefix
+    const upper = supplierId.toUpperCase();
+    return `THE_${upper}`;
+}
+
 export default class SupplierUI {
     constructor(scene) {
         this.scene = scene;
@@ -100,10 +150,29 @@ export default class SupplierUI {
         }).setOrigin(0, 0.5);
         this.container.add(qualityText);
         
-        // Price
-        const price = this.scene.supplierSystem.getPrice(supplier.id);
+        // Price - get base price from supplier system and apply faction reputation
+        const basePrice = this.scene.supplierSystem.getPrice(supplier.id);
+        const factionKey = getSupplierFactionKey(supplier.id);
+        let finalPrice = basePrice;
+        let factionDiscountText = '';
+        
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const factionMultiplier = getFactionPriceMultiplier(reputation);
+            finalPrice = Math.floor(basePrice * factionMultiplier);
+            
+            // Get tier label for display
+            const tierLabel = getReputationTierLabel(reputation);
+            if (factionMultiplier !== 1.0) {
+                const discountText = factionMultiplier < 1.0 
+                    ? `(-${Math.round((1 - factionMultiplier) * 100)}%)`
+                    : `(+${Math.round((factionMultiplier - 1) * 100)}%)`;
+                factionDiscountText = ` [${tierLabel} ${discountText}]`;
+            }
+        }
+        
         const priceText = this.scene.add.text(width / 2 - 180, statsY + 25, 
-            `Price: $${price}/unit`, {
+            `Price: $${finalPrice}/unit${factionDiscountText}`, {
             fontFamily: 'Arial',
             fontSize: '14px',
             color: CONFIG.COLORS.text
@@ -212,7 +281,17 @@ export default class SupplierUI {
     buySupplies() {
         if (!this.currentSupplier) return;
         
-        const price = this.scene.supplierSystem.getPrice(this.currentSupplier.id);
+        // Get base price and apply faction reputation multiplier
+        const basePrice = this.scene.supplierSystem.getPrice(this.currentSupplier.id);
+        const factionKey = getSupplierFactionKey(this.currentSupplier.id);
+        let price = basePrice;
+        
+        if (this.scene.playerManager) {
+            const reputation = this.scene.playerManager.getFactionReputation(factionKey);
+            const factionMultiplier = getFactionPriceMultiplier(reputation);
+            price = Math.floor(basePrice * factionMultiplier);
+        }
+        
         const player = this.scene.playerState;
         
         // Check player money

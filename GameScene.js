@@ -695,6 +695,53 @@ export default class GameScene extends Phaser.Scene {
         this.load.image('interior-jail', 'assets/sprites/interiors/interior_jail_cell.png');
     }
     
+    // ==========================================
+    // DAY/NIGHT CYCLE VISUALS
+    // ==========================================
+    
+    createDayNightOverlay() {
+        const { width, height } = this.scale;
+        
+        this.nightOverlay = this.add.rectangle(
+            width / 2, height / 2,
+            width * 3, height * 3,
+            0x000033, 0
+        );
+        this.nightOverlay.setScrollFactor(0).setDepth(9000);
+        
+        this.duskOverlay = this.add.rectangle(
+            width / 2, height / 2,
+            width * 3, height * 3,
+            0xFF6B35, 0
+        );
+        this.duskOverlay.setScrollFactor(0).setDepth(8999);
+        
+        this.updateDayNightOverlay();
+    }
+    
+    updateDayNightOverlay() {
+        if (!this.timeSystem || !this.nightOverlay) return;
+        
+        const hour = this.timeSystem.getHour();
+        let nightAlpha = 0, duskAlpha = 0;
+        
+        if (hour >= 22 || hour < 5) {
+            nightAlpha = 0.4;
+        } else if (hour >= 5 && hour < 7) {
+            nightAlpha = 0.4 - ((hour - 5) / 2) * 0.4;
+            duskAlpha = 0.2 * ((hour - 5) / 2);
+        } else if (hour >= 18 && hour < 20) {
+            duskAlpha = 0.3 * ((hour - 18) / 2);
+            nightAlpha = 0.1 * ((hour - 18) / 2);
+        } else if (hour >= 20 && hour < 22) {
+            nightAlpha = 0.1 + ((hour - 20) / 2) * 0.3;
+            duskAlpha = 0.3 - ((hour - 20) / 2) * 0.3;
+        }
+        
+        this.tweens.add({ targets: this.nightOverlay, alpha: nightAlpha, duration: 2000 });
+        this.tweens.add({ targets: this.duskOverlay, alpha: duskAlpha, duration: 2000 });
+    }
+    
     create() {
         const { width, height } = this.scale;
         
@@ -843,6 +890,9 @@ export default class GameScene extends Phaser.Scene {
         // Camera setup
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
         this.cameras.main.setZoom(1.2);
+        
+        // NEW: Day/Night cycle visual overlay
+        this.createDayNightOverlay();
         
         // Bind time advance to movement
         this.events.on('playerMoved', () => {
@@ -3623,6 +3673,9 @@ export default class GameScene extends Phaser.Scene {
         
         // Advance time
         this.timeSystem.advanceTime(CONFIG.MINUTES_PER_MOVE);
+        
+        // Update day/night overlay
+        this.updateDayNightOverlay();
         
         // Update UI
         if (this.hud) this.hud.update();

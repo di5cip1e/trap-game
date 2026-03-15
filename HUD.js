@@ -264,6 +264,13 @@ export default class HUD {
             color: CONFIG.COLORS.primary
         }).setScrollFactor(0).setDepth(502);
         
+        // Faction Reputation display
+        this.factionText = this.scene.add.text(leftMargin + 400, topY + 75, 'Factions: Neutral', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '9px',
+            color: CONFIG.COLORS.text
+        }).setScrollFactor(0).setDepth(502);
+        
         // Ability Points indicator
         this.apText = this.scene.add.text(leftMargin + 200, topY, '', {
             fontFamily: 'Press Start 2P',
@@ -615,6 +622,27 @@ export default class HUD {
         const statPoints = player.statPoints || 0;
         
         this.levelText.setText(`LVL ${level} | SP: ${statPoints}`);
+        
+        // NEW: Update Faction Reputation display
+        if (this.scene.playerManager) {
+            const factions = ['THE_DON', 'THE_VIPER', 'THE_ROOK', 'THE_ICE', 'THE_SHADOWS'];
+            let factionDisplay = '';
+            factions.forEach(f => {
+                const rep = this.scene.playerManager.getFactionReputation(f);
+                if (rep !== 0) {
+                    let tier = 'NEU';
+                    let color = CONFIG.COLORS.text;
+                    if (rep >= 50) { tier = 'ALLY'; color = '#00ffff'; }
+                    else if (rep >= 10) { tier = 'FRND'; color = '#66ff66'; }
+                    else if (rep <= -50) { tier = 'HOST'; color = '#ff0000'; }
+                    else if (rep <= -10) { tier = 'UNFR'; color = '#ff6600'; }
+                    factionDisplay += `${f.replace('THE_','')}:${rep > 0 ? '+'+rep : rep}[${tier}] `;
+                }
+            });
+            if (this.factionText) {
+                this.factionText.setText(factionDisplay || 'Factions: Neutral');
+            }
+        }
         
         // Update XP bar
         const xpPercent = Math.min(1, xp / xpToNext);

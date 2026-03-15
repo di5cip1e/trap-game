@@ -24,5 +24,10 @@
   </head>
   <body>
     <script type="module" src="main.js"></script>
+    <script>
+      window.onerror = function(msg, url, line) {
+        document.body.innerHTML = '<pre style="color:white;padding:20px;">Error: ' + msg + '\nLine: ' + line + '</pre>';
+      };
+    </script>
   </body>
 </html>

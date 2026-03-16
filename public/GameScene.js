@@ -749,9 +749,6 @@ export default class GameScene extends Phaser.Scene {
         // Initialize class type and starting skills based on highest stat
         this.initializeClassAndSkills();
         
-        // NEW: Combat System
-        this.combatScene = new CombatScene(this);
-        
         // NEW: Achievements System
         this.achievements = new Achievements(this);
         
@@ -1648,8 +1645,9 @@ export default class GameScene extends Phaser.Scene {
         }
         
         // Update combat scene if active
-        if (this.combatScene && this.combatScene.isActive) {
-            this.combatScene.update();
+        const combatScene = this.scene.get('CombatScene');
+        if (combatScene && combatScene.isActive) {
+            combatScene.update();
             return;
         }
         
@@ -2568,9 +2566,13 @@ export default class GameScene extends Phaser.Scene {
             damage: ENEMY_TYPES[enemyType].damage
         };
         
-        this.combatScene.startCombat(enemyData, 
-            // Victory callback
-            (playerWon) => {
+        // Launch combat as overlay scene
+        this.scene.pause();
+        this.scene.launch('CombatScene', {
+            gameScene: this,
+            enemyData: enemyData,
+            onVictory: (playerWon) => {
+                this.scene.resume();
                 this.playerState.isMoving = false;
                 
                 if (playerWon) {
@@ -2591,8 +2593,8 @@ export default class GameScene extends Phaser.Scene {
                     if (this.hud) this.hud.update();
                 }
             },
-            // Defeat callback
-            (playerWon) => {
+            onDefeat: (playerWon) => {
+                this.scene.resume();
                 this.playerState.isMoving = false;
                 
                 if (!playerWon) {

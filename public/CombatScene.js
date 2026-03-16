@@ -608,6 +608,13 @@ export default class CombatScene {
     enemyAttack() {
         if (!this.isActive || this.enemyHP <= 0) return;
         
+        // Check if player is invisible (Shadow Walk skill)
+        if (this.activeEffects.invisible) {
+            this.showDamageText('MISS!', this.scene.scale.width / 2, 480, 0xaaaaaa);
+            this.updateCombatUI();
+            return;
+        }
+        
         let damage = this.enemy.damage;
         
         // Apply player defense
@@ -658,6 +665,7 @@ export default class CombatScene {
                 // 50% chance to make enemy flee
                 if (Math.random() < 0.5) {
                     this.showDamageText('ENEMY FLED!', this.scene.scale.width / 2, 300, 0x00ff00);
+                    this.enemyFled = true; // Mark as fled, not killed
                     this.enemyHP = 0;
                 } else {
                     this.showDamageText('Intimidate failed!', this.scene.scale.width / 2, 300, 0xffaa00);
@@ -786,8 +794,15 @@ export default class CombatScene {
     victory() {
         this.isActive = false;
         
-        // Grant XP
-        const leveledUp = this.scene.levelSystem?.grantBattleXP(this.enemy);
+        // Check if enemy fled (no rewards for fleeing)
+        const enemyFled = this.enemyFled === true;
+        
+        // Grant XP only if enemy was actually defeated (not fled)
+        let xpGained = 0;
+        if (!enemyFled) {
+            const leveledUp = this.scene.levelSystem?.grantBattleXP(this.enemy);
+            xpGained = this.enemy.xpValue;
+        }
         
         // Show victory screen
         const { width, height } = this.scene.scale;
@@ -802,24 +817,30 @@ export default class CombatScene {
         panel.setStrokeStyle(4, 0x00ff00);
         victoryContainer.add(panel);
         
-        const title = this.scene.add.text(width / 2, height / 2 - 80, 'VICTORY!', {
+        const titleText = enemyFled ? 'ENEMY FLED!' : 'VICTORY!';
+        const titleColor = enemyFled ? '#ffaa00' : '#00ff00';
+        
+        const title = this.scene.add.text(width / 2, height / 2 - 80, titleText, {
             fontFamily: 'Press Start 2P',
             fontSize: '48px',
-            color: '#00ff00',
+            color: titleColor,
             stroke: '#000000',
             strokeThickness: 6
         }).setOrigin(0.5);
         victoryContainer.add(title);
         
-        const detailText = this.scene.add.text(width / 2, height / 2, 
-            `Enemy defeated: ${this.enemy.name}\nXP Gained: ${this.enemy.xpValue}${leveledUp ? '\nLEVEL UP!' : ''}`, {
+        const detailText = enemyFled 
+            ? `Enemy: ${this.enemy.name}\nNo XP gained (fled)`
+            : `Enemy defeated: ${this.enemy.name}\nXP Gained: ${xpGained}`;
+        
+        const text = this.scene.add.text(width / 2, height / 2, detailText, {
             fontFamily: 'Press Start 2P',
             fontSize: '16px',
             color: '#ffffff',
             align: 'center',
             lineSpacing: 8
         }).setOrigin(0.5);
-        victoryContainer.add(detailText);
+        victoryContainer.add(text);
         
         // Continue button
         const btn = this.scene.add.rectangle(width / 2, height / 2 + 100, 200, 50, 0x2a4a2a);

@@ -2852,10 +2852,20 @@ export default class GameScene extends Phaser.Scene {
             this.policeEncounterUI.open((playerEscaped) => {
                 this.playerState.isMoving = false;
                 if (!playerEscaped) {
-                    // Lose product and extra cash
+                    // Lose drugs and extra cash
+                    const drugs = this.playerState.drugs || {};
+                    let drugsLost = 0;
+                    for (const key in drugs) {
+                        const lost = Math.floor((drugs[key] || 0) * 0.5);
+                        drugsLost += lost;
+                        drugs[key] -= lost;
+                    }
+                    // Also take legacy product
                     const productLost = Math.floor(this.playerState.product * 0.5);
-                    const cashLost = Math.floor(this.playerState.money * 0.3);
+                    drugsLost += productLost;
                     this.playerState.product -= productLost;
+                    
+                    const cashLost = Math.floor(this.playerState.money * 0.3);
                     this.playerState.money -= cashLost;
                     this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 30);
                     

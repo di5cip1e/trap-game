@@ -497,26 +497,42 @@ export default class SafehouseUI {
         });
     }
     
-    createSmallButton(x, y, w, h, label, onClick) {
-        const btn = this.scene.add.container(x, y);
+    createSmallButton(x, y, width, height, text, callback) {
+        const container = this.scene.add.container(x, y);
         
-        const bg = this.scene.add.rectangle(0, 0, w, h, 0x2a2a4a);
-        bg.setStrokeStyle(2, 0x666666);
-        btn.add(bg);
+        const bg = this.scene.add.rectangle(0, 0, width, height, 0x2a2a2a);
+        bg.setStrokeStyle(2, 0xffcc00);
         
-        const text = this.scene.add.text(0, 0, label, {
-            fontFamily: 'Arial',
-            fontSize: '11px',
-            color: '#ffffff'
+        const label = this.scene.add.text(0, 0, text, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: CONFIG.COLORS.text
         }).setOrigin(0.5);
-        btn.add(text);
         
-        bg.setInteractive({ useHandCursor: true });
-        bg.on('pointerover', () => bg.setFillStyle(0x3a3a5a));
-        bg.on('pointerout', () => bg.setFillStyle(0x2a2a4a));
-        bg.on('pointerup', onClick);
+        container.add([bg, label]);
+        container.setSize(width, height);
+        container.setInteractive({ useHandCursor: true });
         
-        return btn;
+        container.on('pointerover', () => {
+            bg.setFillStyle(0x3a3a3a);
+            label.setColor(CONFIG.COLORS.primary);
+        });
+        
+        container.on('pointerout', () => {
+            bg.setFillStyle(0x2a2a2a);
+            label.setColor(CONFIG.COLORS.text);
+        });
+        
+        container.on('pointerdown', () => {
+            bg.setFillStyle(0x1a1a1a);
+        });
+        
+        container.on('pointerup', () => {
+            bg.setFillStyle(0x3a3a3a);
+            if (callback) callback();
+        });
+        
+        return container;
     }
 
     rest() {

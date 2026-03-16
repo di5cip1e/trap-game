@@ -4062,48 +4062,52 @@ export default class GameScene extends Phaser.Scene {
     }
     
     processRunnerSales() {
-        const product = this.playerState.runnerProduct;
+        const amount = this.playerState.runnerProduct;
+        const drugKey = this.playerState.runnerDrug || 'Weed';
         
         // Get neighborhood bonus for runner success
         const neighborhoodBonus = this.playerState.neighborhoodBonus;
         const runnerSuccessBonus = neighborhoodBonus?.runnerSuccessBonus || 0;
         
-        // Calculate bust chance based on intuition (reduced by neighborhood bonus)
+        // Calculate bust chance based on intuition
         const intuition = this.playerState.stats.intuition || 0;
         const baseBustChance = CONFIG.RUNNER_BUST_BASE_CHANCE - (intuition * CONFIG.RUNNER_INTUITION_REDUCTION);
-        // Apply neighborhood bonus - reduces bust chance further (success = avoiding bust)
-        const adjustedBustChance = Math.max(0, baseBustChance - runnerSuccessBonus);
-        
-        const bustChance = adjustedBustChance;
+        const bustChance = Math.max(0, baseBustChance - runnerSuccessBonus);
         
         // Roll for bust
-        const busted = Math.random() < bustChance;
-        
-        if (busted) {
-            // Runner got busted - lose all product
+        if (Math.random() < bustChance) {
+            // Runner got busted - lose all assigned product
             this.playerState.runnerProduct = 0;
+            this.playerState.runnerDrug = null;
             this.showRunnerMessage('RUNNER BUSTED!', 
-                `Your runner got caught!\nLost ${product} product.`, 
+                `Your runner got caught!\nLost ${amount} ${drugKey}.`, 
                 CONFIG.COLORS.danger);
         } else {
-            // Successful sale (affected by drought)
+            // Successful sale
+            const drugConfig = CONFIG.DRUG_TYPES[drugKey];
+            const basePrice = drugConfig ? drugConfig.sellPrice : CONFIG.PRODUCT_SELL_PRICE;
+            
             const droughtMultiplier = this.calendarSystem.getProductSellMultiplier();
-            const totalRevenue = product * CONFIG.PRODUCT_SELL_PRICE * droughtMultiplier;
+            const demandMultiplier = this.getNeighborhoodDemandMultiplier(drugKey);
+            
+            // Calculate revenue (runners don't get the player's personal equipment bonuses)
+            const totalRevenue = Math.floor(amount * basePrice * droughtMultiplier * demandMultiplier);
             const runnerCut = Math.floor(totalRevenue * CONFIG.RUNNER_CUT);
             const playerProfit = totalRevenue - runnerCut;
             
-            // Add money to player's stash (not direct inventory)
+            // Add money to player's stash
             this.playerState.money += playerProfit;
             this.playerState.runnerProduct = 0;
+            this.playerState.runnerDrug = null;
             this.checkRankChange();
             
-            // Quest: Check progress on money gain
-            if (this.questSystem) {
-                this.questSystem.checkChapterProgress();
-            }
+            if (this.questSystem) this.questSystem.checkChapterProgress();
+            
+            // Track sales history for demand mechanics
+            this.updateNeighborhoodHistory(drugKey, amount);
             
             this.showRunnerMessage('RUNNER SUCCESS!', 
-                `Sold ${product} product\nRevenue: $${totalRevenue}\nRunner Cut: $${runnerCut}\nYour Profit: $${playerProfit}`, 
+                `Sold ${amount} ${drugKey}\nRevenue: $${totalRevenue}\nRunner Cut: $${runnerCut}\nYour Profit: $${playerProfit}`, 
                 CONFIG.COLORS.success);
         }
         

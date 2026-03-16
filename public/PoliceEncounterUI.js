@@ -1,297 +1,374 @@
 import Phaser from 'phaser';
 import { CONFIG } from './config.js';
 
-export default class PoliceEncounterUI {
+export default class RelationshipUI {
     constructor(scene) {
         this.scene = scene;
         this.isOpen = false;
-        this.callback = null;
+        this.currentNPC = null;
     }
     
-    open(callback) {
+    open(npc) {
         if (this.isOpen) return;
         
         this.isOpen = true;
-        this.callback = callback;
+        this.currentNPC = npc;
         
         const { width, height } = this.scene.scale;
         
-        // Create UI container
-        this.container = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(2000);
+        // Darken background
+        this.overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+        this.overlay.setScrollFactor(0);
+        this.overlay.setDepth(900);
+        this.overlay.setInteractive();
         
-        // Dark overlay
-        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
-        this.container.add(overlay);
+        // Main panel
+        this.panel = this.scene.add.image(width / 2, height / 2, 'panel');
+        this.panel.setDisplaySize(800, 650);
+        this.panel.setScrollFactor(0);
+        this.panel.setDepth(901);
+        this.panel.setAlpha(0.95);
         
-        // Title panel
-        const titlePanel = this.scene.add.rectangle(width / 2, 150, 800, 100, 0x2a2a2a);
-        titlePanel.setStrokeStyle(4, 0x0066ff);
-        this.container.add(titlePanel);
+        // Container for all UI elements
+        this.container = this.scene.add.container(0, 0);
+        this.container.setScrollFactor(0);
+        this.container.setDepth(902);
         
-        const titleText = this.scene.add.text(width / 2, 150, 'POLICE ARREST!', {
+        // NPC specific content
+        const npcData = this.getNPCData(npc);
+        const loyalty = this.scene.playerState.npcRelationships[npc.npcId];
+        
+        // Title
+        const title = this.scene.add.text(width / 2, height / 2 - 280, npcData.name, {
             fontFamily: 'Press Start 2P',
-            fontSize: '32px',
-            color: '#0066ff',
+            fontSize: '28px',
+            color: npcData.color,
             stroke: '#000000',
-            strokeThickness: 6
+            strokeThickness: 4
         }).setOrigin(0.5);
-        this.container.add(titleText);
+        this.container.add(title);
         
-        // Police message panel
-        const messagePanel = this.scene.add.rectangle(width / 2, 280, 900, 180, 0x1a1a1a);
-        messagePanel.setStrokeStyle(3, 0x0066ff);
-        this.container.add(messagePanel);
-        
-        const policeMessage = this.getPoliceMessage();
-        const messageText = this.scene.add.text(width / 2, 280, policeMessage, {
+        // Subtitle
+        const subtitle = this.scene.add.text(width / 2, height / 2 - 240, npcData.role, {
             fontFamily: 'Press Start 2P',
-            fontSize: '18px',
+            fontSize: '14px',
+            color: CONFIG.COLORS.textDark
+        }).setOrigin(0.5);
+        this.container.add(subtitle);
+        
+        // Loyalty display
+        const loyaltyPanel = this.scene.add.rectangle(width / 2, height / 2 - 180, 700, 80, 0x1a1a1a);
+        loyaltyPanel.setStrokeStyle(3, npcData.color);
+        this.container.add(loyaltyPanel);
+        
+        const loyaltyLabel = this.scene.add.text(width / 2, height / 2 - 200, 'LOYALTY', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.textDark
+        }).setOrigin(0.5);
+        this.container.add(loyaltyLabel);
+        
+        // Loyalty bar
+        const loyaltyBarWidth = 400;
+        const loyaltyBarHeight = 25;
+        const loyaltyBarX = width / 2 - loyaltyBarWidth / 2;
+        const loyaltyBarY = height / 2 - 170;
+        
+        const loyaltyBarBg = this.scene.add.rectangle(
+            loyaltyBarX, loyaltyBarY,
+            loyaltyBarWidth, loyaltyBarHeight,
+            0x2a2a2a
+        ).setOrigin(0, 0.5).setStrokeStyle(2, 0xffcc00);
+        this.container.add(loyaltyBarBg);
+        
+        const loyaltyPercent = loyalty / CONFIG.MAX_LOYALTY;
+        const loyaltyBarFill = this.scene.add.rectangle(
+            loyaltyBarX + 2, loyaltyBarY,
+            (loyaltyBarWidth - 4) * loyaltyPercent, loyaltyBarHeight - 4,
+            this.getLoyaltyColor(loyalty)
+        ).setOrigin(0, 0.5);
+        this.container.add(loyaltyBarFill);
+        
+        const loyaltyText = this.scene.add.text(width / 2, loyaltyBarY, `${loyalty}/${CONFIG.MAX_LOYALTY}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+        this.container.add(loyaltyText);
+        
+        // Dialogue
+        const dialogue = this.scene.add.text(width / 2, height / 2 - 100, npcData.dialogue, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
             color: CONFIG.COLORS.text,
             align: 'center',
-            wordWrap: { width: 850 }
+            wordWrap: { width: 700 },
+            lineSpacing: 8
         }).setOrigin(0.5);
-        this.container.add(messageText);
+        this.container.add(dialogue);
         
-        // Instructions
-        const instructionText = this.scene.add.text(width / 2, 400, 'Fight or Submit?', {
+        // Perk status
+        const perkActive = loyalty >= CONFIG.LOYALTY_THRESHOLD;
+        const perkPanel = this.scene.add.rectangle(width / 2, height / 2 - 10, 720, 100, 0x1a1a1a);
+        perkPanel.setStrokeStyle(3, perkActive ? CONFIG.COLORS.success : CONFIG.COLORS.textDark);
+        this.container.add(perkPanel);
+        
+        const perkTitle = this.scene.add.text(width / 2, height / 2 - 40, 
+            perkActive ? 'PERK ACTIVE' : 'PERK LOCKED', {
             fontFamily: 'Press Start 2P',
-            fontSize: '16px',
-            color: CONFIG.COLORS.secondary,
-            align: 'center'
+            fontSize: '14px',
+            color: perkActive ? CONFIG.COLORS.success : CONFIG.COLORS.textDark
         }).setOrigin(0.5);
-        this.container.add(instructionText);
+        this.container.add(perkTitle);
         
-        // Stat choice buttons - Police always uses Ability
-        const statLabels = [
-            { key: 'intuition', label: 'INTUITION', color: CONFIG.COLORS.primary },
-            { key: 'ability', label: 'ABILITY', color: CONFIG.COLORS.secondary },
-            { key: 'luck', label: 'LUCK', color: CONFIG.COLORS.success }
-        ];
-        
-        let xOffset = -320;
-        statLabels.forEach(stat => {
-            this.createStatButton(stat.label, width / 2 + xOffset, 500, stat.key, stat.color);
-            xOffset += 320;
-        });
-        
-        // Warning text
-        const warningText = this.scene.add.text(width / 2, height - 100,
-            'Officer uses ABILITY | Win: Escape (-30 Hustle) | Lose: BUSTED (-50% Cash, -All Product)', {
-            fontFamily: 'Press Start 2P',
-            fontSize: '12px',
-            color: CONFIG.COLORS.danger,
+        const perkDesc = this.scene.add.text(width / 2, height / 2, npcData.perk, {
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            color: CONFIG.COLORS.text,
             align: 'center',
-            wordWrap: { width: 900 }
+            wordWrap: { width: 680 }
         }).setOrigin(0.5);
-        this.container.add(warningText);
-    }
-    
-    getPoliceMessage() {
-        const messages = [
-            "FREEZE! You're under arrest!\nResist and face the consequences!",
-            "You picked the wrong day\nto deal on my beat!",
-            "Hands where I can see them!\nYou're going down!",
-            "End of the line, punk!\nTime to pay for your crimes!",
-            "I've been watching you.\nLet's see how tough you really are!"
-        ];
-        return messages[Math.floor(Math.random() * messages.length)];
-    }
-    
-    createStatButton(label, x, y, stat, color) {
-        const { width, height } = this.scene.scale;
+        this.container.add(perkDesc);
         
-        // Get player's stat value
-        const statValue = this.scene.playerState.stats[stat];
-        
-        // Button background
-        const button = this.scene.add.rectangle(x, y, 280, 120, 0x2a2a2a);
-        button.setStrokeStyle(3, color);
-        button.setInteractive({ useHandCursor: true });
-        this.container.add(button);
-        
-        // Stat name
-        const nameText = this.scene.add.text(x, y - 20, label, {
+        const perkHint = this.scene.add.text(width / 2, height / 2 + 25, 
+            perkActive ? '✓ Requirement Met' : `Need Loyalty ${CONFIG.LOYALTY_THRESHOLD}+`, {
             fontFamily: 'Press Start 2P',
-            fontSize: '18px',
-            color: color
+            fontSize: '10px',
+            color: perkActive ? CONFIG.COLORS.success : CONFIG.COLORS.danger
         }).setOrigin(0.5);
-        this.container.add(nameText);
+        this.container.add(perkHint);
         
-        // Stat value
-        const valueText = this.scene.add.text(x, y + 20, `Power: ${statValue}`, {
+        // Bribe options
+        const optionsY = height / 2 + 100;
+        
+        const optionsTitle = this.scene.add.text(width / 2, optionsY, 'IMPROVE RELATIONSHIP', {
             fontFamily: 'Press Start 2P',
-            fontSize: '16px',
-            color: CONFIG.COLORS.text
+            fontSize: '14px',
+            color: CONFIG.COLORS.secondary
         }).setOrigin(0.5);
-        this.container.add(valueText);
+        this.container.add(optionsTitle);
         
-        // Hover effects
-        button.on('pointerover', () => {
-            button.setFillStyle(0x3a3a3a);
-            button.setStrokeStyle(4, 0xffff00);
-        });
+        // Cash bribe button
+        const canAffordCash = this.scene.playerState.money >= CONFIG.BRIBE_CASH_AMOUNT;
+        const cashButton = this.createBribeButton(
+            width / 2 - 180, optionsY + 60,
+            `GIVE $${CONFIG.BRIBE_CASH_AMOUNT}`,
+            `+${CONFIG.BRIBE_CASH_LOYALTY} Loyalty`,
+            canAffordCash,
+            () => this.giveBribe('cash')
+        );
+        this.container.add(cashButton);
         
-        button.on('pointerout', () => {
-            button.setFillStyle(0x2a2a2a);
-            button.setStrokeStyle(3, color);
-        });
+        // Product bribe button - find available drug
+        const drugs = this.scene.playerState.drugs || {};
+        const availableDrug = Object.keys(drugs).find(k => 
+            drugs[k] >= CONFIG.BRIBE_PRODUCT_AMOUNT && 
+            (!CONFIG.DRUG_TYPES[k] || !CONFIG.DRUG_TYPES[k].isPrecursor)
+        );
+        const canAffordProduct = !!availableDrug;
         
-        button.on('pointerdown', () => {
-            this.handleChoice(stat);
+        const productButton = this.createBribeButton(
+            width / 2 + 180, optionsY + 60,
+            `GIVE ${CONFIG.BRIBE_PRODUCT_AMOUNT} DRUGS`,
+            `+${CONFIG.BRIBE_PRODUCT_LOYALTY} Loyalty`,
+            canAffordProduct,
+            () => this.giveBribe('product', availableDrug)
+        );
+        this.container.add(productButton);
+        
+        // Close button
+        const closeButton = this.createButton(width / 2, height / 2 + 270, 200, 40, 'LEAVE', () => {
+            this.close();
         });
+        this.container.add(closeButton);
     }
     
-    handleChoice(playerChoice) {
-        // Police always uses 'ability'
-        const policeChoice = 'ability';
-        
-        // Determine winner based on RPS rules
-        // Intuition > Ability > Luck > Intuition
-        const playerWins = this.checkWin(playerChoice, policeChoice);
-        
-        this.close();
-        
-        // Show result
-        this.showResult(playerChoice, playerWins);
-    }
-    
-    checkWin(playerChoice, policeChoice) {
-        if (playerChoice === policeChoice) {
-            // Tie - player wins if their stat is higher than a random police roll
-            const policeRoll = Math.floor(Math.random() * 10) + 1;
-            return this.scene.playerState.stats[playerChoice] > policeRoll;
-        }
-        
-        // RPS logic: Intuition > Ability > Luck > Intuition
-        if (playerChoice === 'intuition' && policeChoice === 'ability') return true;
-        if (playerChoice === 'ability' && policeChoice === 'luck') return true;
-        if (playerChoice === 'luck' && policeChoice === 'intuition') return true;
-        
-        return false;
-    }
-    
-    showResult(playerChoice, playerWins) {
-        const { width, height } = this.scene.scale;
-        
-        // Create result overlay
-        const resultContainer = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(2001);
-        
-        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
-        resultContainer.add(overlay);
-        
-        if (playerWins) {
-            // Player escapes
-            this.scene.playerState.hustle -= CONFIG.POLICE_ESCAPE_HUSTLE_COST;
-            this.scene.playerState.hustle = Math.max(0, this.scene.playerState.hustle);
-            
-            const escapeText = this.scene.add.text(width / 2, height / 2 - 60, 'ESCAPED!', {
-                fontFamily: 'Press Start 2P',
-                fontSize: '56px',
+    getNPCData(npc) {
+        if (npc.npcId === 'shopOwner') {
+            return {
+                name: 'Shop Owner',
+                role: 'Local Business Owner',
                 color: CONFIG.COLORS.success,
-                stroke: '#000000',
-                strokeThickness: 8
-            }).setOrigin(0.5);
-            resultContainer.add(escapeText);
-            
-            const detailText = this.scene.add.text(width / 2, height / 2 + 20, 
-                `You used ${playerChoice.toUpperCase()}\n` +
-                `Officer used ABILITY\n\n` +
-                `You barely got away!\n-${CONFIG.POLICE_ESCAPE_HUSTLE_COST} Hustle`, {
-                fontFamily: 'Press Start 2P',
-                fontSize: '18px',
-                color: CONFIG.COLORS.text,
-                align: 'center',
-                lineSpacing: 10
-            }).setOrigin(0.5);
-            resultContainer.add(detailText);
-            
-            this.scene.hud.update();
-            
-        } else {
-            // Player gets busted
-            const cashLoss = Math.floor(this.scene.playerState.money * CONFIG.POLICE_BUST_CASH_PENALTY);
-            
-            // NEW: Tally up and confiscate all specific drugs
-            let totalDrugsLost = 0;
-            if (this.scene.playerState.drugs) {
-                for (const drugKey in this.scene.playerState.drugs) {
-                    totalDrugsLost += this.scene.playerState.drugs[drugKey] || 0;
-                    this.scene.playerState.drugs[drugKey] = 0; // Wipe the stash
-                }
-            }
-            
-            // Catch legacy product just in case
-            totalDrugsLost += this.scene.playerState.product || 0;
-            this.scene.playerState.product = 0;
-            
-            this.scene.playerState.money = Math.max(0, this.scene.playerState.money - cashLoss);
-            
-            const bustText = this.scene.add.text(width / 2, height / 2 - 60, 'BUSTED!', {
-                fontFamily: 'Press Start 2P',
-                fontSize: '56px',
-                color: CONFIG.COLORS.danger,
-                stroke: '#000000',
-                strokeThickness: 8
-            }).setOrigin(0.5);
-            resultContainer.add(bustText);
-            
-            const detailText = this.scene.add.text(width / 2, height / 2 + 20,
-                `You used ${playerChoice.toUpperCase()}\n` +
-                `Officer used ABILITY\n\n` +
-                `You've been arrested!\n` +
-                `Lost $${cashLoss}\n` +
-                `Lost ${totalDrugsLost} Drugs/Precursors\n\n` +
-                `Released at Safehouse...`, {
-                fontFamily: 'Press Start 2P',
-                fontSize: '18px',
-                color: CONFIG.COLORS.text,
-                align: 'center',
-                lineSpacing: 10
-            }).setOrigin(0.5);
-            resultContainer.add(detailText);
-            
-            this.scene.hud.update();
-            
-            // Teleport player to safehouse after delay
-            this.scene.time.delayedCall(4000, () => {
-                resultContainer.destroy();
-                this.teleportToSafehouse();
-                if (this.callback) this.callback(playerWins);
-            });
+                dialogue: '"Hey there! Always good to see\na friendly face around here.\nBusiness treating you well?"',
+                perk: 'SAFE HAVEN: Pass by during a police chase to instantly clear all Heat.'
+            };
+        } else if (npc.npcId === 'corruptCop') {
+            return {
+                name: 'Officer "Payday"',
+                role: 'Corrupt Detective',
+                color: '#6699ff',
+                dialogue: '"Look who it is. You know,\nI could make your life easier...\nor a lot harder. Your choice."',
+                perk: 'GET OUT OF JAIL FREE: First arrest each day is automatically avoided.'
+            };
+        }
+    }
+    
+    getLoyaltyColor(loyalty) {
+        if (loyalty >= 8) return 0x00ff00; // Bright green
+        if (loyalty >= CONFIG.LOYALTY_THRESHOLD) return 0x66ff66; // Green
+        if (loyalty >= 3) return 0xffcc00; // Yellow
+        return 0xff6600; // Orange
+    }
+    
+    giveBribe(type) {
+        const loyalty = this.scene.playerState.npcRelationships[this.currentNPC.npcId];
+        
+        if (loyalty >= CONFIG.MAX_LOYALTY) {
+            this.showMessage('Relationship maxed out!', CONFIG.COLORS.success);
             return;
         }
         
-        // Auto-close result for escape after 3 seconds
-        this.scene.time.delayedCall(3000, () => {
-            resultContainer.destroy();
-            if (this.callback) this.callback(playerWins);
+        if (type === 'cash') {
+            if (this.scene.playerState.money < CONFIG.BRIBE_CASH_AMOUNT) {
+                this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
+                return;
+            }
+            
+            this.scene.playerState.money -= CONFIG.BRIBE_CASH_AMOUNT;
+            this.scene.playerState.npcRelationships[this.currentNPC.npcId] = 
+                Math.min(CONFIG.MAX_LOYALTY, loyalty + CONFIG.BRIBE_CASH_LOYALTY);
+            
+            this.showMessage(`+${CONFIG.BRIBE_CASH_LOYALTY} Loyalty`, CONFIG.COLORS.success);
+            
+        } else if (type === 'product') {
+            const hasDrugs = Object.values(this.scene.playerState.drugs || {}).some(v => v >= CONFIG.BRIBE_PRODUCT_AMOUNT);
+            if (!hasDrugs) {
+                this.showMessage('Not enough Product!', CONFIG.COLORS.danger);
+                return;
+            }
+            
+            this.scene.playerState.product -= CONFIG.BRIBE_PRODUCT_AMOUNT;
+            this.scene.playerState.npcRelationships[this.currentNPC.npcId] = 
+                Math.min(CONFIG.MAX_LOYALTY, loyalty + CONFIG.BRIBE_PRODUCT_LOYALTY);
+            
+            this.showMessage(`+${CONFIG.BRIBE_PRODUCT_LOYALTY} Loyalty`, CONFIG.COLORS.success);
+        }
+        
+        this.scene.hud.update();
+        
+        // Refresh UI
+        this.close();
+        this.open(this.currentNPC);
+    }
+    
+    showMessage(text, color) {
+        const { width, height } = this.scene.scale;
+        
+        const msg = this.scene.add.text(width / 2, height / 2 + 230, text, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(950);
+        
+        this.scene.tweens.add({
+            targets: msg,
+            alpha: 0,
+            y: height / 2 + 200,
+            duration: 1500,
+            onComplete: () => msg.destroy()
         });
     }
     
-    teleportToSafehouse() {
-        // Move player to safehouse position
-        const safehouse = this.scene.worldObjects.find(obj => obj.type === 'safehouse');
-        if (safehouse) {
-            this.scene.playerState.gridX = safehouse.x + 2;
-            this.scene.playerState.gridY = safehouse.y;
+    createBribeButton(x, y, mainText, subText, canAfford, callback) {
+        const container = this.scene.add.container(x, y);
+        
+        const bg = this.scene.add.rectangle(0, 0, 320, 80, canAfford ? 0x2a2a2a : 0x1a1a1a);
+        bg.setStrokeStyle(2, canAfford ? 0xffcc00 : 0x666666);
+        
+        const label = this.scene.add.text(0, -12, mainText, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: canAfford ? CONFIG.COLORS.text : CONFIG.COLORS.textDark
+        }).setOrigin(0.5);
+        
+        const sublabel = this.scene.add.text(0, 12, subText, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.success
+        }).setOrigin(0.5);
+        
+        container.add([bg, label, sublabel]);
+        container.setSize(320, 80);
+        
+        if (canAfford) {
+            container.setInteractive({ useHandCursor: true });
             
-            const targetX = this.scene.playerState.gridX * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
-            const targetY = this.scene.playerState.gridY * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2;
+            container.on('pointerover', () => {
+                bg.setFillStyle(0x3a3a3a);
+                label.setColor(CONFIG.COLORS.primary);
+            });
             
-            this.scene.player.setPosition(targetX, targetY);
+            container.on('pointerout', () => {
+                bg.setFillStyle(0x2a2a2a);
+                label.setColor(CONFIG.COLORS.text);
+            });
+            
+            container.on('pointerdown', () => {
+                bg.setFillStyle(0x1a1a1a);
+            });
+            
+            container.on('pointerup', () => {
+                bg.setFillStyle(0x3a3a3a);
+                if (callback) callback();
+            });
         }
+        
+        return container;
+    }
+    
+    createButton(x, y, width, height, text, callback) {
+        const container = this.scene.add.container(x, y);
+        
+        const bg = this.scene.add.rectangle(0, 0, width, height, 0x2a2a2a);
+        bg.setStrokeStyle(2, 0xffcc00);
+        
+        const label = this.scene.add.text(0, 0, text, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text
+        }).setOrigin(0.5);
+        
+        container.add([bg, label]);
+        container.setSize(width, height);
+        container.setInteractive({ useHandCursor: true });
+        
+        container.on('pointerover', () => {
+            bg.setFillStyle(0x3a3a3a);
+            label.setColor(CONFIG.COLORS.primary);
+        });
+        
+        container.on('pointerout', () => {
+            bg.setFillStyle(0x2a2a2a);
+            label.setColor(CONFIG.COLORS.text);
+        });
+        
+        container.on('pointerdown', () => {
+            bg.setFillStyle(0x1a1a1a);
+        });
+        
+        container.on('pointerup', () => {
+            bg.setFillStyle(0x3a3a3a);
+            if (callback) callback();
+        });
+        
+        return container;
     }
     
     close() {
         if (!this.isOpen) return;
-        
         this.isOpen = false;
         
-        if (this.container) {
-            this.container.destroy();
-            this.container = null;
-        }
+        if (this.overlay) this.overlay.destroy();
+        if (this.panel) this.panel.destroy();
+        if (this.container) this.container.destroy();
         
-        this.callback = null;
+        this.overlay = null;
+        this.panel = null;
+        this.container = null;
+        this.currentNPC = null;
     }
 }

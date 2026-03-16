@@ -232,17 +232,18 @@ export default class RelationshipUI {
             
             this.showMessage(`+${CONFIG.BRIBE_CASH_LOYALTY} Loyalty`, CONFIG.COLORS.success);
             
-        } else if (type === 'product') {
-            if (this.scene.playerState.product < CONFIG.BRIBE_PRODUCT_AMOUNT) {
-                this.showMessage('Not enough Product!', CONFIG.COLORS.danger);
+        } else if (type === 'product' && drugKey) {
+            const drugs = this.scene.playerState.drugs || {};
+            if ((drugs[drugKey] || 0) < CONFIG.BRIBE_PRODUCT_AMOUNT) {
+                this.showMessage(`Not enough ${drugKey}!`, CONFIG.COLORS.danger);
                 return;
             }
             
-            this.scene.playerState.product -= CONFIG.BRIBE_PRODUCT_AMOUNT;
+            drugs[drugKey] -= CONFIG.BRIBE_PRODUCT_AMOUNT;
             this.scene.playerState.npcRelationships[this.currentNPC.npcId] = 
                 Math.min(CONFIG.MAX_LOYALTY, loyalty + CONFIG.BRIBE_PRODUCT_LOYALTY);
             
-            this.showMessage(`+${CONFIG.BRIBE_PRODUCT_LOYALTY} Loyalty`, CONFIG.COLORS.success);
+            this.showMessage(`+${CONFIG.BRIBE_PRODUCT_LOYALTY} Loyalty (Gave ${drugKey})`, CONFIG.COLORS.success);
         }
         
         this.scene.hud.update();

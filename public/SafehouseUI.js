@@ -357,26 +357,42 @@ export default class SafehouseUI {
         this.container.add(confirmBtn);
     }
     
-    createButton(x, y, w, h, label, onClick) {
-        const btn = this.scene.add.container(x, y);
+    createButton(x, y, width, height, text, callback) {
+        const container = this.scene.add.container(x, y);
         
-        const bg = this.scene.add.rectangle(0, 0, w, h, 0x2a2a4a);
-        bg.setStrokeStyle(2, 0x666666);
-        btn.add(bg);
+        const bg = this.scene.add.rectangle(0, 0, width, height, 0x2a2a2a);
+        bg.setStrokeStyle(2, 0xffcc00);
         
-        const text = this.scene.add.text(0, 0, label, {
+        const label = this.scene.add.text(0, 0, text, {
             fontFamily: 'Press Start 2P',
-            fontSize: '12px',
-            color: '#ffffff'
+            fontSize: '16px',
+            color: CONFIG.COLORS.text
         }).setOrigin(0.5);
-        btn.add(text);
         
-        bg.setInteractive({ useHandCursor: true });
-        bg.on('pointerover', () => bg.setFillStyle(0x3a3a5a));
-        bg.on('pointerout', () => bg.setFillStyle(0x2a2a4a));
-        bg.on('pointerup', onClick);
+        container.add([bg, label]);
+        container.setSize(width, height);
+        container.setInteractive({ useHandCursor: true });
         
-        return btn;
+        container.on('pointerover', () => {
+            bg.setFillStyle(0x3a3a3a);
+            label.setColor(CONFIG.COLORS.primary);
+        });
+        
+        container.on('pointerout', () => {
+            bg.setFillStyle(0x2a2a2a);
+            label.setColor(CONFIG.COLORS.text);
+        });
+        
+        container.on('pointerdown', () => {
+            bg.setFillStyle(0x1a1a1a);
+        });
+        
+        container.on('pointerup', () => {
+            bg.setFillStyle(0x3a3a3a);
+            if (callback) callback();
+        });
+        
+        return container;
     }
     
     clearUI() {
@@ -503,27 +519,56 @@ export default class SafehouseUI {
     }
 
     rest() {
-        const player = this.scene.playerState;
-        const restHustle = CONFIG.MAX_HUSTLE;
-        const prevHustle = player.hustle;
-        player.hustle = restHustle;
+        const tier = CONFIG.SAFEHOUSE_TIERS[this.scene.playerState.safehouseTier];
         
-        // Time passes when you rest
-        if (this.scene.timeSystem) {
-            this.scene.timeSystem.advanceTime(6 * 60); // 6 hours
+        const restoreAmount = CONFIG.MAX_HUSTLE * tier.hustleRestore;
+        this.scene.playerState.hustle = Math.min(CONFIG.MAX_HUSTLE, restoreAmount);
+        
+        this.scene.playerState.heat = Math.max(0, 
+            this.scene.playerState.heat - CONFIG.HEAT_DECAY_PER_SLEEP);
+        
+        this.scene.timeSystem.advanceToNextDay();
+        this.scene.hud.update();
+        
+        this.close();
+        this.showRestMessage(tier.name);
+    }
+    
+    showRestMessage(tierName) {
+        const { width, height } = this.scene.scale;
+        
+        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(1000);
+        
+        const calendar = this.scene.calendarSystem.getCalendarInfo();
+        const activeEvents = calendar.activeEvents;
+        
+        let messageText = `You sleep in your ${tierName}...\n\nDay ${this.scene.timeSystem.day} - ${calendar.dayName}`;
+        
+        if (activeEvents.length > 0) {
+            messageText += '\n\n';
+            activeEvents.forEach(event => {
+                messageText += `⚠ ${event.name} ⚠\n${event.description}\n`;
+            });
         }
-        if (this.scene.calendarSystem) {
-            this.scene.calendarSystem.advanceDay();
-        }
         
-        // Heat decreases while resting
-        player.heat = Math.max(0, player.heat - 10);
+        const message = this.scene.add.text(width / 2, height / 2, messageText, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '18px',
+            color: CONFIG.COLORS.success,
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 4,
+            lineSpacing: 5
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
         
-        this.showMessage(`Rested! Hustle: ${prevHustle} → ${player.hustle}`, CONFIG.COLORS.success);
-        if (this.scene.hud) this.scene.hud.update();
+        const delay = activeEvents.length > 0 ? 3500 : 2000;
         
-        // Refresh display
-        this.renderMainMenu();
+        this.scene.time.delayedCall(delay, () => {
+            overlay.destroy();
+            message.destroy();
+        });
     }
     
 

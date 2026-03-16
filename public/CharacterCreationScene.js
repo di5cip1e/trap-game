@@ -61,8 +61,6 @@ export default class CharacterCreationScene extends Phaser.Scene {
         
         graphics.destroy();
     }
-    }
-    
     create() {
         const { width, height } = this.scale;
         

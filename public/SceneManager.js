@@ -345,12 +345,13 @@ export default class SceneManager {
             (1 + playerPriceBonus)
         );
 
-        const amountToSell = Math.min(buyer.purchaseAmount || 1, this.playerState.product);
+        const drugs = this.playerState.drugs || {};
+        const amountToSell = Math.min(buyer.purchaseAmount || 1, drugs[soldDrug] || 0);
         const totalEarned = finalPrice * amountToSell;
 
         // Apply sale
         this.addMoney(totalEarned);
-        this.playerState.product -= amountToSell;
+        if (soldDrug && drugs[soldDrug]) drugs[soldDrug] -= amountToSell;
 
         // Track achievement: First Sale
         EventBus.emit('achievement:trackSale');
@@ -416,27 +417,34 @@ export default class SceneManager {
             this.scene.policeEncounterUI.open((playerEscaped) => {
                 this.playerState.isMoving = false;
                 if (!playerEscaped) {
-                    const productLost = Math.floor(this.playerState.product * 0.5);
+                    const drugs = this.playerState.drugs || {};
+                    let drugsLost = 0;
+                    for (const key in drugs) {
+                        const lost = Math.floor(drugs[key] * 0.5);
+                        drugsLost += lost;
+                        drugs[key] -= lost;
+                    }
                     const cashLost = Math.floor(this.playerState.money * 0.3);
-                    this.playerState.product -= productLost;
                     this.spendMoney(cashLost);
                     this.addHeat(30);
-                    this.scene.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, this.scene.CONFIG.COLORS.danger);
+                    this.scene.showFloatingText(`BUSTED! Lost drugs, $${cashLost}`, this.scene.CONFIG.COLORS.danger);
                     this.scene.hud.update();
                 }
             });
         } else {
             const heatPenalty = this.playerState.heat * this.scene.CONFIG.HEAT_PENALTY_PER_POINT;
             const droughtMultiplier = this.scene.calendarSystem.getProductSellMultiplier();
+            const soldDrug = Object.keys(this.playerState.drugs || {}).find(k => (this.playerState.drugs[k] || 0) > 0);
             const finalPrice = Math.floor(
-                this.scene.CONFIG.PRODUCT_SELL_PRICE * (1 - heatPenalty) * droughtMultiplier
+                (this.scene.CONFIG.DRUG_TYPES[soldDrug]?.sellPrice || 100) * (1 - heatPenalty) * droughtMultiplier
             );
 
-            const amountToSell = Math.min(buyer.purchaseAmount || 2, this.playerState.product);
+            const drugs = this.playerState.drugs || {};
+            const amountToSell = Math.min(buyer.purchaseAmount || 2, drugs[soldDrug] || 0);
             const totalEarned = finalPrice * amountToSell;
 
             this.addMoney(totalEarned);
-            this.playerState.product -= amountToSell;
+            if (soldDrug && drugs[soldDrug]) drugs[soldDrug] -= amountToSell;
 
             this.npcController.removeBuyer(buyer);
             this.scene.hud.update();

@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 /**
  * WorldMapScene.js - Pokemon-style world navigation for TRAP
  * Shows all neighborhoods and allows travel between unlocked areas

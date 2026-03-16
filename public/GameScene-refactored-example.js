@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 /**
  * GameScene refactoring example - showing how to integrate controllers
  * This is the PATTERN to follow, not the complete refactored file

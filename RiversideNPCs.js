@@ -357,11 +357,12 @@ export const RIVERSIDE_QUESTS = {
     'riverside_first_delivery': {
         id: 'riverside_first_delivery',
         title: 'First Delivery',
-        description: 'Make your first delivery to a customer in Riverside. Learn the ropes.',
+        description: 'Make your first delivery to a customer in Riverside. Sally wants 2 Weed.',
         giver: 'kim-shopkeeper',
         location: 'Riverside Diner',
+        requirements: { drugs: { 'Weed': 2 } },
         objectives: [
-            { type: 'deliver', target: 'sally-diner', description: 'Deliver supplies to Sally at the diner', amount: 2 }
+            { type: 'deliver', target: 'sally-diner', description: 'Deliver 2 Weed to Sally at the diner' }
         ],
         rewards: {
             cash: 100,
@@ -420,8 +421,9 @@ export const RIVERSIDE_QUESTS = {
         description: 'Dr. Chen needs a reliable supplier for her "special" customers.',
         giver: 'pharmacist',
         location: 'Riverside Pharmacy',
+        requirements: { drugs: { 'Cocaine': 3 } },
         objectives: [
-            { type: 'supply', description: 'Provide medical-grade supplies', amount: 3 }
+            { type: 'supply', description: 'Provide 3 Cocaine' }
         ],
         rewards: {
             cash: 250,

@@ -576,15 +576,47 @@ export default class QuestSystem {
     }
     
     /**
-     * Complete a side quest
+     * Checks if the player has the required specific items to turn in the quest
+     */
+    canCompleteQuest(questId) {
+        const quest = this.activeQuests.find(q => q.id === questId);
+        if (!quest) return false;
+        
+        // Check if quest has specific drug requirements
+        if (quest.requirements && quest.requirements.drugs) {
+            const playerDrugs = this.scene.playerState.drugs || {};
+            for (const [drugName, requiredAmount] of Object.entries(quest.requirements.drugs)) {
+                if ((playerDrugs[drugName] || 0) < requiredAmount) {
+                    return false; // Player doesn't have enough of this specific drug
+                }
+            }
+        }
+        return true; // Requirements met (or no requirements)
+    }
+    
+    /**
+     * Complete a side quest and deduct required items
      */
     completeQuest(questId) {
+        if (!this.canCompleteQuest(questId)) {
+            this.scene.showFloatingText('Missing required items!', CONFIG.COLORS.danger);
+            return false;
+        }
+
         const questIndex = this.activeQuests.findIndex(q => q.id === questId);
         if (questIndex === -1) return false;
         
         const quest = this.activeQuests[questIndex];
         // Use quest.rewards directly - it's already copied when quest was accepted
         const rewards = quest.rewards;
+        
+        // NEW: Deduct the required items from the player's stash
+        if (quest.requirements && quest.requirements.drugs) {
+            for (const [drugName, requiredAmount] of Object.entries(quest.requirements.drugs)) {
+                this.scene.playerState.drugs[drugName] -= requiredAmount;
+            }
+            if (this.scene.hud) this.scene.hud.update(); // Refresh inventory display
+        }
         
         // Grant rewards
         if (rewards.money) {

@@ -11,9 +11,6 @@ export default class SafehouseUI {
         // UI State trackers for the new dynamic drug system
         this.selectedStashItem = null;
         this.selectedRunnerDrug = null;
-        
-        // Initialize stash (stores items: { id: string, amount: number })
-        this.stash = [];
     }
     
     open() {
@@ -419,9 +416,10 @@ export default class SafehouseUI {
 
     depositItem(itemId, amount) {
         const tier = CONFIG.SAFEHOUSE_TIERS[this.scene.playerState.safehouseTier];
+        const stash = this.scene.playerState.safehouseStash || [];
         
         // Check if we already have a slot with this item to stack
-        let slot = this.stash.find(s => s.id === itemId);
+        let slot = stash.find(s => s.id === itemId);
         if (!slot) {
             if (this.stash.length >= tier.stashSlots) {
                 this.showQuickMessage('Stash is full!', CONFIG.COLORS.danger);
@@ -440,13 +438,15 @@ export default class SafehouseUI {
         
         // Add to stash
         slot.amount += amount;
+        this.scene.playerState.safehouseStash = stash; // Ensure reference is saved
         
         this.scene.hud.update();
         this.renderMainMenu();
     }
     
     withdrawItem(slotIndex) {
-        const item = this.stash[slotIndex];
+        const stash = this.scene.playerState.safehouseStash || [];
+        const item = stash[slotIndex];
         if (!item) return;
         
         // Check player capacity
@@ -470,7 +470,8 @@ export default class SafehouseUI {
         }
         
         // Remove from stash
-        this.stash.splice(slotIndex, 1);
+        stash.splice(slotIndex, 1);
+        this.scene.playerState.safehouseStash = stash;
         
         this.scene.hud.update();
         this.renderMainMenu();

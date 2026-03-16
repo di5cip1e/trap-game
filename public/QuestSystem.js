@@ -592,10 +592,6 @@ export default class QuestSystem {
             this.scene.showFloatingText(`+$${rewards.money}`, '#00ff00');
         }
         
-        if (rewards.reputation) {
-            this.addReputation(rewards.reputation);
-        }
-        
         // NEW: Grant XP for side quest completion
         if (this.scene.levelSystem) {
             const xpReward = 50 + Math.floor(Math.random() * 50); // 50-100 XP

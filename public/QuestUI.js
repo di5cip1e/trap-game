@@ -274,7 +274,7 @@ export default class QuestUI {
             });
         }
         
-        // Faction relationships
+        // Faction relationships - use PlayerManager
         this.logFactionsTitle = this.scene.add.text(
             width / 2 - 350, height / 2 + 50,
             'FACTION RELATIONSHIPS:', {
@@ -284,26 +284,32 @@ export default class QuestUI {
             }
         ).setScrollFactor(0).setDepth(701);
         
-        let factionY = height / 2 + 75;
-        const factions = Object.keys(questSystem.factionRelationships);
-        const shortFactions = ['Don', 'Viper', 'Rook', 'Ghost', 'Iron', 'Fang', 
-                               'Storm', 'Shade', 'Blaze', 'Frost', 'Razor', 'Byte'];
-        
-        factions.forEach((faction, index) => {
-            const rel = questSystem.factionRelationships[faction];
-            const color = rel === 'allied' ? CONFIG.COLORS.success : 
-                         rel === 'hostile' ? CONFIG.COLORS.danger : 
-                         CONFIG.COLORS.textDark;
+        if (this.scene.playerManager) {
+            const factions = this.scene.playerManager.getAllFactionReputations();
+            const factionKeys = Object.keys(factions).slice(0, 12);
             
-            this.scene.add.text(
-                width / 2 - 350 + ((index % 6) * 130), factionY + Math.floor(index / 6) * 20,
-                `${shortFactions[index]}: ${rel.charAt(0).toUpperCase() + rel.slice(1)}`, {
-                    fontFamily: 'Press Start 2P',
-                    fontSize: '8px',
-                    color: color
-                }
-            ).setScrollFactor(0).setDepth(701);
-        });
+            factionKeys.forEach((key, index) => {
+                const repValue = factions[key] || 0;
+                let rel = 'Neutral';
+                let color = CONFIG.COLORS.textDark;
+                
+                if (repValue >= 25) { rel = 'Allied'; color = CONFIG.COLORS.success; }
+                else if (repValue >= 10) { rel = 'Friendly'; color = '#00ffaa'; }
+                else if (repValue <= -25) { rel = 'Hostile'; color = CONFIG.COLORS.danger; }
+                else if (repValue <= -10) { rel = 'Unfriendly'; color = '#ffaa00'; }
+                
+                const displayName = key.replace('THE_', '').replace('_', ' ');
+                
+                this.scene.add.text(
+                    width / 2 - 350 + ((index % 6) * 130), height / 2 + 75 + Math.floor(index / 6) * 20,
+                    `${displayName}: ${rel}`, {
+                        fontFamily: 'Press Start 2P',
+                        fontSize: '8px',
+                        color: color
+                    }
+                ).setScrollFactor(0).setDepth(701);
+            });
+        }
         
         // Close button
         this.logCloseBtn = this.scene.add.rectangle(

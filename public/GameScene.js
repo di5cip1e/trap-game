@@ -5112,9 +5112,15 @@ export default class GameScene extends Phaser.Scene {
         
         // Save button - opens save slot selection
         const saveBtn = this.createMenuButton(width / 2 + 150, buttonY, 280, 50, 'SAVE GAME', () => {
-            this.showSaveSlotSelection();
+            this.showSaveSlotSelection('save');
         });
         this.pauseContainer.add(saveBtn);
+        
+        // Load button - opens load slot selection
+        const loadBtn = this.createMenuButton(width / 2 - 150, buttonY, 280, 50, 'LOAD GAME', () => {
+            this.showSaveSlotSelection('load');
+        });
+        this.pauseContainer.add(loadBtn);
         
         // Stats display
         const statsY = height / 2 + 250;
@@ -5161,7 +5167,7 @@ export default class GameScene extends Phaser.Scene {
     /**
      * Show save slot selection UI
      */
-    showSaveSlotSelection() {
+    showSaveSlotSelection(mode = 'save') {
         const { width, height } = this.scale;
         
         // Close pause menu first
@@ -5184,8 +5190,9 @@ export default class GameScene extends Phaser.Scene {
         this.pauseContainer.setScrollFactor(0);
         this.pauseContainer.setDepth(902);
         
-        // Title
-        const title = this.add.text(width / 2, height / 2 - 250, 'SELECT SAVE SLOT', {
+        // Title - changes based on mode
+        const titleText = mode === 'save' ? 'SELECT SAVE SLOT' : 'SELECT LOAD SLOT';
+        const title = this.add.text(width / 2, height / 2 - 250, titleText, {
             fontFamily: 'Press Start 2P',
             fontSize: '28px',
             color: CONFIG.COLORS.primary,
@@ -5260,9 +5267,13 @@ export default class GameScene extends Phaser.Scene {
                 this.pauseContainer.add(timeText);
             }
             
-            // Click handler
+            // Click handler - handles both save and load modes
             slotBg.on('pointerdown', () => {
-                this.saveToSlot(index);
+                if (mode === 'save') {
+                    this.saveToSlot(index);
+                } else {
+                    this.loadFromSlot(index);
+                }
             });
             
             // Hover effect

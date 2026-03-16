@@ -2874,36 +2874,45 @@ export default class GameScene extends Phaser.Scene {
                         this.riversidePolice.addSuspicionFromAction('high_heat', 15);
                     }
                     
-                    this.showFloatingText(`BUSTED! Lost ${productLost} product, $${cashLost}`, CONFIG.COLORS.danger);
+                    this.showFloatingText(`BUSTED! Lost ${drugsLost} Drugs, $${cashLost}`, CONFIG.COLORS.danger);
                     if (this.hud) this.hud.update();
                 }
             });
         } else {
             // Cop buys but doesn't bust (low heat)
+            const drugs = this.playerState.drugs || {};
+            const availableDrugs = Object.keys(drugs).filter(k => drugs[k] > 0 && (!CONFIG.DRUG_TYPES[k] || !CONFIG.DRUG_TYPES[k].isPrecursor));
+            
+            let soldDrug = buyer.preferredDrug && drugs[buyer.preferredDrug] > 0 ? buyer.preferredDrug : 
+                (availableDrugs.length > 0 ? availableDrugs[0] : 'Weed');
+            
+            const drugConfig = CONFIG.DRUG_TYPES[soldDrug];
+            const basePrice = drugConfig ? drugConfig.sellPrice : CONFIG.PRODUCT_SELL_PRICE;
+            
             const heatPenalty = this.playerState.heat * CONFIG.HEAT_PENALTY_PER_POINT;
             const droughtMultiplier = this.calendarSystem.getProductSellMultiplier();
-            const finalPrice = Math.floor(
-                CONFIG.PRODUCT_SELL_PRICE * (1 - heatPenalty) * droughtMultiplier
-            );
+            const finalPrice = Math.floor(basePrice * (1 - heatPenalty) * droughtMultiplier);
             
-            const amountToSell = Math.min(buyer.purchaseAmount || 2, this.playerState.product);
+            const availableStock = soldDrug && drugs[soldDrug] !== undefined ? drugs[soldDrug] : this.playerState.product;
+            const amountToSell = Math.min(buyer.purchaseAmount || 2, availableStock);
             const totalEarned = finalPrice * amountToSell;
             
             this.playerState.money += totalEarned;
-            this.playerState.product -= amountToSell;
-            this.checkRankChange();
             
-            // Quest: Check progress on money gain
-            if (this.questSystem) {
-                this.questSystem.checkChapterProgress();
+            if (soldDrug && drugs[soldDrug] !== undefined) {
+                this.playerState.drugs[soldDrug] -= amountToSell;
+            } else {
+                this.playerState.product -= amountToSell;
             }
+            
+            this.checkRankChange();
+            if (this.questSystem) this.questSystem.checkChapterProgress();
             
             this.removeBuyer(buyer);
             if (this.hud) this.hud.update();
             this.minimap.update();
-            this.showFloatingText(`Sold to undercover! +$${totalEarned}`, CONFIG.COLORS.success);
+            this.showFloatingText(`Sold ${amountToSell} ${soldDrug} to undercover! +$${totalEarned}`, CONFIG.COLORS.success);
             
-            // Small heat gain from dealing
             this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 8);
             if (this.hud) this.hud.update();
         }

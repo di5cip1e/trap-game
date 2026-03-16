@@ -2,6 +2,7 @@ import Phaser from './lib/phaser.min.js';
 import CharacterCreationScene from './CharacterCreationScene.js';
 import GameScene from './GameScene.js';
 import WorldMapScene from './WorldMapScene.js';
+import CombatScene from './CombatScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -12,7 +13,7 @@ const config = {
         height: 1080
     },
     backgroundColor: '#000000',
-    scene: [CharacterCreationScene, GameScene, WorldMapScene],
+    scene: [CharacterCreationScene, GameScene, WorldMapScene, CombatScene],
     parent: document.body,
     pixelArt: true
 };

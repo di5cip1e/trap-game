@@ -140,72 +140,52 @@ export default class Achievements {
      * Setup event listeners for achievement tracking
      */
     setupEventListeners() {
-        // Money earned - track lifetime earnings
-        EventBus.on(EVENTS.PLAYER_MONEY_CHANGED, (data) => {
-            if (data.amount > 0) {
-                this.stats.totalMoney += data.amount;
-                this.checkAchievements();
-            }
-        });
-        
-        // Track sales
-        EventBus.on('achievement:trackSale', () => {
+        // Bind handlers to this so they can be removed later (prevent memory leaks)
+        this._onMoneyChanged = (data) => {
+            if (data.amount > 0) { this.stats.totalMoney += data.amount; this.checkAchievements(); }
+        };
+        this._onSaleTracked = () => {
             this.stats.totalSales++;
-            if (this.stats.totalSales === 1) {
-                // First sale achievement
-                this.unlockAchievement('FIRST_SALE');
-            }
+            if (this.stats.totalSales === 1) this.unlockAchievement('FIRST_SALE');
             this.checkAchievements();
-        });
+        };
+        this._onCombatEnded = (data) => {
+            if (data.victory) { this.stats.combatsWon++; if (this.stats.combatsWon === 1) this.unlockAchievement('FIRST_BLOOD'); this.checkAchievements(); }
+        };
+        this._onNeighborhoodChanged = (data) => {
+            const n = data.neighborhood;
+            if (n && !this.stats.visitedNeighborhoods.includes(n)) { this.stats.visitedNeighborhoods.push(n); this.checkAchievements(); }
+        };
+        this._onSupplierMet = (data) => {
+            const s = data.supplierId;
+            if (s && !this.stats.metSuppliers.includes(s)) { this.stats.metSuppliers.push(s); this.checkAchievements(); }
+        };
+        this._onHeatEscaped = () => {
+            if (this.scene.playerState.heat >= 100) { this.stats.escapedMaxHeat = true; this.unlockAchievement('HEAT_WAVE'); }
+        };
+        this._onEquipmentPurchased = () => { this.stats.itemsPurchased++; this.checkAchievements(); };
         
-        // Track combat wins
-        EventBus.on(EVENTS.ENEMY_DEFEATED, (data) => {
-            // This fires when any enemy is defeated
-            // We need to track when player actually wins combat
-        });
+        // Attach listeners
+        EventBus.on(EVENTS.PLAYER_MONEY_CHANGED, this._onMoneyChanged);
+        EventBus.on('achievement:trackSale', this._onSaleTracked);
+        EventBus.on(EVENTS.COMBAT_ENDED, this._onCombatEnded);
+        EventBus.on(EVENTS.PLAYER_NEIGHBORHOOD_CHANGED, this._onNeighborhoodChanged);
+        EventBus.on('achievement:metSupplier', this._onSupplierMet);
+        EventBus.on('achievement:escapedHeat', this._onHeatEscaped);
+        EventBus.on('achievement:purchasedEquipment', this._onEquipmentPurchased);
         
-        EventBus.on(EVENTS.COMBAT_ENDED, (data) => {
-            if (data.victory) {
-                this.stats.combatsWon++;
-                if (this.stats.combatsWon === 1) {
-                    this.unlockAchievement('FIRST_BLOOD');
-                }
-                this.checkAchievements();
-            }
-        });
-        
-        // Track neighborhood visits
-        EventBus.on(EVENTS.PLAYER_NEIGHBORHOOD_CHANGED, (data) => {
-            const neighborhood = data.neighborhood;
-            if (neighborhood && !this.stats.visitedNeighborhoods.includes(neighborhood)) {
-                this.stats.visitedNeighborhoods.push(neighborhood);
-                this.checkAchievements();
-            }
-        });
-        
-        // Track supplier meetings
-        EventBus.on('achievement:metSupplier', (data) => {
-            const supplierId = data.supplierId;
-            if (supplierId && !this.stats.metSuppliers.includes(supplierId)) {
-                this.stats.metSuppliers.push(supplierId);
-                this.checkAchievements();
-            }
-        });
-        
-        // Track escaping at max heat
-        EventBus.on('achievement:escapedHeat', () => {
-            // Check if current heat is at or near max when escaping police
-            if (this.scene.playerState.heat >= 100) {
-                this.stats.escapedMaxHeat = true;
-                this.unlockAchievement('HEAT_WAVE');
-            }
-        });
-        
-        // Track equipment purchases
-        EventBus.on('achievement:purchasedEquipment', () => {
-            this.stats.itemsPurchased++;
-            this.checkAchievements();
-        });
+        // Cleanup on scene shutdown to prevent memory leaks
+        this.scene.events.once('shutdown', this._cleanup, this);
+    }
+    
+    _cleanup() {
+        EventBus.off(EVENTS.PLAYER_MONEY_CHANGED, this._onMoneyChanged);
+        EventBus.off('achievement:trackSale', this._onSaleTracked);
+        EventBus.off(EVENTS.COMBAT_ENDED, this._onCombatEnded);
+        EventBus.off(EVENTS.PLAYER_NEIGHBORHOOD_CHANGED, this._onNeighborhoodChanged);
+        EventBus.off('achievement:metSupplier', this._onSupplierMet);
+        EventBus.off('achievement:escapedHeat', this._onHeatEscaped);
+        EventBus.off('achievement:purchasedEquipment', this._onEquipmentPurchased);
     }
     
     /**

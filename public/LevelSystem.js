@@ -15,11 +15,20 @@ export default class LevelSystem {
      * @param {Object} playerState - Player state object
      */
     initPlayerLevel(playerState) {
+        // GUARD: Only initialize if this is a brand new game
+        if (playerState.level !== undefined) return;
+
         playerState.level = 1;
         playerState.xp = 0;
         playerState.xpToNextLevel = this.getXpForLevel(2);
         playerState.abilityPoints = 2; // Starting AP
         playerState.statPoints = 1; // Starting stat points
+
+        // Ensure stats exist
+        if (!playerState.stats) {
+            playerState.stats = { intuition: 5, ability: 5, luck: 5 };
+        }
+
         playerState.classType = playerState.stats.intuition >= playerState.stats.ability && 
                                 playerState.stats.intuition >= playerState.stats.luck ? 'intuition' :
                                 playerState.stats.ability >= playerState.stats.intuition &&
@@ -109,83 +118,92 @@ export default class LevelSystem {
     /**
      * Show level up notification UI
      */
+    /**
+     * Show interactive level up and stat allocation UI
+     */
     showLevelUpNotification() {
         const { width, height } = this.scene.scale;
         const { playerState } = this.scene;
         
-        // Create notification container
         const container = this.scene.add.container(0, 0).setScrollFactor(0).setDepth(3000);
-        
-        // Overlay
-        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
         container.add(overlay);
         
-        // Level up panel
-        const panel = this.scene.add.rectangle(width / 2, height / 2 - 50, 600, 350, 0x1a1a2e);
+        const panel = this.scene.add.rectangle(width / 2, height / 2, 600, 450, 0x1a1a2e);
         panel.setStrokeStyle(4, 0xffd700);
         container.add(panel);
         
-        // Title
-        const title = this.scene.add.text(width / 2, height / 2 - 150, 'LEVEL UP!', {
-            fontFamily: 'Press Start 2P',
-            fontSize: '36px',
-            color: '#ffd700',
-            stroke: '#000000',
-            strokeThickness: 6
+        const title = this.scene.add.text(width / 2, height / 2 - 180, 'LEVEL UP!', {
+            fontFamily: 'Press Start 2P', fontSize: '36px', color: '#ffd700', stroke: '#000000', strokeThickness: 6
         }).setOrigin(0.5);
         container.add(title);
         
-        // Level text
-        const levelText = this.scene.add.text(width / 2, height / 2 - 100, `Level ${playerState.level}`, {
-            fontFamily: 'Press Start 2P',
-            fontSize: '24px',
-            color: '#ffffff'
+        const levelText = this.scene.add.text(width / 2, height / 2 - 130, `You are now Level ${playerState.level}`, {
+            fontFamily: 'Press Start 2P', fontSize: '18px', color: '#ffffff'
         }).setOrigin(0.5);
         container.add(levelText);
         
-        // Rewards
-        const rewardsText = this.scene.add.text(width / 2, height / 2 - 40, 
-            `+1 Ability Point\n+1 Stat Point`, {
-            fontFamily: 'Press Start 2P',
-            fontSize: '16px',
-            color: '#00ff00',
-            align: 'center',
-            lineSpacing: 8
+        const rewardsText = this.scene.add.text(width / 2, height / 2 - 80, '+1 Ability Point\n+1 Stat Point', {
+            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#00ff00', align: 'center'
         }).setOrigin(0.5);
         container.add(rewardsText);
         
-        // Current points
-        const pointsText = this.scene.add.text(width / 2, height / 2 + 40,
-            `AP: ${playerState.abilityPoints} | SP: ${playerState.statPoints}`, {
-            fontFamily: 'Press Start 2P',
-            fontSize: '14px',
-            color: '#ffcc00'
+        // Stat allocation UI
+        const stats = ['intuition', 'ability', 'luck'];
+        const labels = { intuition: 'INTUITION', ability: 'ABILITY', luck: 'LUCK' };
+        const statX = [width / 2 - 120, width / 2, width / 2 + 120];
+        
+        const updateStats = () => {
+            stats.forEach((stat, i) => {
+                statTexts[i].setText(`${labels[stat]}: ${playerState.stats[stat]}`);
+            });
+            pointsText.setText(`Stat Points: ${playerState.statPoints} | AP: ${playerState.abilityPoints}`);
+            closeBtn.setAlpha(playerState.statPoints > 0 ? 0.5 : 1);
+            closeBtnText.setText(playerState.statPoints > 0 ? 'SPEND FIRST' : 'CONTINUE');
+        };
+        
+        const statTexts = stats.map((stat, i) => {
+            return this.scene.add.text(statX[i], height / 2 - 10, `${labels[stat]}: ${playerState.stats[stat]}`, {
+                fontFamily: 'Press Start 2P', fontSize: '12px', color: '#88ff88'
+            }).setOrigin(0.5);
+        });
+        
+        // + buttons
+        stats.forEach((stat, i) => {
+            if (playerState.statPoints > 0) {
+                const btn = this.scene.add.text(statX[i] + 70, height / 2 - 10, '+', {
+                    fontFamily: 'Press Start 2P', fontSize: '16px', color: '#00ff00'
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                btn.on('pointerup', () => {
+                    if (playerState.statPoints > 0) {
+                        playerState.statPoints--;
+                        playerState.stats[stat]++;
+                        updateStats();
+                        if (this.scene.hud) this.scene.hud.update();
+                    }
+                });
+                container.add(btn);
+            }
+        });
+        
+        const pointsText = this.scene.add.text(width / 2, height / 2 + 60, `Stat Points: ${playerState.statPoints} | AP: ${playerState.abilityPoints}`, {
+            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#ffcc00'
         }).setOrigin(0.5);
         container.add(pointsText);
         
-        // Continue button
-        const btnBg = this.scene.add.rectangle(width / 2, height / 2 + 100, 200, 50, 0x2a2a4a);
-        btnBg.setStrokeStyle(2, 0xffd700);
-        btnBg.setInteractive({ useHandCursor: true });
-        container.add(btnBg);
+        const closeBtn = this.scene.add.rectangle(width / 2, height / 2 + 140, 200, 50, 0x2a2a4a).setStrokeStyle(2, 0xffd700).setInteractive({ useHandCursor: true });
+        container.add(closeBtn);
         
-        const btnText = this.scene.add.text(width / 2, height / 2 + 100, 'CONTINUE', {
-            fontFamily: 'Press Start 2P',
-            fontSize: '14px',
-            color: '#ffffff'
+        const closeBtnText = this.scene.add.text(width / 2, height / 2 + 140, playerState.statPoints > 0 ? 'SPEND FIRST' : 'CONTINUE', {
+            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#ffffff'
         }).setOrigin(0.5);
-        container.add(btnText);
+        container.add(closeBtnText);
         
-        btnBg.on('pointerover', () => btnBg.setFillStyle(0x3a3a5a));
-        btnBg.on('pointerout', () => btnBg.setFillStyle(0x2a2a4a));
-        btnBg.on('pointerup', () => {
+        closeBtn.on('pointerup', () => {
             container.destroy();
         });
         
-        // Auto close after 5 seconds
-        this.scene.time.delayedCall(5000, () => {
-            if (container) container.destroy();
-        });
+        updateStats();
     }
 
     /**

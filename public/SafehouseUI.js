@@ -526,6 +526,86 @@ export default class SafehouseUI {
         this.renderMainMenu();
     }
     
+
+    assignProductToRunner(drugKey, amount) {
+        const player = this.scene.playerState;
+        const drugs = player.drugs || {};
+        
+        if (!drugs[drugKey] || drugs[drugKey] < amount) {
+            this.showQuickMessage('Not enough!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        // Deduct from player
+        drugs[drugKey] -= amount;
+        
+        // Add to runner
+        if (!player.runnerProduct) player.runnerProduct = 0;
+        if (!player.runnerDrug) player.runnerDrug = drugKey;
+        
+        // If switching drugs, retrieve old product first
+        if (player.runnerDrug !== drugKey && player.runnerProduct > 0) {
+            const oldDrug = player.runnerDrug;
+            drugs[oldDrug] = (drugs[oldDrug] || 0) + player.runnerProduct;
+            player.runnerProduct = 0;
+        }
+        
+        player.runnerProduct += amount;
+        player.runnerDrug = drugKey;
+        player.runnerStatus = 'Ready';
+        
+        if (this.scene.hud) this.scene.hud.update();
+        this.renderRunnerMenu();
+    }
+    
+    retrieveProductFromRunner() {
+        const player = this.scene.playerState;
+        const drugs = player.drugs || {};
+        
+        if (!player.runnerProduct || player.runnerProduct <= 0) {
+            this.showQuickMessage('Nothing to retrieve!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        const drugKey = player.runnerDrug || 'Weed';
+        const maxCarry = player.productCapacity || 20;
+        const currentStock = drugs[drugKey] || 0;
+        
+        if (currentStock + player.runnerProduct > maxCarry) {
+            this.showQuickMessage('Inventory full!', CONFIG.COLORS.danger);
+            return;
+        }
+        
+        drugs[drugKey] = (drugs[drugKey] || 0) + player.runnerProduct;
+        player.runnerProduct = 0;
+        player.runnerDrug = null;
+        player.runnerStatus = 'Idle';
+        
+        if (this.scene.hud) this.scene.hud.update();
+        this.renderRunnerMenu();
+    }
+    
+    fireRunner() {
+        const player = this.scene.playerState;
+        
+        // Return any assigned product to player
+        if (player.runnerProduct && player.runnerProduct > 0) {
+            const drugs = player.drugs || {};
+            const drugKey = player.runnerDrug || 'Weed';
+            drugs[drugKey] = (drugs[drugKey] || 0) + player.runnerProduct;
+            player.runnerProduct = 0;
+            player.runnerDrug = null;
+        }
+        
+        player.hasRunner = false;
+        player.runnerStatus = 'Idle';
+        player.runnerEarnings = 0;
+        
+        if (this.scene.hud) this.scene.hud.update();
+        this.showQuickMessage('Runner fired!', CONFIG.COLORS.danger);
+        this.renderRunnerMenu();
+    }
+
     renderUpgradeMenu() {
         this.currentMenu = 'upgrade';
         this.clearUI();

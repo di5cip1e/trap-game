@@ -885,11 +885,8 @@ export class RiversidePoliceSystem {
         // Show welcome message for new area
         this.scene.showFloatingText('Welcome to Big City!', CONFIG.COLORS.success);
         
-        // Save player state before restart
-        const savedState = JSON.stringify(this.scene.playerState);
-        
-        // Reload the scene for new neighborhood - pass saved state
-        this.scene.scene.start('GameScene', { playerState: savedState });
+        // Reload the scene for new neighborhood, passing the preserved state
+        this.scene.scene.restart({ loadedState: this.scene.playerState });
     }
 }
 

@@ -70,17 +70,11 @@ export default class GameScene extends Phaser.Scene {
         // Get character data from registry
         this.characterData = this.registry.get('characterData');
         
-        // Check for loaded save data (passed from another scene like prison transition)
-        const passedData = this.sys.events.locatedData?.playerState;
+        // Check for passed state data (e.g., from prison transition)
+        const passedData = this.sys.events.locatedData?.loadedState;
         if (passedData) {
-            // Restore player state from passed data (e.g., after prison release)
-            try {
-                const restoredState = JSON.parse(passedData);
-                // Store for use after full init
-                this._restoredPlayerState = restoredState;
-            } catch (e) {
-                console.warn('Failed to parse passed playerState:', e);
-            }
+            // Store for use after full init
+            this._restoredPlayerState = passedData;
         }
         
         // Check for loaded save data

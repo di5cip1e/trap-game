@@ -2690,7 +2690,7 @@ export default class GameScene extends Phaser.Scene {
         const availableDrugs = Object.keys(drugs).filter(k => drugs[k] > 0 && (!CONFIG.DRUG_TYPES[k] || !CONFIG.DRUG_TYPES[k].isPrecursor));
         
         // Fallback check
-        if (availableDrugs.length === 0 && this.playerState.product <= 0) {
+        if (availableDrugs.length === 0) {
             this.showFloatingText('No Drugs to sell!', CONFIG.COLORS.danger);
             return;
         }
@@ -2719,8 +2719,12 @@ export default class GameScene extends Phaser.Scene {
                     stolenAmount = Math.min(2, drugs[stolenDrug]);
                     this.playerState.drugs[stolenDrug] -= stolenAmount;
                 } else {
-                    stolenAmount = Math.min(2, this.playerState.product);
-                    this.playerState.product -= stolenAmount;
+                    const drugs = this.playerState.drugs || {};
+                    const firstDrug = Object.keys(drugs).find(k => drugs[k] > 0);
+                    if (firstDrug) {
+                        stolenAmount = Math.min(2, drugs[firstDrug]);
+                        drugs[firstDrug] -= stolenAmount;
+                    }
                 }
                 
                 // Run away!
@@ -2749,7 +2753,7 @@ export default class GameScene extends Phaser.Scene {
             soldDrug = availableDrugs.sort((a, b) => drugs[b] - drugs[a])[0];
         }
         // 3. Legacy fallback
-        else if (this.playerState.product > 0) {
+        else if (Object.values(this.playerState.drugs || {}).some(v => v > 0)) {
             soldDrug = 'Weed'; // Default assumption
         }
         
@@ -2795,7 +2799,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Calculate how much to sell (customer's purchase amount or player's stock)
         const playerDrugStock = drugs[soldDrug] || 0;
-        const legacyStock = this.playerState.product || 0;
+        const legacyStock = 0; // legacy, drugs now in drugs{}
         const totalStock = playerDrugStock + legacyStock;
         const amountToSell = Math.min(buyer.purchaseAmount || 1, totalStock);
         const totalEarned = finalPrice * amountToSell;
@@ -2951,7 +2955,7 @@ export default class GameScene extends Phaser.Scene {
             const droughtMultiplier = this.calendarSystem.getProductSellMultiplier();
             const finalPrice = Math.floor(basePrice * (1 - heatPenalty) * droughtMultiplier);
             
-            const availableStock = soldDrug && drugs[soldDrug] !== undefined ? drugs[soldDrug] : this.playerState.product;
+            const availableStock = drugs[soldDrug] || 0;
             const amountToSell = Math.min(buyer.purchaseAmount || 2, availableStock);
             const totalEarned = finalPrice * amountToSell;
             

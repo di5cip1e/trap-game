@@ -6,6 +6,14 @@ import { EventBus, EVENTS } from './EventBus.js';
 export default class HUD {
     constructor(scene) {
         this.scene = scene;
+        
+        // Suspicion bar variables
+        this.suspicionText = null;
+        this.suspBarBg = null;
+        this.suspBarFill = null;
+        this.suspBarMaxWidth = 0;
+        this.factionText = null;
+        
         this.create();
         this.setupEventListeners();
     }

@@ -657,74 +657,7 @@ export default class CombatScene {
             return;
         }
         
-        const skill = result.skill;
-        
-        // Apply skill effects
-        switch (skillKey) {
-            case 'intimidate':
-                // 50% chance to make enemy flee
-                if (Math.random() < 0.5) {
-                    this.showDamageText('ENEMY FLED!', this.scene.scale.width / 2, 300, 0x00ff00);
-                    this.enemyFled = true; // Mark as fled, not killed
-                    this.enemyHP = 0;
-                } else {
-                    this.showDamageText('Intimidate failed!', this.scene.scale.width / 2, 300, 0xffaa00);
-                }
-                break;
-                
-            case 'shadow_walk':
-                // 5 seconds invisibility
-                this.activeEffects.invisible = true;
-                this.showDamageText('INVISIBLE!', this.scene.scale.width / 2, 400, 0x8888ff);
-                this.scene.time.delayedCall(5000, () => {
-                    delete this.activeEffects.invisible;
-                });
-                break;
-                
-            case 'power_strike':
-                // 2x damage attack
-                const damage = this.getPlayerDamage() * 2;
-                this.enemyHP = Math.max(0, this.enemyHP - damage);
-                this.showDamageText(`-${damage}!`, this.scene.scale.width / 2, 220, 0xff4444);
-                break;
-                
-            case 'berserk':
-                // 8 seconds of 2x damage, cannot be killed (but takes minimum 1 damage)
-                this.activeEffects.berserk = true;
-                this.showDamageText('BERSERK! (8s)', this.scene.scale.width / 2, 400, 0xff0000);
-                
-                // Warning at 2 seconds remaining
-                this.scene.time.delayedCall(6000, () => {
-                    if (this.activeEffects.berserk) {
-                        this.showDamageText('BERSERK ENDING!', this.scene.scale.width / 2, 350, 0xffaa00);
-                    }
-                });
-                
-                this.scene.time.delayedCall(8000, () => {
-                    delete this.activeEffects.berserk;
-                });
-                break;
-                
-            case 'game_of_chance':
-                // Double or nothing
-                if (Math.random() < 0.5) {
-                    // Win: 2x damage
-                    const damage = this.getPlayerDamage() * 2;
-                    this.enemyHP = Math.max(0, this.enemyHP - damage);
-                    this.showDamageText('LUCKY! -' + damage, this.scene.scale.width / 2, 220, 0xffd700);
-                } else {
-                    // Lose: take extra damage
-                    const extraDamage = Math.floor(this.enemy.damage * 0.5);
-                    this.playerHP = Math.max(0, this.playerHP - extraDamage);
-                    this.showDamageText('BAD LUCK! +' + extraDamage, this.scene.scale.width / 2, 480, 0xff0000);
-                }
-                break;
-        }
-        
-        // Apply status effect from skill if it has one
-        if (skill.statusEffect) {
-            this.applyEnemyStatusEffect(skill.statusEffect, skill.statusDuration);
-        }
+        // Combat skill execution now handled by SkillTree.activateSkill()
         
         // Refresh skill buttons
         this.refreshSkillButtons();

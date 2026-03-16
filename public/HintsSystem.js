@@ -101,7 +101,7 @@ export default class HintsSystem {
                 id: 'trading_first_buy',
                 category: 'trading',
                 text: "Find a Supplier on the map to buy raw materials - $50 each",
-                trigger: (state) => state.rawMaterials === 0 && state.money >= 50 && !state.hasBoughtRaw,
+                trigger: (state) => !state.hasBoughtRaw && state.money >= 50,
                 once: true,
                 priority: 1,
                 onShow: () => { this.triggerState.hasBoughtRaw = true; }
@@ -110,7 +110,7 @@ export default class HintsSystem {
                 id: 'trading_first_sell',
                 category: 'trading',
                 text: "Find a Buyer on the map to sell your product - $100 each",
-                trigger: (state) => state.product > 0 && !state.hasSoldProduct,
+                trigger: (state) => { const d = state.drugs || {}; return Object.values(d).some(a => a > 0) && !state.hasSoldProduct; },
                 once: true,
                 priority: 1,
                 onShow: () => { this.triggerState.hasSoldProduct = true; }
@@ -119,7 +119,7 @@ export default class HintsSystem {
                 id: 'trading_process_raw',
                 category: 'trading',
                 text: "Process raw materials at Safehouse workstation (2x value!)",
-                trigger: (state) => state.rawMaterials > 0 && state.product === 0 && state.safehouseTier >= 1,
+                trigger: (state) => { const d = state.drugs || {}; return !Object.values(d).some(a => a > 0) && state.safehouseTier >= 1 && state.hasBoughtRaw; },
                 once: true,
                 priority: 2
             },
@@ -127,7 +127,7 @@ export default class HintsSystem {
                 id: 'trading_profit_cycle',
                 category: 'trading',
                 text: "Profit formula: Buy $50, Process, Sell $100 = ~$85 profit",
-                trigger: (state) => state.totalSales >= 3,
+                trigger: (state) => (state.drugsSold || 0) >= 3,
                 once: false,
                 priority: 3
             },

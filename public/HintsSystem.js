@@ -65,23 +65,23 @@ export default class HintsSystem {
             {
                 id: 'combat_first',
                 category: 'combat',
-                text: "First time fighting? Rock beats Scissors, Scissors beats Shield, Shield beats Rock!",
+                text: "Combat is real-time! You auto-attack, but use your AP to cast Skills and turn the tide!",
                 trigger: (state) => state.combatCount === 0 && state.hasSeenCombat,
                 once: true,
                 priority: 1
             },
             {
-                id: 'combat_rock_paper_scissors',
+                id: 'combat_skills',
                 category: 'combat',
-                text: "Rock beats Scissors | Scissors beats Shield | Shield beats Rock",
+                text: "Check your Skill Tree (K). Passive skills apply automatically, active skills use cooldowns.",
                 trigger: (state) => state.inCombat,
-                once: false,
+                once: true,
                 priority: 2
             },
             {
                 id: 'combat_run_option',
                 category: 'combat',
-                text: "Running from combat costs HEAT but saves your product!",
+                text: "Running from combat costs Hustle, but saves your stash and your life!",
                 trigger: (state) => state.inCombat && state.combatCount > 0 && !state.shownRunHint,
                 once: true,
                 priority: 1,
@@ -90,7 +90,7 @@ export default class HintsSystem {
             {
                 id: 'combat_outmatched',
                 category: 'combat',
-                text: "Outmatched? Running is sometimes the smart play!",
+                text: "Outmatched? Running is sometimes the smart play! Keep an eye on your HP.",
                 trigger: (state) => state.inCombat && state.playerHealth < 30 && state.enemyHealth > 70,
                 once: false,
                 priority: 2
@@ -100,8 +100,8 @@ export default class HintsSystem {
             {
                 id: 'trading_first_buy',
                 category: 'trading',
-                text: "Find a Supplier on the map to buy raw materials - $50 each",
-                trigger: (state) => !state.hasBoughtRaw && state.money >= 50,
+                text: "Find a Supplier on the map to buy raw materials - $50 each.",
+                trigger: (state) => state.rawMaterials === 0 && state.money >= 50 && !state.hasBoughtRaw,
                 once: true,
                 priority: 1,
                 onShow: () => { this.triggerState.hasBoughtRaw = true; }
@@ -109,8 +109,11 @@ export default class HintsSystem {
             {
                 id: 'trading_first_sell',
                 category: 'trading',
-                text: "Find a Buyer on the map to sell your product - $100 each",
-                trigger: (state) => { const d = state.drugs || {}; return Object.values(d).some(a => a > 0) && !state.hasSoldProduct; },
+                text: "Find a Buyer on the map to sell your drugs - look for the yellow markers.",
+                trigger: (state) => {
+                    const hasDrugs = state.drugs && Object.values(state.drugs).some(v => v > 0);
+                    return hasDrugs && !state.hasSoldProduct;
+                },
                 once: true,
                 priority: 1,
                 onShow: () => { this.triggerState.hasSoldProduct = true; }
@@ -118,23 +121,15 @@ export default class HintsSystem {
             {
                 id: 'trading_process_raw',
                 category: 'trading',
-                text: "Process raw materials at Safehouse workstation (2x value!)",
-                trigger: (state) => { const d = state.drugs || {}; return !Object.values(d).some(a => a > 0) && state.safehouseTier >= 1 && state.hasBoughtRaw; },
+                text: "Process raw materials at Workstations to vastly increase their value!",
+                trigger: (state) => state.rawMaterials > 0 && (!state.drugs || Object.values(state.drugs).every(v => v === 0)),
                 once: true,
                 priority: 2
             },
             {
-                id: 'trading_profit_cycle',
-                category: 'trading',
-                text: "Profit formula: Buy $50, Process, Sell $100 = ~$85 profit",
-                trigger: (state) => (state.drugsSold || 0) >= 3,
-                once: false,
-                priority: 3
-            },
-            {
                 id: 'trading_inventory_full',
                 category: 'trading',
-                text: "Inventory full! Sell product or visit Safehouse to stash items.",
+                text: "Inventory full! Sell product, buy a backpack, or stash items at the Safehouse.",
                 trigger: (state) => state.inventoryFull && !state.shownInventoryHint,
                 once: true,
                 priority: 1,
@@ -153,7 +148,7 @@ export default class HintsSystem {
             {
                 id: 'running_shoes_help',
                 category: 'running',
-                text: "Running Shoes let you escape combat and move faster!",
+                text: "Running Shoes let you move faster across the city. Check the equipment shop!",
                 trigger: (state) => state.hasEnemyEngaged && !state.hasRunningShoes && !state.shownShoesHint,
                 once: true,
                 priority: 1,

@@ -1916,8 +1916,14 @@ export default class GameScene extends Phaser.Scene {
                 } else if (obj.type === 'supplier') {
                     this.openSupplierMeeting(obj.supplierId);
                     return;
-                } else if (obj.type === 'npc' && obj.npcId) {
+                } else if (obj.type === 'npc') {
                     // Generic NPC with quest dialog
+                    if (this.dialogUI) {
+                        this.dialogUI.open(obj.npcId || obj.poiKey);
+                    }
+                    return;
+                } else if (obj.npcId && !obj.type) {
+                    // NPC object with npcId but no type
                     if (this.dialogUI) {
                         this.dialogUI.open(obj.npcId);
                     }
@@ -4991,7 +4997,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.safehouseUI.isOpen) this.safehouseUI.close();
         if (this.vendorUI.isOpen) this.vendorUI.close();
         if (this.workstationUI.isOpen) this.workstationUI.close();
-        if (this.dialogUI.isOpen) this.rivalEncounterUI.close();
+        if (this.dialogUI && this.dialogUI.isOpen) this.dialogUI.close();
         if (this.equipmentUI.isOpen) this.equipmentUI.close();
         if (this.policeEncounterUI.isOpen) this.policeEncounterUI.close();
         if (this.relationshipUI.isOpen) this.relationshipUI.close();

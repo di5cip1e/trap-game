@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+
 import CharacterCreationScene from './CharacterCreationScene.js';
 import GameScene from './GameScene.js';
 import WorldMapScene from './WorldMapScene.js';

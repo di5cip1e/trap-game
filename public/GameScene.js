@@ -2627,12 +2627,13 @@ export default class GameScene extends Phaser.Scene {
     }
     
     sellToBuyer(buyer) {
-        // Check new drugs inventory OR legacy product
+        // Find available drugs (excluding precursors)
         const drugs = this.playerState.drugs || {};
-        const hasDrugs = Object.values(drugs).some(amount => amount > 0);
+        const availableDrugs = Object.keys(drugs).filter(k => drugs[k] > 0 && (!CONFIG.DRUG_TYPES[k] || !CONFIG.DRUG_TYPES[k].isPrecursor));
         
-        if (!hasDrugs && this.playerState.product <= 0) {
-            this.showFloatingText('No drugs to sell!', CONFIG.COLORS.danger);
+        // Fallback check
+        if (availableDrugs.length === 0 && this.playerState.product <= 0) {
+            this.showFloatingText('No Drugs to sell!', CONFIG.COLORS.danger);
             return;
         }
         
@@ -2652,15 +2653,24 @@ export default class GameScene extends Phaser.Scene {
             const stealChance = customerConfig?.stealChance || 0.15;
             if (Math.random() < stealChance) {
                 // Junkie steals from player!
-                const stolenAmount = Math.min(2, this.playerState.product);
-                this.playerState.product -= stolenAmount;
+                let stolenAmount = 0;
+                let stolenDrug = 'Product';
+                
+                if (availableDrugs.length > 0) {
+                    stolenDrug = availableDrugs[Math.floor(Math.random() * availableDrugs.length)];
+                    stolenAmount = Math.min(2, drugs[stolenDrug]);
+                    this.playerState.drugs[stolenDrug] -= stolenAmount;
+                } else {
+                    stolenAmount = Math.min(2, this.playerState.product);
+                    this.playerState.product -= stolenAmount;
+                }
                 
                 // Run away!
                 this.removeBuyer(buyer);
                 if (this.hud) this.hud.update();
                 this.minimap.update();
                 
-                this.showFloatingText(`${customerConfig.name} stole ${stolenAmount} product and ran!`, CONFIG.COLORS.danger);
+                this.showFloatingText(`${customerConfig.name} stole ${stolenAmount} ${stolenDrug} and ran!`, CONFIG.COLORS.danger);
                 
                 // Add some heat from the theft
                 this.playerState.heat = Math.min(CONFIG.MAX_HEAT, this.playerState.heat + 10);
@@ -2669,22 +2679,25 @@ export default class GameScene extends Phaser.Scene {
             }
         }
         
-        // Determine what drug is being sold (needed for demand calculation)
-        const drugs = this.playerState.drugs || {};
+        // Determine what drug is being sold
         let soldDrug = null;
         
-        // Find first non-zero drug in inventory to determine what's being sold
-        for (const [drugName, amount] of Object.entries(drugs)) {
-            if (amount > 0) {
-                soldDrug = drugName;
-                break;
-            }
+        // 1. Try to sell them their preferred drug if we have it
+        if (buyer.preferredDrug && drugs[buyer.preferredDrug] > 0) {
+            soldDrug = buyer.preferredDrug;
+        } 
+        // 2. Otherwise sell them whatever we have the most of
+        else if (availableDrugs.length > 0) {
+            soldDrug = availableDrugs.sort((a, b) => drugs[b] - drugs[a])[0];
         }
-        
-        // Fallback: check legacy product (assume it's Weed if player has any)
-        if (!soldDrug && this.playerState.product > 0) {
+        // 3. Legacy fallback
+        else if (this.playerState.product > 0) {
             soldDrug = 'Weed'; // Default assumption
         }
+        
+        // Get base price from specific drug config
+        const drugConfig = CONFIG.DRUG_TYPES[soldDrug];
+        const basePrice = drugConfig ? drugConfig.sellPrice : CONFIG.PRODUCT_SELL_PRICE;
         
         // Calculate base price
         const heatPenalty = this.playerState.heat * CONFIG.HEAT_PENALTY_PER_POINT;
@@ -2714,10 +2727,10 @@ export default class GameScene extends Phaser.Scene {
         const playerPriceBonus = this.getPriceBonus();
         
         const finalPrice = Math.floor(
-            CONFIG.PRODUCT_SELL_PRICE * 
+            basePrice * 
             priceMultiplier * 
             droughtMultiplier * 
-            demandMultiplier *  // NEW: Apply neighborhood demand
+            demandMultiplier *  
             customerPriceMult * 
             (1 + playerPriceBonus)
         );

@@ -2986,6 +2986,50 @@ export default class GameScene extends Phaser.Scene {
         });
     }
     
+    /**
+     * Add police suspicion - increases player visibility to law enforcement
+     * Called when player does crimes or encounters police
+     * @param {number} amount - Amount of suspicion to add (0-100 scale)
+     */
+    addPoliceSuspicion(amount) {
+        const { playerState } = this;
+        
+        // Initialize suspicion tracking if not present
+        if (!playerState.policeSuspicion) playerState.policeSuspicion = 0;
+        
+        // Add suspicion (scales with amount - max 150 for critical threshold)
+        playerState.policeSuspicion = Math.min(150, playerState.policeSuspicion + amount);
+        
+        // Update suspicion level
+        if (playerState.policeSuspicion >= 100) {
+            playerState.policeSuspicionLevel = 'critical';
+            if (!playerState.policeRaidTriggered) {
+                playerState.policeRaidTriggered = true;
+                this.showFloatingText('POLICE RAID IMMINENT!', 0xff0000);
+            }
+        } else if (playerState.policeSuspicion >= 75) {
+            playerState.policeSuspicionLevel = 'high';
+        } else if (playerState.policeSuspicion >= 50) {
+            playerState.policeSuspicionLevel = 'medium';
+        } else if (playerState.policeSuspicion >= 25) {
+            playerState.policeSuspicionLevel = 'low';
+        } else {
+            playerState.policeSuspicionLevel = 'none';
+        }
+        
+        // Also trigger Riverside Police system if active
+        if (this.riversidePolice) {
+            this.riversidePolice.addSuspicionFromAction('crime_witnessed', amount);
+        }
+        
+        // Show warning at high suspicion
+        if (playerState.policeSuspicion >= 50 && playerState.policeSuspicion < 75) {
+            this.showFloatingText(`Police Suspicion: ${playerState.policeSuspicion}%`, 0xffaa00);
+        } else if (playerState.policeSuspicion >= 75) {
+            this.showFloatingText(`HIGH POLICE INTEREST!`, 0xff0000);
+        }
+    }
+    
     // ==========================================
     // BUILDING ENTRY & INTERIOR SYSTEM
     // ==========================================

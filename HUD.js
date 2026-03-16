@@ -725,6 +725,40 @@ export default class HUD {
             this.heatBarFill.setFillStyle(0xffcc00); // Yellow (low)
         }
         
+        // Update Police Suspicion bar (Riverside only)
+        if (this.scene.riversidePolice && this.suspicionText && this.suspBarFill) {
+            const suspValue = this.scene.riversidePolice.getSuspicion();
+            const suspLevel = this.scene.riversidePolice.getSuspicionLevel();
+            
+            // Update suspicion text
+            this.suspicionText.setText(`SUSPICION: ${suspValue}%`);
+            
+            // Color based on level
+            const suspColors = {
+                'none': '#44cc44',
+                'low': '#88cc44',
+                'medium': '#ccaa44',
+                'high': '#cc6644',
+                'critical': '#cc4444'
+            };
+            this.suspicionText.setColor(suspColors[suspLevel] || '#ffffff');
+            
+            // Update bar fill
+            const suspPercent = suspValue / 100;
+            this.suspBarFill.width = this.suspBarMaxWidth * suspPercent;
+            
+            // Change bar color based on suspicion level
+            if (suspValue >= 75) {
+                this.suspBarFill.setFillStyle(0xff0000); // Bright red (critical)
+            } else if (suspValue >= 50) {
+                this.suspBarFill.setFillStyle(0xff4444); // Red (high)
+            } else if (suspValue >= 25) {
+                this.suspBarFill.setFillStyle(0xffaa00); // Orange (medium)
+            } else {
+                this.suspBarFill.setFillStyle(0x4488cc); // Blue (low)
+            }
+        }
+        
         // Update time
         const timeStr = time.getTimeString();
         const dayStr = `Day ${time.day}`;

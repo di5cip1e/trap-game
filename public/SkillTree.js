@@ -430,6 +430,31 @@ export default class SkillTree {
         }
         playerState.skillCooldowns[skillKey] = now;
         
+        // Execute combat logic directly in SkillTree
+        if (combatState) {
+            switch (skillKey) {
+                case 'intimidate':
+                    if (Math.random() < 0.5) {
+                        combatState.showDamageText('ENEMY FLED!', combatState.scale.width / 2, 300, 0x00ff00);
+                        combatState.enemyHP = 0;
+                        combatState.enemyFled = true;
+                    } else {
+                        combatState.showDamageText('Intimidate failed!', combatState.scale.width / 2, 300, 0xffaa00);
+                    }
+                    break;
+                case 'shadow_walk':
+                    combatState.activeEffects.invisible = true;
+                    combatState.showDamageText('INVISIBLE!', combatState.scale.width / 2, 400, 0x8888ff);
+                    combatState.time.delayedCall(5000, () => delete combatState.activeEffects.invisible);
+                    break;
+                case 'berserker_rage':
+                    combatState.activeEffects.berserk = true;
+                    combatState.showDamageText('BERSERK!', combatState.scale.width / 2, 400, 0xff0000);
+                    combatState.time.delayedCall(8000, () => delete combatState.activeEffects.berserk);
+                    break;
+            }
+        }
+        
         return {
             success: true,
             skill: skill,

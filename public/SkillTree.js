@@ -327,10 +327,22 @@ export default class SkillTree {
      */
     getPlayerSkills() {
         const { playerState } = this.scene;
-        const tree = this.getSkillTree();
+        const classTree = this.getSkillTree();
+        const weaponTree = SKILL_TREES.weapons;
         const skills = [];
         
-        for (const [key, skill] of Object.entries(tree.skills)) {
+        // Add class-specific skills
+        for (const [key, skill] of Object.entries(classTree.skills)) {
+            skills.push({
+                key,
+                ...skill,
+                learned: playerState.unlockedSkills.includes(key),
+                canLearn: this.canLearnSkill(key).canLearn
+            });
+        }
+        
+        // Add weapons skills (available to all classes)
+        for (const [key, skill] of Object.entries(weaponTree.skills)) {
             skills.push({
                 key,
                 ...skill,
@@ -449,7 +461,7 @@ export default class SkillTree {
     openSkillTreeUI() {
         if (this.ui && this.ui.isOpen) return;
         
-        this.ui = new SkillTreeUI(this.scene);
+        this.ui = new SkillTreeUI(this.scene, this);
         this.ui.open();
     }
 }
@@ -458,8 +470,9 @@ export default class SkillTree {
  * Skill Tree UI Class
  */
 class SkillTreeUI {
-    constructor(scene) {
+    constructor(scene, skillTreeManager) {
         this.scene = scene;
+        this.skillTreeManager = skillTreeManager;
         this.isOpen = false;
         this.container = null;
     }
@@ -469,8 +482,7 @@ class SkillTreeUI {
         this.isOpen = true;
 
         const { width, height } = this.scene.scale;
-        const skillTree = new SkillTree(this.scene);
-        const playerSkills = skillTree.getPlayerSkills();
+        const playerSkills = this.skillTreeManager.getPlayerSkills();
         const { playerState } = this.scene;
 
         // Container

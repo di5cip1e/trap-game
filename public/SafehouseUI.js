@@ -97,11 +97,46 @@ export default class SafehouseUI {
             this.container.add(runnerButton);
         }
         
-        // Back button
-        const backButton = this.createButton(width / 2, height / 2 + 240, 200, 45, 'LEAVE', () => {
+        // Upgrade button
+        if (this.scene.playerState.safehouseTier < CONFIG.SAFEHOUSE_TIERS.length - 1) {
+            const upgradeButton = this.createButton(width / 2 - 160, height / 2 + 240, 260, 50, 'UPGRADE', () => {
+                this.renderUpgradeMenu();
+            });
+            this.container.add(upgradeButton);
+        }
+        
+        // Rest button
+        const restButton = this.createButton(width / 2 + 160, height / 2 + 240, 260, 50, 'SLEEP', () => {
+            this.rest();
+        });
+        this.container.add(restButton);
+        
+        // Save/Load buttons
+        const saveButton = this.createButton(width / 2 - 120, height / 2 + 305, 200, 40, 'SAVE GAME', () => {
+            const success = SaveLoadSystem.saveGame(this.scene);
+            this.showSaveLoadMessage(success, 'Game saved!', 'Failed to save');
+        });
+        this.container.add(saveButton);
+        
+        const loadButton = this.createButton(width / 2 + 120, height / 2 + 305, 200, 40, 'LOAD GAME', () => {
+            const saveData = SaveLoadSystem.loadGame();
+            if (saveData) {
+                SaveLoadSystem.applySaveData(this.scene, saveData);
+                this.scene.hud.update();
+                this.showSaveLoadMessage(true, 'Game loaded!', '');
+                this.close();
+            } else {
+                this.showSaveLoadMessage(false, '', 'No save found');
+            }
+        });
+        this.container.add(loadButton);
+        
+        // Close button
+        const closeButtonY = tier.canHireRunners ? height / 2 + 360 : height / 2 + 360;
+        const closeButton = this.createButton(width / 2, closeButtonY, 200, 40, 'LEAVE', () => {
             this.close();
         });
-        this.container.add(backButton);
+        this.container.add(closeButton);
     }
     
     renderStashSlots(maxSlots) {
@@ -364,6 +399,99 @@ export default class SafehouseUI {
         this.isOpen = false;
     }
     
+
+    rest() {
+        const player = this.scene.playerState;
+        const restHustle = CONFIG.MAX_HUSTLE;
+        const prevHustle = player.hustle;
+        player.hustle = restHustle;
+        
+        // Time passes when you rest
+        if (this.scene.timeSystem) {
+            this.scene.timeSystem.advanceTime(6 * 60); // 6 hours
+        }
+        if (this.scene.calendarSystem) {
+            this.scene.calendarSystem.advanceDay();
+        }
+        
+        // Heat decreases while resting
+        player.heat = Math.max(0, player.heat - 10);
+        
+        this.showMessage(`Rested! Hustle: ${prevHustle} → ${player.hustle}`, CONFIG.COLORS.success);
+        if (this.scene.hud) this.scene.hud.update();
+        
+        // Refresh display
+        this.renderMainMenu();
+    }
+    
+    renderUpgradeMenu() {
+        this.clearUI();
+        const { width, height } = this.scene.scale;
+        const player = this.scene.playerState;
+        const currentTier = player.safehouseTier;
+        const nextTier = currentTier + 1;
+        
+        if (nextTier >= CONFIG.SAFEHOUSE_TIERS.length) {
+            this.showMessage('Max tier reached!', CONFIG.COLORS.success);
+            this.renderMainMenu();
+            return;
+        }
+        
+        const nextTierData = CONFIG.SAFEHOUSE_TIERS[nextTier];
+        
+        this.overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+        this.overlay.setScrollFactor(0);
+        this.overlay.setDepth(900);
+        
+        this.container = this.scene.add.container(0, 0);
+        this.container.setScrollFactor(0);
+        this.container.setDepth(902);
+        
+        const title = this.scene.add.text(width / 2, height / 2 - 200, 'UPGRADE SAFEHOUSE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '24px',
+            color: CONFIG.COLORS.primary
+        }).setOrigin(0.5);
+        this.container.add(title);
+        
+        const infoText = this.scene.add.text(width / 2, height / 2 - 100, 
+            `Current: ${CONFIG.SAFEHOUSE_TIERS[currentTier].name}\n` +
+            `Next: ${nextTierData.name}\n` +
+            `Cost: $${nextTierData.cost}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '14px',
+            color: CONFIG.COLORS.text,
+            align: 'center'
+        }).setOrigin(0.5);
+        this.container.add(infoText);
+        
+        const buyBtn = this.createButton(width / 2, height / 2 + 50, 250, 50, 'UPGRADE', () => {
+            if (player.money >= nextTierData.cost) {
+                player.money -= nextTierData.cost;
+                player.safehouseTier = nextTier;
+                this.showMessage('Safehouse upgraded!', CONFIG.COLORS.success);
+                if (this.scene.hud) this.scene.hud.update();
+                this.renderMainMenu();
+            } else {
+                this.showMessage('Not enough money!', CONFIG.COLORS.danger);
+            }
+        });
+        this.container.add(buyBtn);
+        
+        const backBtn = this.createButton(width / 2, height / 2 + 130, 200, 45, 'BACK', () => {
+            this.renderMainMenu();
+        });
+        this.container.add(backBtn);
+    }
+    
+    showSaveLoadMessage(success, successMsg, failMsg) {
+        if (success) {
+            this.showMessage(successMsg, CONFIG.COLORS.success);
+        } else if (failMsg) {
+            this.showMessage(failMsg, CONFIG.COLORS.danger);
+        }
+    }
+
     showMessage(text, color = CONFIG.COLORS.text) {
         const { width, height } = this.scene.scale;
         const msg = this.scene.add.text(width / 2, height / 2 + 300, text, {

@@ -129,81 +129,94 @@ export default class LevelSystem {
         const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
         container.add(overlay);
         
-        const panel = this.scene.add.rectangle(width / 2, height / 2, 600, 450, 0x1a1a2e);
+        const panel = this.scene.add.rectangle(width / 2, height / 2, 600, 500, 0x1a1a2e);
         panel.setStrokeStyle(4, 0xffd700);
         container.add(panel);
         
-        const title = this.scene.add.text(width / 2, height / 2 - 180, 'LEVEL UP!', {
+        const title = this.scene.add.text(width / 2, height / 2 - 200, 'LEVEL UP!', {
             fontFamily: 'Press Start 2P', fontSize: '36px', color: '#ffd700', stroke: '#000000', strokeThickness: 6
         }).setOrigin(0.5);
         container.add(title);
         
-        const levelText = this.scene.add.text(width / 2, height / 2 - 130, `You are now Level ${playerState.level}`, {
+        const levelText = this.scene.add.text(width / 2, height / 2 - 150, `You are now Level ${playerState.level}`, {
             fontFamily: 'Press Start 2P', fontSize: '18px', color: '#ffffff'
         }).setOrigin(0.5);
         container.add(levelText);
         
-        const rewardsText = this.scene.add.text(width / 2, height / 2 - 80, '+1 Ability Point\n+1 Stat Point', {
-            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#00ff00', align: 'center'
+        // Display Points Available
+        const pointsDisplay = this.scene.add.text(width / 2, height / 2 - 100, 
+            `Stat Points Available: ${playerState.statPoints}\nAbility Points (AP): ${playerState.abilityPoints}`, {
+            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#00ff88', align: 'center', lineSpacing: 8
         }).setOrigin(0.5);
-        container.add(rewardsText);
-        
-        // Stat allocation UI
-        const stats = ['intuition', 'ability', 'luck'];
-        const labels = { intuition: 'INTUITION', ability: 'ABILITY', luck: 'LUCK' };
-        const statX = [width / 2 - 120, width / 2, width / 2 + 120];
-        
-        const updateStats = () => {
-            stats.forEach((stat, i) => {
-                statTexts[i].setText(`${labels[stat]}: ${playerState.stats[stat]}`);
-            });
-            pointsText.setText(`Stat Points: ${playerState.statPoints} | AP: ${playerState.abilityPoints}`);
-            closeBtn.setAlpha(playerState.statPoints > 0 ? 0.5 : 1);
-            closeBtnText.setText(playerState.statPoints > 0 ? 'SPEND FIRST' : 'CONTINUE');
-        };
-        
-        const statTexts = stats.map((stat, i) => {
-            return this.scene.add.text(statX[i], height / 2 - 10, `${labels[stat]}: ${playerState.stats[stat]}`, {
-                fontFamily: 'Press Start 2P', fontSize: '12px', color: '#88ff88'
+        container.add(pointsDisplay);
+
+        // --- STAT ALLOCATION ROW GENERATOR ---
+        let startY = height / 2 - 30;
+        const stats = [
+            { key: 'intuition', name: 'INTUITION', color: '#4488ff', desc: 'Stealth & Awareness' },
+            { key: 'ability', name: 'ABILITY', color: '#ff4444', desc: 'Combat & Speed' },
+            { key: 'luck', name: 'LUCK', color: '#ffcc00', desc: 'Prices & RNG' }
+        ];
+
+        const statTexts = {}; // Store references to update numbers dynamically
+
+        stats.forEach((stat, index) => {
+            const y = startY + (index * 60);
+            
+            // Stat Name & Desc
+            const nameText = this.scene.add.text(width / 2 - 180, y, stat.name, {
+                fontFamily: 'Press Start 2P', fontSize: '14px', color: stat.color
+            }).setOrigin(0, 0.5);
+            
+            const descText = this.scene.add.text(width / 2 - 180, y + 18, stat.desc, {
+                fontFamily: 'Press Start 2P', fontSize: '8px', color: '#888888'
+            }).setOrigin(0, 0.5);
+            
+            // Current Stat Value
+            statTexts[stat.key] = this.scene.add.text(width / 2 + 50, y, `${playerState.stats[stat.key]}`, {
+                fontFamily: 'Press Start 2P', fontSize: '18px', color: '#ffffff'
             }).setOrigin(0.5);
+
+            // [+] Button
+            const plusBtn = this.scene.add.rectangle(width / 2 + 130, y, 40, 40, 0x2a4a2a).setStrokeStyle(2, 0x00ff00).setInteractive({ useHandCursor: true });
+            const plusText = this.scene.add.text(width / 2 + 130, y, '+', {
+                fontFamily: 'Press Start 2P', fontSize: '20px', color: '#00ff00'
+            }).setOrigin(0.5);
+
+            plusBtn.on('pointerdown', () => {
+                if (playerState.statPoints > 0 && playerState.stats[stat.key] < 100) {
+                    playerState.statPoints--;
+                    playerState.stats[stat.key]++;
+                    
+                    // Update Text
+                    statTexts[stat.key].setText(`${playerState.stats[stat.key]}`);
+                    pointsDisplay.setText(`Stat Points Available: ${playerState.statPoints}\nAbility Points (AP): ${playerState.abilityPoints}`);
+                    
+                    // Visual feedback
+                    this.scene.tweens.add({ targets: statTexts[stat.key], scale: 1.5, yoyo: true, duration: 150 });
+                } else if (playerState.statPoints <= 0) {
+                    this.scene.showFloatingText('No Stat Points left!', '#ff0000');
+                } else {
+                    this.scene.showFloatingText('Stat is maxed out!', '#ffaa00');
+                }
+            });
+
+            container.add([nameText, descText, statTexts[stat.key], plusBtn, plusText]);
         });
         
-        // + buttons
-        stats.forEach((stat, i) => {
-            if (playerState.statPoints > 0) {
-                const btn = this.scene.add.text(statX[i] + 70, height / 2 - 10, '+', {
-                    fontFamily: 'Press Start 2P', fontSize: '16px', color: '#00ff00'
-                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-                btn.on('pointerup', () => {
-                    if (playerState.statPoints > 0) {
-                        playerState.statPoints--;
-                        playerState.stats[stat]++;
-                        updateStats();
-                        if (this.scene.hud) this.scene.hud.update();
-                    }
-                });
-                container.add(btn);
-            }
-        });
-        
-        const pointsText = this.scene.add.text(width / 2, height / 2 + 60, `Stat Points: ${playerState.statPoints} | AP: ${playerState.abilityPoints}`, {
-            fontFamily: 'Press Start 2P', fontSize: '14px', color: '#ffcc00'
-        }).setOrigin(0.5);
-        container.add(pointsText);
-        
-        const closeBtn = this.scene.add.rectangle(width / 2, height / 2 + 140, 200, 50, 0x2a2a4a).setStrokeStyle(2, 0xffd700).setInteractive({ useHandCursor: true });
-        container.add(closeBtn);
-        
-        const closeBtnText = this.scene.add.text(width / 2, height / 2 + 140, playerState.statPoints > 0 ? 'SPEND FIRST' : 'CONTINUE', {
+        // Continue / Close button
+        const btnBg = this.scene.add.rectangle(width / 2, height / 2 + 160, 250, 50, 0x2a2a4a).setStrokeStyle(2, 0xffd700).setInteractive({ useHandCursor: true });
+        const btnText = this.scene.add.text(width / 2, height / 2 + 160, 'FINISH & CONTINUE', {
             fontFamily: 'Press Start 2P', fontSize: '14px', color: '#ffffff'
         }).setOrigin(0.5);
-        container.add(closeBtnText);
+        container.add([btnBg, btnText]);
         
-        closeBtn.on('pointerup', () => {
+        btnBg.on('pointerover', () => btnBg.setFillStyle(0x3a3a5a));
+        btnBg.on('pointerout', () => btnBg.setFillStyle(0x2a2a4a));
+        btnBg.on('pointerup', () => {
             container.destroy();
+            if (this.scene.hud) this.scene.hud.update();
         });
-        
-        updateStats();
     }
 
     /**

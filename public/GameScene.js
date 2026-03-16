@@ -8,7 +8,7 @@ import MapGenerator, { CONTESTED_ZONES, NEIGHBORHOODS, FACTION_HQ, isPositionCon
 import SafehouseUI from './SafehouseUI.js';
 import VendorUI from './VendorUI.js';
 import WorkstationUI from './WorkstationUI.js';
-import RivalEncounterUI from './RivalEncounterUI.js';
+import DialogUI from './DialogUI.js';
 import EquipmentUI from './EquipmentUI.js';
 import PoliceEncounterUI from './PoliceEncounterUI.js';
 import RelationshipUI from './RelationshipUI.js';
@@ -728,7 +728,7 @@ export default class GameScene extends Phaser.Scene {
         this.safehouseUI = new SafehouseUI(this);
         this.vendorUI = new VendorUI(this);
         this.workstationUI = new WorkstationUI(this);
-        this.rivalEncounterUI = new RivalEncounterUI(this);
+        // RivalEncounterUI removed - using DialogUI instead
         this.equipmentUI = new EquipmentUI(this);
         this.policeEncounterUI = new PoliceEncounterUI(this);
         this.relationshipUI = new RelationshipUI(this);
@@ -739,6 +739,9 @@ export default class GameScene extends Phaser.Scene {
         this.questSystem = new QuestSystem(this);
         this.questUI = new QuestUI(this);
         this.questUI.create();
+        
+        // Dialog UI for NPC interactions
+        this.dialogUI = new DialogUI(this);
         
         // Setup quest completion callback for police suspicion tracking
         this.questSystem.onQuestComplete = (questId) => {
@@ -1142,7 +1145,7 @@ export default class GameScene extends Phaser.Scene {
         return this.safehouseUI.isOpen || 
                this.vendorUI.isOpen || 
                this.workstationUI.isOpen || 
-               this.rivalEncounterUI.isOpen || 
+               this.dialogUI.isOpen || 
                this.equipmentUI.isOpen ||
                this.policeEncounterUI.isOpen || 
                this.relationshipUI.isOpen ||
@@ -1150,6 +1153,7 @@ export default class GameScene extends Phaser.Scene {
                this.tutorialUI.isOpen ||
                (this.skillTree.ui && this.skillTree.ui.isOpen) ||
                (this.questUI && this.questUI.isOpen) ||
+               (this.dialogUI && this.dialogUI.isOpen) ||
                this.pauseOverlay !== null;
     }
     
@@ -1666,7 +1670,7 @@ export default class GameScene extends Phaser.Scene {
         
         if (this.playerState.isMoving || this.safehouseUI.isOpen || 
             this.vendorUI.isOpen || this.workstationUI.isOpen || 
-            this.rivalEncounterUI.isOpen || this.equipmentUI.isOpen ||
+            this.dialogUI.isOpen || this.equipmentUI.isOpen ||
             this.policeEncounterUI.isOpen || this.relationshipUI.isOpen) return;
         
         // ==========================================
@@ -1902,10 +1906,21 @@ export default class GameScene extends Phaser.Scene {
                         this.showFloatingText(`NPC not available${status}`, CONFIG.COLORS.warning);
                         return;
                     }
-                    this.relationshipUI.open(obj);
+                    // Open DialogUI for quest interactions
+                    if (obj.npcId && this.dialogUI) {
+                        this.dialogUI.open(obj.npcId);
+                    } else {
+                        this.relationshipUI.open(obj);
+                    }
                     return;
                 } else if (obj.type === 'supplier') {
                     this.openSupplierMeeting(obj.supplierId);
+                    return;
+                } else if (obj.type === 'npc' && obj.npcId) {
+                    // Generic NPC with quest dialog
+                    if (this.dialogUI) {
+                        this.dialogUI.open(obj.npcId);
+                    }
                     return;
                 } else if (obj.type === 'poi' && obj.interactive) {
                     // Check if it's the police station
@@ -4976,7 +4991,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.safehouseUI.isOpen) this.safehouseUI.close();
         if (this.vendorUI.isOpen) this.vendorUI.close();
         if (this.workstationUI.isOpen) this.workstationUI.close();
-        if (this.rivalEncounterUI.isOpen) this.rivalEncounterUI.close();
+        if (this.dialogUI.isOpen) this.rivalEncounterUI.close();
         if (this.equipmentUI.isOpen) this.equipmentUI.close();
         if (this.policeEncounterUI.isOpen) this.policeEncounterUI.close();
         if (this.relationshipUI.isOpen) this.relationshipUI.close();

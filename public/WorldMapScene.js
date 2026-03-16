@@ -1,8 +1,10 @@
 /**
  * WorldMapScene.js - Pokemon-style world navigation for TRAP
+ * Shows all neighborhoods and allows travel between unlocked areas
  */
 import { NEIGHBORHOODS } from './MapGenerator.js';
 
+// Adjacency graph
 const WORLD_ADJACENCY = {
     'RIVERSIDE': [],
     'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
@@ -101,20 +103,29 @@ export default class WorldMapScene extends Phaser.Scene {
             const playerLevel = this.gameScene?.playerState?.level || 1;
             const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
             const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
+            const isLockedByLevel = !isUnlocked && this.unlockedNeighborhoods.includes(key) && playerLevel < reqs.minLevel;
             const isCurrent = this.currentNeighborhood === key;
             
             const x = mapX + pos.x * mapWidth;
             const y = mapY + pos.y * mapHeight;
             const color = isUnlocked ? parseInt(neighborhood.color.replace('#', '0x')) : 0x333333;
+            const markerSize = isCurrent ? 20 : 14;
             
-            const marker = this.add.circle(x, y, isCurrent ? 20 : 14, color);
+            const marker = this.add.circle(x, y, markerSize, color);
             if (isCurrent) marker.setStrokeStyle(3, 0xffffff);
             else if (!isUnlocked) marker.setAlpha(0.4);
             
-            this.add.text(x, y + 25, neighborhood.name, { fontSize: isCurrent ? '14px' : '12px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#ffffff' : '#555555' }).setOrigin(0.5);
+            let labelColor = isUnlocked ? '#ffffff' : '#555555';
+            if (isLockedByLevel) labelColor = '#ff6666';
+            
+            this.add.text(x, y + 25, neighborhood.name, { fontSize: isCurrent ? '14px' : '12px', fontFamily: 'Courier, monospace', color: labelColor }).setOrigin(0.5);
             
             if (isUnlocked) {
                 marker.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.travelToNeighborhood(key));
+            } else if (isLockedByLevel) {
+                marker.setInteractive({ useHandCursor: true })
+                    .on('pointerover', () => this.showUnlockRequirement(key, reqs.minLevel))
+                    .on('pointerout', () => this.hideUnlockRequirement());
             }
         });
         
@@ -126,42 +137,89 @@ export default class WorldMapScene extends Phaser.Scene {
         const startY = 280;
         const cardWidth = 350;
         const cardHeight = 100;
+        const gap = 20;
         
-        Object.entries(NEIGHBORHOODS).forEach(([key, data], index) => {
+        const neighborhoods = Object.entries(NEIGHBORHOODS);
+        const leftCol = [];
+        const rightCol = [];
+        
+        neighborhoods.forEach(([key, data], index) => {
+            if (index % 2 === 0) leftCol.push([key, data]);
+            else rightCol.push([key, data]);
+        });
+        
+        const createCard = (key, data, x, y) => {
             const playerLevel = this.gameScene?.playerState?.level || 1;
             const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
             const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
+            const isLockedByLevel = this.unlockedNeighborhoods.includes(key) && playerLevel < reqs.minLevel;
             const isCurrent = this.currentNeighborhood === key;
             
-            const x = width * 0.5;
-            const y = startY + index * (cardHeight + 20);
-            
-            const bgColor = isCurrent ? 0x2a4a2a : (isUnlocked ? 0x2a2a3a : 0x1a1a1a);
+            const bgColor = isCurrent ? 0x2a4a2a : (isUnlocked ? 0x2a2a3a : (isLockedByLevel ? 0x3a2a2a : 0x1a1a1a));
             const card = this.add.rectangle(x, y, cardWidth, cardHeight, bgColor);
-            card.setStrokeStyle(isCurrent ? 2 : 1, isCurrent ? 0x00ff00 : (isUnlocked ? 0x666666 : 0x333333));
+            card.setStrokeStyle(isCurrent ? 2 : 1, isCurrent ? 0x00ff00 : (isUnlocked ? 0x666666 : (isLockedByLevel ? 0xff4444 : 0x333333)));
             
-            this.add.text(x - cardWidth/2 + 15, y - 30, data.name, { fontSize: '18px', fontFamily: 'Courier, monospace', color: isUnlocked ? data.color : '#555555', fontStyle: 'bold' });
-            this.add.text(x - cardWidth/2 + 15, y, data.description.substring(0, 40), { fontSize: '12px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#aaaaaa' : '#555555' });
+            const nameColor = isLockedByLevel ? '#ff6666' : (isUnlocked ? data.color : '#555555');
+            this.add.text(x - cardWidth/2 + 15, y - 30, data.name, { fontSize: '18px', fontFamily: 'Courier, monospace', color: nameColor, fontStyle: 'bold' });
             
-            const statusText = isCurrent ? 'CURRENT' : (isUnlocked ? 'UNLOCKED' : 'LOCKED');
-            const statusColor = isCurrent ? '#00ff00' : (isUnlocked ? '#888888' : '#555555');
-            this.add.text(x + cardWidth/2 - 15, y + 25, statusText, { fontSize: '11px', fontFamily: 'Courier, monospace', color: statusColor }).setOrigin(1, 0);
+            const desc = data.description.length > 45 ? data.description.substring(0, 42) + '...' : data.description;
+            this.add.text(x - cardWidth/2 + 15, y, desc, { fontSize: '12px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#aaaaaa' : '#555555' });
+            
+            const factions = data.factions ? data.factions.join(', ') : 'None';
+            this.add.text(x - cardWidth/2 + 15, y + 25, `Factions: ${factions}`, { fontSize: '11px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#888888' : '#444444' });
+            
+            const dangerLevel = data.dangerLevel || 1;
+            const dangerText = '⚠'.repeat(dangerLevel) + '☆'.repeat(5 - dangerLevel);
+            this.add.text(x + cardWidth/2 - 15, y - 30, dangerText, { fontSize: '12px', fontFamily: 'Courier, monospace', color: dangerLevel >= 4 ? '#ff4444' : (dangerLevel >= 3 ? '#ffaa00' : '#44ff44') }).setOrigin(1, 0);
+            
+            let statusText = '';
+            let statusColor = '#555555';
+            
+            if (isCurrent) { statusText = 'CURRENT'; statusColor = '#00ff00'; }
+            else if (isLockedByLevel) { statusText = `LVL ${reqs.minLevel}`; statusColor = '#ff4444'; }
+            else if (isUnlocked) { statusText = 'UNLOCKED'; statusColor = '#888888'; }
+            else { statusText = 'LOCKED'; }
+            
+            this.add.text(x + cardWidth/2 - 15, y + 25, statusText, { fontSize: '11px', fontFamily: 'Courier, monospace', color: statusColor, fontStyle: 'bold' }).setOrigin(1, 0);
             
             if (isUnlocked && !isCurrent) {
-                card.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.travelToNeighborhood(key));
+                card.setInteractive({ useHandCursor: true })
+                    .on('pointerover', () => card.setFillStyle(isCurrent ? 0x3a5a3a : 0x3a3a4a))
+                    .on('pointerout', () => card.setFillStyle(bgColor))
+                    .on('pointerdown', () => this.travelToNeighborhood(key));
+            } else if (isLockedByLevel) {
+                card.setInteractive({ useHandCursor: true })
+                    .on('pointerover', () => card.setFillStyle(0x4a2a2a))
+                    .on('pointerout', () => card.setFillStyle(bgColor))
+                    .on('pointerdown', () => this.showFloatingText(`Requires Level ${reqs.minLevel}!`, '#ff4444'));
             }
-        });
+        };
+        
+        leftCol.forEach(([key, data], index) => createCard(key, data, width * 0.25, startY + index * (cardHeight + gap)));
+        rightCol.forEach(([key, data], index) => createCard(key, data, width * 0.75, startY + index * (cardHeight + gap)));
     }
     
     travelToNeighborhood(key) {
+        const neighborhood = NEIGHBORHOODS[key];
         const { width, height } = this.scale;
+        
         const overlay = this.add.rectangle(width/2, height/2, width, height, 0x000000, 0.7);
         
-        const confirmBtn = this.add.text(width/2 - 80, height/2 + 40, '[ CONFIRM ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#00ff00' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        const cancelBtn = this.add.text(width/2 + 80, height/2 + 40, '[ CANCEL ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#ff4444' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        this.add.text(width/2, height/2 - 60, `Travel to ${neighborhood.name}?`, { fontSize: '32px', fontFamily: 'Courier, monospace', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(width/2, height/2 - 10, neighborhood.description, { fontSize: '16px', fontFamily: 'Courier, monospace', color: '#aaaaaa' }).setOrigin(0.5);
+        
+        const confirmBtn = this.add.text(width/2 - 100, height/2 + 60, '[ CONFIRM ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#00ff00' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const cancelBtn = this.add.text(width/2 + 100, height/2 + 60, '[ CANCEL ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#ff4444' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        
+        confirmBtn.on('pointerover', () => confirmBtn.setColor('#44ff44'));
+        confirmBtn.on('pointerout', () => confirmBtn.setColor('#00ff00'));
+        cancelBtn.on('pointerover', () => cancelBtn.setColor('#ff6666'));
+        cancelBtn.on('pointerout', () => cancelBtn.setColor('#ff4444'));
         
         confirmBtn.on('pointerdown', () => { overlay.destroy(); confirmBtn.destroy(); cancelBtn.destroy(); this.performTravel(key); });
         cancelBtn.on('pointerdown', () => { overlay.destroy(); confirmBtn.destroy(); cancelBtn.destroy(); });
+        
+        this.input.keyboard.once('keydown-ENTER', () => this.performTravel(key));
     }
     
     performTravel(targetNeighborhood) {
@@ -169,6 +227,7 @@ export default class WorldMapScene extends Phaser.Scene {
             if (this.gameScene && this.gameScene.playerState) {
                 this.gameScene.playerState.neighborhood = targetNeighborhood;
             } else {
+                this.showFloatingText('Travel error!', '#ff0000');
                 return;
             }
             
@@ -178,8 +237,9 @@ export default class WorldMapScene extends Phaser.Scene {
                 this.scene.stop();
                 this.gameScene.scene.restart({ loadedState: preservedState });
             });
-        } catch (e) {
-            console.error('Travel error:', e);
+        } catch (error) {
+            console.error('Error during travel:', error);
+            this.showFloatingText('Travel failed!', '#ff0000');
         }
     }
     
@@ -190,4 +250,33 @@ export default class WorldMapScene extends Phaser.Scene {
             this.scene.resume('GameScene');
         });
     }
+    
+    showFloatingText(message, color = '#ffffff') {
+        const { width, height } = this.scale;
+        const text = this.add.text(width/2, height
+    showFloatingText(message, color = '#ffffff') {
+        const { width, height } = this.scale;
+        
+        const text = this.add.text(width / 2, height / 2 - 100, message, {
+            fontSize: '24px',
+            fontFamily: 'Courier, monospace',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        this.tweens.add({
+            targets: text,
+            y: text.y - 50,
+            alpha: 0,
+            duration: 1500,
+            onComplete: () => text.destroy()
+        });
+    }
+    
+    showUnlockRequirement(neighborhood, minLevel) {
+        this.showFloatingText(`Requires Level ${minLevel}`, '#ff4444');
+    }
+    
+    hideUnlockRequirement() {}
 }

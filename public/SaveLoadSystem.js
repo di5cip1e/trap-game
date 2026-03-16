@@ -382,6 +382,23 @@ export default class SaveLoadSystem {
                 // Heat & Hustle
                 heat: gameScene.playerState.heat,
                 hustle: gameScene.playerState.hustle,
+
+                // NEW: Exact Time of Day
+                timeInMinutes: gameScene.timeSystem ? gameScene.timeSystem.timeInMinutes : (6 * 60),
+
+                // NEW: Faction Reputation
+                factionReputation: { ...gameScene.playerState.factionReputation },
+
+                // NEW: Police & Suspicion States
+                policeSuspicion: gameScene.playerState.policeSuspicion || 0,
+                policeSuspicionLevel: gameScene.playerState.policeSuspicionLevel || 'none',
+                policeRaidTriggered: gameScene.playerState.policeRaidTriggered || false,
+                arrested: gameScene.playerState.arrested || false,
+                bigCityPoliceSuspicion: gameScene.playerState.bigCityPoliceSuspicion || 0,
+                bigCityPoliceSuspicionLevel: gameScene.playerState.bigCityPoliceSuspicionLevel || 'none',
+                bigCityPoliceRaidTriggered: gameScene.playerState.bigCityPoliceRaidTriggered || false,
+                federalInvestigation: gameScene.playerState.federalInvestigation || false,
+                justReleasedFromPrison: gameScene.playerState.justReleasedFromPrison || false,
                 
                 // NEW: Neighborhood demand history
                 neighborhoodHistory: gameScene.playerState.neighborhoodHistory || {},
@@ -614,6 +631,23 @@ export default class SaveLoadSystem {
                 // Heat & Hustle
                 heat: gameScene.playerState.heat,
                 hustle: gameScene.playerState.hustle,
+
+                // NEW: Exact Time of Day
+                timeInMinutes: gameScene.timeSystem ? gameScene.timeSystem.timeInMinutes : (6 * 60),
+
+                // NEW: Faction Reputation
+                factionReputation: { ...gameScene.playerState.factionReputation },
+
+                // NEW: Police & Suspicion States
+                policeSuspicion: gameScene.playerState.policeSuspicion || 0,
+                policeSuspicionLevel: gameScene.playerState.policeSuspicionLevel || 'none',
+                policeRaidTriggered: gameScene.playerState.policeRaidTriggered || false,
+                arrested: gameScene.playerState.arrested || false,
+                bigCityPoliceSuspicion: gameScene.playerState.bigCityPoliceSuspicion || 0,
+                bigCityPoliceSuspicionLevel: gameScene.playerState.bigCityPoliceSuspicionLevel || 'none',
+                bigCityPoliceRaidTriggered: gameScene.playerState.bigCityPoliceRaidTriggered || false,
+                federalInvestigation: gameScene.playerState.federalInvestigation || false,
+                justReleasedFromPrison: gameScene.playerState.justReleasedFromPrison || false,
                 
                 // NEW: Neighborhood demand history
                 neighborhoodHistory: gameScene.playerState.neighborhoodHistory || {},
@@ -912,8 +946,8 @@ export default class SaveLoadSystem {
             
             // Restore stats
             if (saveData.stats && typeof saveData.stats === 'object') {
-                // Validate required stat properties
-                const requiredStats = ['strength', 'agility', 'charisma', 'intelligence'];
+                // UPDATE: Use the new RPG stats
+                const requiredStats = ['intuition', 'ability', 'luck'];
                 const validStats = {};
                 let hasAllStats = true;
                 
@@ -921,20 +955,17 @@ export default class SaveLoadSystem {
                     if (typeof saveData.stats[stat] === 'number') {
                         validStats[stat] = saveData.stats[stat];
                     } else {
-                        console.warn(`SaveLoadSystem: Missing or invalid stat "${stat}", using default 5`);
+                        // Default to 5 if migrating from an older save version
+                        console.warn(`SaveLoadSystem: Missing stat "${stat}", using default 5`);
                         validStats[stat] = 5;
                         hasAllStats = false;
                     }
                 }
                 
                 gameScene.playerState.stats = validStats;
-                
-                if (!hasAllStats) {
-                    console.warn('SaveLoadSystem: Some stats were missing, defaults applied');
-                }
             } else {
                 console.warn('SaveLoadSystem: Invalid or missing stats, using defaults');
-                gameScene.playerState.stats = { strength: 5, agility: 5, charisma: 5, intelligence: 5 };
+                gameScene.playerState.stats = { intuition: 5, ability: 5, luck: 5 };
             }
             
             // Restore resources
@@ -984,6 +1015,29 @@ export default class SaveLoadSystem {
             gameScene.playerState.heat = typeof saveData.heat === 'number' ? saveData.heat : 0;
             gameScene.playerState.hustle = typeof saveData.hustle === 'number' ? saveData.hustle : 100;
             
+            // Restore Exact Time
+            if (gameScene.timeSystem && saveData.timeInMinutes !== undefined) {
+                gameScene.timeSystem.timeInMinutes = saveData.timeInMinutes;
+            }
+
+            // Restore Faction Reputation
+            if (saveData.factionReputation && typeof saveData.factionReputation === 'object') {
+                gameScene.playerState.factionReputation = { ...saveData.factionReputation };
+            } else {
+                gameScene.playerState.factionReputation = {};
+            }
+
+            // Restore Police & Suspicion Tracking
+            gameScene.playerState.policeSuspicion = saveData.policeSuspicion || 0;
+            gameScene.playerState.policeSuspicionLevel = saveData.policeSuspicionLevel || 'none';
+            gameScene.playerState.policeRaidTriggered = saveData.policeRaidTriggered || false;
+            gameScene.playerState.arrested = saveData.arrested || false;
+            gameScene.playerState.bigCityPoliceSuspicion = saveData.bigCityPoliceSuspicion || 0;
+            gameScene.playerState.bigCityPoliceSuspicionLevel = saveData.bigCityPoliceSuspicionLevel || 'none';
+            gameScene.playerState.bigCityPoliceRaidTriggered = saveData.bigCityPoliceRaidTriggered || false;
+            gameScene.playerState.federalInvestigation = saveData.federalInvestigation || false;
+            gameScene.playerState.justReleasedFromPrison = saveData.justReleasedFromPrison || false;
+
             // NEW: Restore neighborhood demand history
             if (saveData.neighborhoodHistory && typeof saveData.neighborhoodHistory === 'object') {
                 gameScene.playerState.neighborhoodHistory = { ...saveData.neighborhoodHistory };

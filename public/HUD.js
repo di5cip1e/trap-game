@@ -331,10 +331,47 @@ export default class HUD {
         
         this.heatBarMaxWidth = heatBarWidth - 4;
         
+        // Police Suspicion bar (below heat)
+        const suspBarWidth = 150;
+        const suspBarHeight = 20;
+        const suspBarX = heatBarX;
+        const suspBarY = heatBarY + 30;
+        
+        // Suspicion label
+        this.suspicionText = this.scene.add.text(suspBarX, suspBarY - 22, 'SUSP: NONE', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '10px',
+            color: CONFIG.COLORS.text
+        }).setScrollFactor(0).setDepth(502);
+        
+        // Suspicion bar background
+        this.suspBarBg = this.scene.add.rectangle(
+            suspBarX, suspBarY,
+            suspBarWidth, suspBarHeight,
+            0x1a1a1a
+        ).setOrigin(0, 0.5).setScrollFactor(0).setDepth(502);
+        this.suspBarBg.setStrokeStyle(2, 0x4488cc);
+        
+        // Suspicion bar fill
+        this.suspBarFill = this.scene.add.rectangle(
+            suspBarX + 2, suspBarY,
+            0, suspBarHeight - 4,
+            0x4488cc
+        ).setOrigin(0, 0.5).setScrollFactor(0).setDepth(503);
+        
+        this.suspBarMaxWidth = suspBarWidth - 4;
+        
         // Time/Day (center-right)
         this.timeText = this.scene.add.text(width - 400, topY, '', {
             fontFamily: 'Press Start 2P',
             fontSize: '18px',
+            color: CONFIG.COLORS.text
+        }).setScrollFactor(0).setDepth(502);
+        
+        // Faction Reputation display
+        this.factionText = this.scene.add.text(width - 400, topY + 70, 'REP: Unknown', {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
             color: CONFIG.COLORS.text
         }).setScrollFactor(0).setDepth(502);
         
@@ -659,6 +696,30 @@ export default class HUD {
             this.heatBarFill.setFillStyle(0xffcc00); // Yellow (low)
         }
         
+        // Update Police Suspicion (Dynamically checks Riverside vs Big City)
+        let suspicion = 0;
+        let suspLabel = 'none';
+        const isBigCity = ['DOWNTOWN', 'DOWNTOWN_EXPANSION', 'WAREHOUSE_DISTRICT'].includes(player.neighborhood);
+        
+        if (isBigCity) {
+            suspicion = player.bigCityPoliceSuspicion || 0;
+            suspLabel = player.bigCityPoliceSuspicionLevel || 'none';
+        } else {
+            suspicion = player.policeSuspicion || 0;
+            suspLabel = player.policeSuspicionLevel || 'none';
+        }
+
+        const maxSuspicion = isBigCity ? 150 : 100;
+        const suspPercent = Math.min(1, suspicion / maxSuspicion);
+        
+        this.suspicionText.setText(`SUSP: ${suspLabel.toUpperCase()}`);
+        this.suspBarFill.width = this.suspBarMaxWidth * suspPercent;
+        
+        // Color code suspicion bar
+        if (suspPercent >= 0.8) this.suspBarFill.setFillStyle(0xff0000); // Critical
+        else if (suspPercent >= 0.5) this.suspBarFill.setFillStyle(0xffaa00); // High
+        else this.suspBarFill.setFillStyle(0x4488cc); // Low/Medium
+        
         // Update time
         const timeStr = time.getTimeString();
         const dayStr = `Day ${time.day}`;
@@ -674,6 +735,25 @@ export default class HUD {
         // Update calendar info
         const calendar = this.scene.calendarSystem.getCalendarInfo();
         this.calendarText.setText(`${calendar.dayName} (Week ${calendar.week})`);
+        
+        // NEW: Update Faction Reputation display (Shows Most Notable)
+        if (this.scene.playerManager && this.factionText) {
+            const notableFactions = this.scene.playerManager.getNotableFactions();
+            
+            if (notableFactions.length > 0) {
+                // Display the faction they have the strongest relationship (good or bad) with
+                const topFaction = notableFactions[0];
+                this.factionText.setText(`REP: ${topFaction.name} [${topFaction.label.toUpperCase()}]`);
+                
+                // Color code based on standing
+                if (topFaction.reputation >= 25) this.factionText.setColor('#66ff66'); // Green for friendly
+                else if (topFaction.reputation <= -25) this.factionText.setColor('#ff3333'); // Red for hostile
+                else this.factionText.setColor(CONFIG.COLORS.text);
+            } else {
+                this.factionText.setText('REP: Unknown');
+                this.factionText.setColor(CONFIG.COLORS.textDark);
+            }
+        }
         
         // Clear old event texts
         this.eventTexts.forEach(text => text.destroy());

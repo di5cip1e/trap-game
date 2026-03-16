@@ -356,8 +356,8 @@ export default class CharacterCreationScene extends Phaser.Scene {
                     ngpMoneyCarriedOver: carryOverMoney,
                     
                     // Start with only home neighborhood unlocked - others discovered but locked
-                    unlockedNeighborhoods: [GameScene.convertNeighborhoodToKeyStatic(this.characterData.neighborhood)],
-                    visitedNeighborhoods: [GameScene.convertNeighborhoodToKeyStatic(this.characterData.neighborhood)],
+                    unlockedNeighborhoods: [this.characterData.neighborhood || 'RIVERSIDE'],
+                    visitedNeighborhoods: [this.characterData.neighborhood || 'RIVERSIDE'],
                     
                     // Keep achievements (level, XP, skills, class)
                     level: saveData.level || 1,

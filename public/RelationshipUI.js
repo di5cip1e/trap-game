@@ -161,14 +161,20 @@ export default class RelationshipUI {
         );
         this.container.add(cashButton);
         
-        // Product bribe button
-        const canAffordProduct = this.scene.playerState.product >= CONFIG.BRIBE_PRODUCT_AMOUNT;
+        // Product bribe button - find available drug
+        const drugs = this.scene.playerState.drugs || {};
+        const availableDrug = Object.keys(drugs).find(k => 
+            drugs[k] >= CONFIG.BRIBE_PRODUCT_AMOUNT && 
+            (!CONFIG.DRUG_TYPES[k] || !CONFIG.DRUG_TYPES[k].isPrecursor)
+        );
+        const canAffordProduct = !!availableDrug;
+        
         const productButton = this.createBribeButton(
             width / 2 + 180, optionsY + 60,
-            `GIVE ${CONFIG.BRIBE_PRODUCT_AMOUNT} PRODUCT`,
+            `GIVE ${CONFIG.BRIBE_PRODUCT_AMOUNT} DRUGS`,
             `+${CONFIG.BRIBE_PRODUCT_LOYALTY} Loyalty`,
             canAffordProduct,
-            () => this.giveBribe('product')
+            () => this.giveBribe('product', availableDrug)
         );
         this.container.add(productButton);
         

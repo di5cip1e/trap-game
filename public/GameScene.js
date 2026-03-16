@@ -1801,6 +1801,64 @@ export default class GameScene extends Phaser.Scene {
         });
     }
     
+
+    /**
+     * Triggers a combat encounter when trying to seize a rival drug lab
+     */
+    triggerLabCombat(poi) {
+        this.playerState.isMoving = true;
+        
+        // Define the guard based on the danger level of the lab
+        let enemyType = 'thug';
+        if (poi.dangerLevel === 4) enemyType = 'gangster';
+        if (poi.dangerLevel >= 5) enemyType = 'enforcer';
+        
+        // Pause the background game entirely
+        this.scene.pause();
+        
+        // Launch the combat overlay
+        this.scene.launch('CombatScene', {
+            gameScene: this,
+            enemyData: {
+                type: enemyType,
+                name: `Lab Guard (${poi.poiKey})`
+            },
+            onVictory: (enemyKilled) => {
+                this.playerState.isMoving = false;
+                if (enemyKilled || enemyType.isFleeing) {
+                    // Mark the lab as cleared so they don't have to fight again!
+                    poi.cleared = true;
+                    
+                    // Give them the massive XP reward defined in the MapGenerator
+                    if (poi.experienceReward && this.levelSystem) {
+                        this.levelSystem.addXP(poi.experienceReward, 'battle');
+                    }
+                    
+                    this.showFloatingText('Lab Secured!', CONFIG.COLORS.success);
+                    
+                    // Now open the workstation UI!
+                    this.time.delayedCall(500, () => {
+                        if (this.workstationUI) this.workstationUI.open();
+                    });
+                }
+            },
+            onDefeat: (isHardcoreDeath) => {
+                this.playerState.isMoving = false;
+                if (!isHardcoreDeath) {
+                    // Kick them away from the lab
+                    const hustleLoss = Math.floor(this.playerState.hustle * 0.3);
+                    this.playerState.hustle = Math.max(0, this.playerState.hustle - hustleLoss);
+                    this.showFloatingText(`Repelled! -${hustleLoss} Hustle`, CONFIG.COLORS.danger);
+                    
+                    if (this.playerState.hustle <= 0 && this.passOut) {
+                        this.passOut();
+                    }
+                    if (this.hud) this.hud.update();
+                }
+            }
+        });
+    }
+    
     tryInteract() {
         // Check for interior exit first
         if (this.isIndoor && this.checkInteriorExit()) {

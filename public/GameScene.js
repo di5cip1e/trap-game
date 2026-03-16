@@ -40,6 +40,7 @@ import { RiversidePoliceSystem, RIVERSIDE_COPS, getAllCops, getCopPosition } fro
 import { BigCityPoliceSystem, BIG_CITY_COPS, getAllBigCityCops, getBigCityCopPosition } from './BigCityPolice.js';
 
 // Biome mapping based on neighborhood origin
+// Helper function (standalone, no this)
 function getBiomeForNeighborhood(neighborhood) {
     const biomeMap = {
         'Riverside': 'block',        // Starting area - simple block map
@@ -74,7 +75,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Determine biome based on neighborhood origin (not gender)
         const homeNeighborhood = this.characterData.neighborhood;
-        this.biomeType = this.getBiomeForNeighborhood(homeNeighborhood);
+        this.biomeType = getBiomeForNeighborhood(homeNeighborhood);
         
         // Initialize player state
         this.playerState = {
@@ -672,7 +673,7 @@ export default class GameScene extends Phaser.Scene {
         
         // Generate procedural map with neighborhood settings
         const neighborhood = this.playerState.neighborhood;
-        const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
+        const hoodConfig = NEIGHBORHOODS[neighborhood];
         const factions = hoodConfig?.factions || [];
         const primaryFaction = factions.length > 0 ? factions[0] : null;
         const isContested = this.isNeighborhoodContested(neighborhood);
@@ -1297,7 +1298,7 @@ export default class GameScene extends Phaser.Scene {
             const neighborhood = neighborhoodKey || this.playerState.neighborhood;
         
         // Get neighborhood config
-        const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
+        const hoodConfig = NEIGHBORHOODS[neighborhood];
         if (!hoodConfig) {
             console.error(`Unknown neighborhood: ${neighborhood}`);
             return;
@@ -1448,7 +1449,7 @@ export default class GameScene extends Phaser.Scene {
         }
         
         const { neighborhood } = this.playerState;
-        const hoodConfig = MapGenerator.NEIGHBORHOODS[neighborhood];
+        const hoodConfig = NEIGHBORHOODS[neighborhood];
         
         // Get neighboring neighborhoods based on direction
         const adjacency = {

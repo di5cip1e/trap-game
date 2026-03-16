@@ -374,19 +374,17 @@ export default class VendorUI {
         const total = this.quantity * currentPrice;
         const canAfford = this.scene.playerState.money >= total;
         
-        // Get selected drug key for inventory check
         const selectedDrug = this.drugTypes[this.selectedDrugIndex];
-        const [, drug] = selectedDrug || [null, {}];
-        const drugKey = drug.rawMaterial ? drug.rawMaterial.replace(' ', '') : drug.category;
+        const [drugKey] = selectedDrug || [null];
         
-        // Check inventory - use product inventory for processed drugs
-        const inventoryKey = 'rawMaterials'; // Default to raw materials
-        const afterPurchase = this.scene.playerState[inventoryKey] + this.quantity;
-        const hasInventorySpace = afterPurchase <= this.scene.playerState.rawCapacity;
+        const isPrecursor = drugKey === 'Precursor A' || drugKey === 'Precursor B';
+        const currentStock = this.scene.playerState.drugs[drugKey] || 0;
+        const maxCapacity = isPrecursor ? 20 : (this.scene.playerState.productCapacity || 20);
+        
+        const hasInventorySpace = (currentStock + this.quantity) <= maxCapacity;
         
         this.qtyText.setText(this.quantity.toString());
         
-        // Show faction pricing info
         const factionKey = this.getVendorFaction();
         let factionInfo = '';
         if (this.scene.playerManager) {
@@ -402,7 +400,6 @@ export default class VendorUI {
         }
         this.totalText.setText(`Total: $${total}${factionInfo}`);
         
-        // Update buy button state - must have both money AND inventory space
         if (canAfford && hasInventorySpace) {
             this.buyButton.list[0].setFillStyle(0x2a2a2a);
             this.buyButton.list[1].setColor(CONFIG.COLORS.text);
@@ -417,143 +414,73 @@ export default class VendorUI {
     buy() {
         const total = this.quantity * this.getCurrentDrugPrice();
         
-        // Get selected drug info
         const selectedDrug = this.drugTypes[this.selectedDrugIndex];
         if (!selectedDrug) {
             this.showMessage('No item selected!', CONFIG.COLORS.danger);
             return;
         }
-        const [drugKey, drug] = selectedDrug;
+        const [drugKey] = selectedDrug;
         
-        // Check if this is a precursor purchase from traveling salesman
-        const isPrecursorA = drugKey.toLowerCase() === 'precursor a';
-        const isPrecursorB = drugKey.toLowerCase() === 'precursor b';
-        const isPrecursor = isPrecursorA || isPrecursorB;
-        
-        // Check if player can afford
         if (this.scene.playerState.money < total) {
             this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
             return;
         }
         
-        if (isPrecursor) {
-            // Precursors go to drugs inventory, not raw materials
-            const precursorKey = isPrecursorA ? 'precursorA' : 'precursorB';
-            const currentPrecursors = this.scene.playerState.drugs[precursorKey] || 0;
-            const afterPurchase = currentPrecursors + this.quantity;
-            const maxPrecursors = 20; // Max precursor storage
-            
-            if (afterPurchase > maxPrecursors) {
-                const canBuy = maxPrecursors - currentPrecursors;
-                if (canBuy <= 0) {
-                    this.showMessage('Precursor inventory full!', CONFIG.COLORS.danger);
-                } else {
-                    this.showMessage(`Can only carry ${canBuy} more`, CONFIG.COLORS.danger);
-                }
-                return;
+        const isPrecursor = drugKey === 'Precursor A' || drugKey === 'Precursor B';
+        const currentStock = this.scene.playerState.drugs[drugKey] || 0;
+        const maxCapacity = isPrecursor ? 20 : (this.scene.playerState.productCapacity || 20);
+        
+        if (currentStock + this.quantity > maxCapacity) {
+            const canBuy = maxCapacity - currentStock;
+            if (canBuy <= 0) {
+                this.showMessage('Inventory full!', CONFIG.COLORS.danger);
+            } else {
+                this.showMessage(`Can only carry ${canBuy} more`, CONFIG.COLORS.danger);
             }
-            
-            // Process precursor purchase
-            this.scene.playerState.money -= total;
-            this.scene.playerState.drugs[precursorKey] = (this.scene.playerState.drugs[precursorKey] || 0) + this.quantity;
-        } else {
-            // Standard raw materials purchase
-            const afterPurchase = this.scene.playerState.rawMaterials + this.quantity;
-            if (afterPurchase > this.scene.playerState.rawCapacity) {
-                const canBuy = this.scene.playerState.rawCapacity - this.scene.playerState.rawMaterials;
-                if (canBuy <= 0) {
-                    this.showMessage('Inventory full!', CONFIG.COLORS.danger);
-                } else {
-                    this.showMessage(`Can only carry ${canBuy} more`, CONFIG.COLORS.danger);
-                }
-                return;
-            }
-            
-            // Process standard purchase
-            this.scene.playerState.money -= total;
-            this.scene.playerState.rawMaterials += this.quantity;
+            return;
         }
         
-        // Update HUD
-        if (this.scene.hud) {
-            this.scene.hud.update();
-        }
+        // Execute purchase
+        this.scene.playerState.money -= total;
+        this.scene.playerState.drugs[drugKey] = currentStock + this.quantity;
+        
+        if (this.scene.hud) this.scene.hud.update();
         this.moneyText.setText(`Your Money: $${this.scene.playerState.money}`);
         this.updateDisplay();
         
-        // Track precursor purchases from traveling salesman to unlock content
         if (isPrecursor && this.customInventory) {
             this.scene.playerState.purchasedFromSalesman = true;
         }
         
-        // Show purchase message
-        if (isPrecursor) {
-            this.showMessage(`Purchased ${this.quantity} ${drugKey}`);
-        } else {
-            this.showMessage(`Purchased ${this.quantity} Raw Materials`);
-        }
+        this.showMessage(`Purchased ${this.quantity} ${drugKey}`);
     }
     
-    /**
-     * Buy maximum affordable quantity
-     */
     buyMax() {
         const currentPrice = this.getCurrentDrugPrice();
         const playerMoney = this.scene.playerState.money;
         
-        // Get selected drug info
         const selectedDrug = this.drugTypes[this.selectedDrugIndex];
         if (!selectedDrug) {
             this.showMessage('No item selected!', CONFIG.COLORS.danger);
             return;
         }
-        const [drugKey, drug] = selectedDrug;
+        const [drugKey] = selectedDrug;
         
-        // Check if this is a precursor
-        const isPrecursorA = drugKey.toLowerCase() === 'precursor a';
-        const isPrecursorB = drugKey.toLowerCase() === 'precursor b';
-        const isPrecursor = isPrecursorA || isPrecursorB;
+        const isPrecursor = drugKey === 'Precursor A' || drugKey === 'Precursor B';
+        const currentStock = this.scene.playerState.drugs[drugKey] || 0;
+        const maxCapacity = isPrecursor ? 20 : (this.scene.playerState.productCapacity || 20);
         
-        if (isPrecursor) {
-            // Calculate max for precursors
-            const precursorKey = isPrecursorA ? 'precursorA' : 'precursorB';
-            const currentPrecursors = this.scene.playerState.drugs[precursorKey] || 0;
-            const maxPrecursors = 20;
-            const maxByInventory = maxPrecursors - currentPrecursors;
-            const maxByMoney = Math.floor(playerMoney / currentPrice);
-            const maxAffordable = Math.min(maxByInventory, maxByMoney);
-            
-            if (maxAffordable <= 0) {
-                if (maxByInventory <= 0) {
-                    this.showMessage('Precursor inventory full!', CONFIG.COLORS.danger);
-                } else {
-                    this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
-                }
-                return;
-            }
-            
-            // Purchase max
-            this.quantity = maxAffordable;
-            this.buy();
-        } else {
-            // Calculate max for raw materials
-            const maxByInventory = this.scene.playerState.rawCapacity - this.scene.playerState.rawMaterials;
-            const maxByMoney = Math.floor(playerMoney / currentPrice);
-            const maxAffordable = Math.min(maxByInventory, maxByMoney);
-            
-            if (maxAffordable <= 0) {
-                if (maxByInventory <= 0) {
-                    this.showMessage('Inventory full!', CONFIG.COLORS.danger);
-                } else {
-                    this.showMessage('Not enough cash!', CONFIG.COLORS.danger);
-                }
-                return;
-            }
-            
-            // Purchase max
-            this.quantity = maxAffordable;
-            this.buy();
+        const maxByInventory = maxCapacity - currentStock;
+        const maxByMoney = Math.floor(playerMoney / currentPrice);
+        const maxAffordable = Math.min(maxByInventory, maxByMoney);
+        
+        if (maxAffordable <= 0) {
+            this.showMessage(maxByInventory <= 0 ? 'Inventory full!' : 'Not enough cash!', CONFIG.COLORS.danger);
+            return;
         }
+        
+        this.quantity = maxAffordable;
+        this.buy();
     }
     
     /**

@@ -192,7 +192,7 @@ export default class WorkstationUI {
         
         // Handle different display for crack processing
         if (this.selectedProcessingType === 'crack') {
-            const cocaineCount = player.drugs.cocaine || 0;
+            const cocaineCount = player.drugs['Cocaine'] || 0;
             const canProcess = cocaineCount >= 2 && player.hustle >= CONFIG.PROCESSING_HUSTLE_COST;
             
             this.resourcesText.setText(
@@ -225,8 +225,8 @@ export default class WorkstationUI {
         
         // Handle meth processing display
         if (this.selectedProcessingType === 'meth') {
-            const precursorA = player.drugs.precursorA || 0;
-            const precursorB = player.drugs.precursorB || 0;
+            const precursorA = player.drugs['Precursor A'] || 0;
+            const precursorB = player.drugs['Precursor B'] || 0;
             const canProcess = precursorA >= 3 && precursorB >= 3 && player.hustle >= CONFIG.PROCESSING_HUSTLE_COST;
             
             this.resourcesText.setText(
@@ -308,8 +308,8 @@ export default class WorkstationUI {
         
         // Show/hide meth button based on precursor availability
         if (this.methButton) {
-            const precursorA = player.drugs.precursorA || 0;
-            const precursorB = player.drugs.precursorB || 0;
+            const precursorA = player.drugs['Precursor A'] || 0;
+            const precursorB = player.drugs['Precursor B'] || 0;
             const hasEnoughPrecursors = precursorA >= 3 && precursorB >= 3;
             this.methButton.setVisible(hasEnoughPrecursors);
             
@@ -329,7 +329,7 @@ export default class WorkstationUI {
         if (this.selectedProcessingType === 'crack') {
             // Crack processing: 2 Cocaine → 1 Crack
             const cocaineNeeded = 2;
-            const hasEnoughCocaine = player.drugs.cocaine >= cocaineNeeded;
+            const hasEnoughCocaine = player.drugs['Cocaine'] >= cocaineNeeded;
             const hasEnoughHustle = player.hustle >= CONFIG.PROCESSING_HUSTLE_COST;
             const hasSpace = (player.drugs.crack || 0) < (player.productCapacity || 20);
             
@@ -347,7 +347,7 @@ export default class WorkstationUI {
             }
             
             // Deduct cocaine, add crack
-            player.drugs.cocaine -= cocaineNeeded;
+            player.drugs['Cocaine'] -= cocaineNeeded;
             player.drugs.crack = (player.drugs.crack || 0) + 1;
             player.hustle -= CONFIG.PROCESSING_HUSTLE_COST;
             
@@ -363,10 +363,10 @@ export default class WorkstationUI {
             // Meth processing: 3 Precursor A + 3 Precursor B → Meth
             const player = this.scene.playerState;
             const precursorNeeded = 3;
-            const hasEnoughA = (player.drugs.precursorA || 0) >= precursorNeeded;
-            const hasEnoughB = (player.drugs.precursorB || 0) >= precursorNeeded;
+            const hasEnoughA = (player.drugs['Precursor A'] || 0) >= precursorNeeded;
+            const hasEnoughB = (player.drugs['Precursor B'] || 0) >= precursorNeeded;
             const hasEnoughHustle = player.hustle >= CONFIG.PROCESSING_HUSTLE_COST;
-            const hasSpace = (player.drugs.methamphetamine || 0) < (player.productCapacity || 20);
+            const hasSpace = (player.drugs['Meth'] || 0) < (player.productCapacity || 20);
             
             if (!hasEnoughA || !hasEnoughB) {
                 this.showMessage('Need 3 Precursor A + 3 Precursor B!', CONFIG.COLORS.danger);
@@ -382,9 +382,9 @@ export default class WorkstationUI {
             }
             
             // Deduct precursors, add meth
-            player.drugs.precursorA = (player.drugs.precursorA || 0) - precursorNeeded;
-            player.drugs.precursorB = (player.drugs.precursorB || 0) - precursorNeeded;
-            player.drugs.methamphetamine = (player.drugs.methamphetamine || 0) + 1;
+            player.drugs['Precursor A'] = (player.drugs['Precursor A'] || 0) - precursorNeeded;
+            player.drugs['Precursor B'] = (player.drugs['Precursor B'] || 0) - precursorNeeded;
+            player.drugs['Meth'] = (player.drugs['Meth'] || 0) + 1;
             player.hustle -= CONFIG.PROCESSING_HUSTLE_COST;
             
             // Update HUD

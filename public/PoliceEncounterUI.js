@@ -210,10 +210,21 @@ export default class PoliceEncounterUI {
         } else {
             // Player gets busted
             const cashLoss = Math.floor(this.scene.playerState.money * CONFIG.POLICE_BUST_CASH_PENALTY);
-            const productLoss = this.scene.playerState.product;
+            
+            // NEW: Tally up and confiscate all specific drugs
+            let totalDrugsLost = 0;
+            if (this.scene.playerState.drugs) {
+                for (const drugKey in this.scene.playerState.drugs) {
+                    totalDrugsLost += this.scene.playerState.drugs[drugKey] || 0;
+                    this.scene.playerState.drugs[drugKey] = 0; // Wipe the stash
+                }
+            }
+            
+            // Catch legacy product just in case
+            totalDrugsLost += this.scene.playerState.product || 0;
+            this.scene.playerState.product = 0;
             
             this.scene.playerState.money = Math.max(0, this.scene.playerState.money - cashLoss);
-            this.scene.playerState.product = 0;
             
             const bustText = this.scene.add.text(width / 2, height / 2 - 60, 'BUSTED!', {
                 fontFamily: 'Press Start 2P',
@@ -229,7 +240,7 @@ export default class PoliceEncounterUI {
                 `Officer used ABILITY\n\n` +
                 `You've been arrested!\n` +
                 `Lost $${cashLoss}\n` +
-                `Lost ${productLoss} Product\n\n` +
+                `Lost ${totalDrugsLost} Drugs/Precursors\n\n` +
                 `Released at Safehouse...`, {
                 fontFamily: 'Press Start 2P',
                 fontSize: '18px',

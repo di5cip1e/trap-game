@@ -2627,8 +2627,12 @@ export default class GameScene extends Phaser.Scene {
     }
     
     sellToBuyer(buyer) {
-        if (this.playerState.product <= 0) {
-            this.showFloatingText('No Product to sell!', CONFIG.COLORS.danger);
+        // Check new drugs inventory OR legacy product
+        const drugs = this.playerState.drugs || {};
+        const hasDrugs = Object.values(drugs).some(amount => amount > 0);
+        
+        if (!hasDrugs && this.playerState.product <= 0) {
+            this.showFloatingText('No drugs to sell!', CONFIG.COLORS.danger);
             return;
         }
         
@@ -2719,12 +2723,27 @@ export default class GameScene extends Phaser.Scene {
         );
         
         // Calculate how much to sell (customer's purchase amount or player's stock)
-        const amountToSell = Math.min(buyer.purchaseAmount || 1, this.playerState.product);
+        const playerDrugStock = drugs[soldDrug] || 0;
+        const legacyStock = this.playerState.product || 0;
+        const totalStock = playerDrugStock + legacyStock;
+        const amountToSell = Math.min(buyer.purchaseAmount || 1, totalStock);
         const totalEarned = finalPrice * amountToSell;
         
-        // Apply sale
+        // Apply sale - deduct from drugs inventory first, then legacy
         this.playerState.money += totalEarned;
-        this.playerState.product -= amountToSell;
+        
+        // Deduct from new drugs inventory if available
+        if (drugs[soldDrug] && drugs[soldDrug] > 0) {
+            const deductFromDrugs = Math.min(amountToSell, drugs[soldDrug]);
+            drugs[soldDrug] -= deductFromDrugs;
+            // If still need to deduct more, use legacy product
+            if (deductFromDrugs < amountToSell) {
+                this.playerState.product -= (amountToSell - deductFromDrugs);
+            }
+        } else {
+            // Fallback to legacy product
+            this.playerState.product -= amountToSell;
+        }
         this.checkRankChange();
         
         // NEW: Track sale in neighborhood history for demand system

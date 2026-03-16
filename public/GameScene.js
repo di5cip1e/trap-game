@@ -2807,17 +2807,9 @@ export default class GameScene extends Phaser.Scene {
         // Apply sale - deduct from drugs inventory first, then legacy
         this.playerState.money += totalEarned;
         
-        // Deduct from new drugs inventory if available
+        // Deduct from drugs inventory
         if (drugs[soldDrug] && drugs[soldDrug] > 0) {
-            const deductFromDrugs = Math.min(amountToSell, drugs[soldDrug]);
-            drugs[soldDrug] -= deductFromDrugs;
-            // If still need to deduct more, use legacy product
-            if (deductFromDrugs < amountToSell) {
-                this.playerState.product -= (amountToSell - deductFromDrugs);
-            }
-        } else {
-            // Fallback to legacy product
-            this.playerState.product -= amountToSell;
+            drugs[soldDrug] = Math.max(0, drugs[soldDrug] - amountToSell);
         }
         this.checkRankChange();
         
@@ -2922,10 +2914,7 @@ export default class GameScene extends Phaser.Scene {
                         drugsLost += lost;
                         drugs[key] -= lost;
                     }
-                    // Also take legacy product
-                    const productLost = Math.floor(this.playerState.product * 0.5);
-                    drugsLost += productLost;
-                    this.playerState.product -= productLost;
+                    // Drugs already handled above in drugs loop
                     
                     const cashLost = Math.floor(this.playerState.money * 0.3);
                     this.playerState.money -= cashLost;
@@ -2964,7 +2953,7 @@ export default class GameScene extends Phaser.Scene {
             if (soldDrug && drugs[soldDrug] !== undefined) {
                 this.playerState.drugs[soldDrug] -= amountToSell;
             } else {
-                this.playerState.product -= amountToSell;
+                // Drugs deducted above
             }
             
             this.checkRankChange();
@@ -3715,9 +3704,11 @@ export default class GameScene extends Phaser.Scene {
         const penalty = Math.floor(this.playerState.money * CONFIG.HUSTLE_PASSOUT_PENALTY);
         this.playerState.money = Math.max(0, this.playerState.money - penalty);
         
-        // Add heat if holding product (with neighborhood-based heat resistance)
+        // Add heat if holding drugs (with neighborhood-based heat resistance)
         let heatGained = 0;
-        if (this.playerState.product > 0) {
+        const drugs = this.playerState.drugs || {};
+        const hasDrugs = Object.values(drugs).some(v => v > 0);
+        if (hasDrugs) {
             const neighborhoodBonus = this.playerState.neighborhoodBonus;
             const heatResistance = neighborhoodBonus?.heatResistance || 0;
             const baseHeatGain = CONFIG.HEAT_GAIN_PASSOUT;

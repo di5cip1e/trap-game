@@ -1,17 +1,10 @@
 /**
  * WorldMapScene.js - Pokemon-style world navigation for TRAP
- * Shows all neighborhoods and allows travel between unlocked areas
  */
-
 import { NEIGHBORHOODS } from './MapGenerator.js';
 
-// ============================================================
-// SHARED WORLD CONSTANTS (synced with MapController)
-// ============================================================
-
-// Adjacency graph - defines which neighborhoods connect to which
 const WORLD_ADJACENCY = {
-    'RIVERSIDE': [], // Isolated starter town. No physical connections to Big City.
+    'RIVERSIDE': [],
     'OLD_TOWN': ['THE_MAW', 'THE_FLATS', 'INDUSTRIAL_ZONE'],
     'SKID_ROW': ['THE_FLATS', 'THE_MAW'],
     'THE_FLATS': ['OLD_TOWN', 'SKID_ROW', 'INDUSTRIAL_ZONE', 'SALVAGE_YARD', 'THE_MAW'],
@@ -22,7 +15,6 @@ const WORLD_ADJACENCY = {
     'THE_HARBOR': ['INDUSTRIAL_ZONE', 'IRONWORKS']
 };
 
-// Unlock requirements by danger level
 const UNLOCK_REQUIREMENTS = {
     'RIVERSIDE': { minLevel: 1, dangerLevel: 2 },
     'OLD_TOWN': { minLevel: 1, dangerLevel: 2 },
@@ -36,9 +28,7 @@ const UNLOCK_REQUIREMENTS = {
 };
 
 export default class WorldMapScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'WorldMapScene' });
-    }
+    constructor() { super({ key: 'WorldMapScene' }); }
 
     init() {
         this.gameScene = this.registry.get('gameScene') || this.scene.manager.getScene('GameScene');
@@ -48,227 +38,156 @@ export default class WorldMapScene extends Phaser.Scene {
 
     create() {
         const { width, height } = this.scale;
-        
-        // Dark background
         this.add.rectangle(width/2, height/2, width, height, 0x1a1a2e);
         
-        // Title (Dynamic based on whether they are in Riverside or Big City)
-        const isBigCity = this.currentNeighborhood !== 'RIVERSIDE';
-        const title = isBigCity ? 'THE DOCKS' : 'RIVERSIDE OUTSKIRTS';
+        const title = this.currentNeighborhood !== 'RIVERSIDE' ? 'THE DOCKS' : 'RIVERSIDE OUTSKIRTS';
+        this.add.text(width/2, 60, title, { fontSize: '48px', fontFamily: 'Courier, monospace', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(width/2, 110, 'Select a neighborhood to travel to', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#888888' }).setOrigin(0.5);
         
-        this.add.text(width/2, 40, title, {
-            fontSize: '32px',
-            fontFamily: 'Courier, monospace',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+        this.createWorldMap(width, height);
+        this.createNeighborhoodCards(width, height);
         
-        // Subtitle
-        this.add.text(width/2, 75, 'Select a neighborhood to travel', {
-            fontSize: '14px',
-            fontFamily: 'Courier, monospace',
-            color: '#888888'
-        }).setOrigin(0.5);
+        this.add.text(width/2, height - 50, 'Press ESC or M to return to game', { fontSize: '20px', fontFamily: 'Courier, monospace', color: '#666666' }).setOrigin(0.5);
         
-        // Create neighborhood cards
-        this.createNeighborhoodCards();
-        
-        // Back button
-        const backBtn = this.add.rectangle(width - 80, height - 40, 120, 40, 0x2a2a4a);
-        backBtn.setStrokeStyle(2, 0x666666);
-        backBtn.setInteractive({ useHandCursor: true });
-        
-        const backText = this.add.text(width - 80, height - 40, 'BACK', {
-            fontSize: '14px',
-            fontFamily: 'Courier, monospace',
-            color: '#ffffff'
-        }).setOrigin(0.5);
-        
-        backBtn.on('pointerover', () => backBtn.setFillStyle(0x3a3a5a));
-        backBtn.on('pointerout', () => backBtn.setFillStyle(0x2a2a4a));
-        backBtn.on('pointerup', () => this.returnToGame());
-        
-        // Legend
-        this.createLegend(width, height);
+        this.input.keyboard.on('keydown-ESC', () => this.returnToGame());
+        this.input.keyboard.on('keydown-M', () => this.returnToGame());
+        this.cameras.main.fadeIn(300);
     }
     
-    createLegend(width, height) {
-        const legendY = height - 100;
+    createWorldMap(width, height) {
+        const mapLayout = {
+            'RIVERSIDE': { x: 0.1, y: 0.8 },
+            'OLD_TOWN': { x: 0.2, y: 0.25 },
+            'SKID_ROW': { x: 0.15, y: 0.55 },
+            'THE_FLATS': { x: 0.35, y: 0.55 },
+            'INDUSTRIAL_ZONE': { x: 0.5, y: 0.25 },
+            'THE_MAW': { x: 0.35, y: 0.3 },
+            'SALVAGE_YARD': { x: 0.55, y: 0.6 },
+            'THE_HARBOR': { x: 0.75, y: 0.5 },
+            'IRONWORKS': { x: 0.7, y: 0.7 }
+        };
         
-        // Unlocked
-        this.add.rectangle(100, legendY, 20, 20, 0x2a2a3a).setStrokeStyle(1, 0x666666);
-        this.add.text(120, legendY - 8, 'Unlocked', { fontSize: '10px', color: '#888888' });
+        const mapWidth = width * 0.6;
+        const mapHeight = height * 0.4;
+        const mapX = width / 2 - mapWidth / 2;
+        const mapY = height / 2 - mapHeight / 2 + 30;
         
-        // Current
-        this.add.rectangle(100, legendY + 30, 20, 20, 0x2a4a2a).setStrokeStyle(1, 0x00ff00);
-        this.add.text(120, legendY + 22, 'Current', { fontSize: '10px', color: '#00ff00' });
+        this.add.rectangle(width/2, mapY + mapHeight/2, mapWidth, mapHeight, 0x0a0a15).setStrokeStyle(2, 0x444444);
         
-        // Locked
-        this.add.rectangle(100, legendY + 60, 20, 20, 0x1a1a1a).setStrokeStyle(1, 0x333333);
-        this.add.text(120, legendY + 52, 'Locked', { fontSize: '10px', color: '#555555' });
-    }
-    
-    createNeighborhoodCards() {
-        const { width, height } = this.scale;
+        const connections = [];
+        Object.entries(WORLD_ADJACENCY).forEach(([from, neighbors]) => {
+            neighbors.forEach(to => {
+                const forward = [from, to].sort().join('-');
+                if (!connections.some(c => [...c].sort().join('-') === forward)) connections.push([from, to]);
+            });
+        });
         
-        const neighborhoods = Object.keys(NEIGHBORHOODS);
-        const cardWidth = 200;
-        const cardHeight = 120;
-        const cols = 3;
-        const startX = (width - (cols * cardWidth + (cols - 1) * 20)) / 2 + cardWidth / 2;
-        const startY = 180;
+        const graphics = this.add.graphics();
+        connections.forEach(([from, to]) => {
+            const fromPos = mapLayout[from];
+            const toPos = mapLayout[to];
+            if (fromPos && toPos) {
+                const fromUnlocked = this.unlockedNeighborhoods.includes(from);
+                const toUnlocked = this.unlockedNeighborhoods.includes(to);
+                graphics.lineStyle(2, (fromUnlocked && toUnlocked) ? 0x666666 : 0x333333);
+                graphics.lineBetween(mapX + fromPos.x * mapWidth, mapY + fromPos.y * mapHeight, mapX + toPos.x * mapWidth, mapY + toPos.y * mapHeight);
+            }
+        });
         
-        neighborhoods.forEach((key, index) => {
-            const col = index % cols;
-            const row = Math.floor(index / cols);
-            const x = startX + col * (cardWidth + 20);
-            const y = startY + row * (cardHeight + 20);
+        Object.entries(mapLayout).forEach(([key, pos]) => {
+            const neighborhood = NEIGHBORHOODS[key];
+            if (!neighborhood) return;
             
-            const data = NEIGHBORHOODS[key];
-            const isUnlocked = this.unlockedNeighborhoods.includes(key);
+            const playerLevel = this.gameScene?.playerState?.level || 1;
+            const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
+            const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
             const isCurrent = this.currentNeighborhood === key;
             
-            // Skip Riverside on Big City map
-            if (this.currentNeighborhood !== 'RIVERSIDE' && key === 'RIVERSIDE') return;
+            const x = mapX + pos.x * mapWidth;
+            const y = mapY + pos.y * mapHeight;
+            const color = isUnlocked ? parseInt(neighborhood.color.replace('#', '0x')) : 0x333333;
             
-            // Skip Big City neighborhoods on Riverside map
-            if (this.currentNeighborhood === 'RIVERSIDE' && key !== 'RIVERSIDE') return;
+            const marker = this.add.circle(x, y, isCurrent ? 20 : 14, color);
+            if (isCurrent) marker.setStrokeStyle(3, 0xffffff);
+            else if (!isUnlocked) marker.setAlpha(0.4);
             
-            // Get connected neighborhoods
-            const connections = WORLD_ADJACENCY[key] || [];
-            const canTravel = isUnlocked && connections.some(c => this.unlockedNeighborhoods.includes(c));
+            this.add.text(x, y + 25, neighborhood.name, { fontSize: isCurrent ? '14px' : '12px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#ffffff' : '#555555' }).setOrigin(0.5);
             
-            // Card background
+            if (isUnlocked) {
+                marker.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.travelToNeighborhood(key));
+            }
+        });
+        
+        const currentName = NEIGHBORHOODS[this.currentNeighborhood]?.name || 'Unknown';
+        this.add.text(width/2, mapY + mapHeight + 20, `Current: ${currentName}`, { fontSize: '18px', fontFamily: 'Courier, monospace', color: '#00ff00' }).setOrigin(0.5);
+    }
+    
+    createNeighborhoodCards(width, height) {
+        const startY = 280;
+        const cardWidth = 350;
+        const cardHeight = 100;
+        
+        Object.entries(NEIGHBORHOODS).forEach(([key, data], index) => {
+            const playerLevel = this.gameScene?.playerState?.level || 1;
+            const reqs = UNLOCK_REQUIREMENTS[key] || { minLevel: 1 };
+            const isUnlocked = this.unlockedNeighborhoods.includes(key) && playerLevel >= reqs.minLevel;
+            const isCurrent = this.currentNeighborhood === key;
+            
+            const x = width * 0.5;
+            const y = startY + index * (cardHeight + 20);
+            
             const bgColor = isCurrent ? 0x2a4a2a : (isUnlocked ? 0x2a2a3a : 0x1a1a1a);
             const card = this.add.rectangle(x, y, cardWidth, cardHeight, bgColor);
             card.setStrokeStyle(isCurrent ? 2 : 1, isCurrent ? 0x00ff00 : (isUnlocked ? 0x666666 : 0x333333));
             
+            this.add.text(x - cardWidth/2 + 15, y - 30, data.name, { fontSize: '18px', fontFamily: 'Courier, monospace', color: isUnlocked ? data.color : '#555555', fontStyle: 'bold' });
+            this.add.text(x - cardWidth/2 + 15, y, data.description.substring(0, 40), { fontSize: '12px', fontFamily: 'Courier, monospace', color: isUnlocked ? '#aaaaaa' : '#555555' });
+            
+            const statusText = isCurrent ? 'CURRENT' : (isUnlocked ? 'UNLOCKED' : 'LOCKED');
+            const statusColor = isCurrent ? '#00ff00' : (isUnlocked ? '#888888' : '#555555');
+            this.add.text(x + cardWidth/2 - 15, y + 25, statusText, { fontSize: '11px', fontFamily: 'Courier, monospace', color: statusColor }).setOrigin(1, 0);
+            
             if (isUnlocked && !isCurrent) {
-                card.setInteractive({ useHandCursor: canTravel });
-                
-                if (canTravel) {
-                    card.on('pointerover', () => card.setFillStyle(0x3a3a4a));
-                    card.on('pointerout', () => card.setFillStyle(bgColor));
-                    card.on('pointerup', () => this.performTravel(key));
-                }
+                card.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.travelToNeighborhood(key));
             }
-            
-            // Neighborhood name
-            this.add.text(x - cardWidth/2 + 15, y - 40, data.name, {
-                fontSize: '16px',
-                fontFamily: 'Courier, monospace',
-                color: isUnlocked ? data.color : '#555555',
-                fontStyle: 'bold'
-            });
-            
-            // Danger level
-            const dangerLabel = UNLOCK_REQUIREMENTS[key]?.dangerLevel || 2;
-            const dangerColor = dangerLabel <= 2 ? '#44ff44' : dangerLabel <= 4 ? '#ffaa00' : '#ff4444';
-            this.add.text(x + cardWidth/2 - 60, y - 40, `Lv${dangerLabel}`, {
-                fontSize: '10px',
-                fontFamily: 'Courier, monospace',
-                color: isUnlocked ? dangerColor : '#444444'
-            });
-            
-            // Description
-            const desc = data.description.length > 30 ? data.description.substring(0, 27) + '...' : data.description;
-            this.add.text(x - cardWidth/2 + 15, y - 15, desc, {
-                fontSize: '11px',
-                fontFamily: 'Courier, monospace',
-                color: isUnlocked ? '#aaaaaa' : '#555555'
-            });
-            
-            // Factions
-            const factions = data.factions.join(', ');
-            const factionText = factions.length > 25 ? factions.substring(0, 22) + '...' : factions;
-            this.add.text(x - cardWidth/2 + 15, y + 20, factionText, {
-                fontSize: '9px',
-                fontFamily: 'Courier, monospace',
-                color: isUnlocked ? '#888888' : '#444444'
-            });
-            
-            // Travel/Status indicator
-            let statusText = '';
-            let statusColor = '#555555';
-            
-            if (isCurrent) {
-                statusText = 'CURRENT';
-                statusColor = '#00ff00';
-            } else if (!isUnlocked) {
-                statusText = 'LOCKED';
-                statusColor = '#555555';
-            } else if (!canTravel) {
-                statusText = 'NO PATH';
-                statusColor = '#ffaa00';
-            } else {
-                statusText = 'TRAVEL';
-                statusColor = '#00aaff';
-            }
-            
-            this.add.text(x, y + 45, statusText, {
-                fontSize: '12px',
-                fontFamily: 'Courier, monospace',
-                color: statusColor
-            }).setOrigin(0.5);
         });
     }
     
+    travelToNeighborhood(key) {
+        const { width, height } = this.scale;
+        const overlay = this.add.rectangle(width/2, height/2, width, height, 0x000000, 0.7);
+        
+        const confirmBtn = this.add.text(width/2 - 80, height/2 + 40, '[ CONFIRM ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#00ff00' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const cancelBtn = this.add.text(width/2 + 80, height/2 + 40, '[ CANCEL ]', { fontSize: '24px', fontFamily: 'Courier, monospace', color: '#ff4444' }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        
+        confirmBtn.on('pointerdown', () => { overlay.destroy(); confirmBtn.destroy(); cancelBtn.destroy(); this.performTravel(key); });
+        cancelBtn.on('pointerdown', () => { overlay.destroy(); confirmBtn.destroy(); cancelBtn.destroy(); });
+    }
+    
     performTravel(targetNeighborhood) {
-        // Check if we can travel
-        const connections = WORLD_ADJACENCY[targetNeighborhood] || [];
-        const canTravel = connections.some(c => this.unlockedNeighborhoods.includes(c));
-        
-        if (!canTravel) {
-            this.showMessage('Cannot travel there!', '#ff4444');
-            return;
-        }
-        
-        // Get current player state
-        const playerState = this.gameScene?.playerState;
-        if (!playerState) {
-            console.error('No player state found!');
-            return;
-        }
-        
-        // Update neighborhood
-        playerState.neighborhood = targetNeighborhood;
-        
-        // Fade out
-        this.cameras.main.fadeOut(500, 0, 0, 0);
-        
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-            // Clean restart with player state
-            const savedState = JSON.stringify(playerState);
+        try {
+            if (this.gameScene && this.gameScene.playerState) {
+                this.gameScene.playerState.neighborhood = targetNeighborhood;
+            } else {
+                return;
+            }
             
-            // Stop both scenes
-            this.scene.stop('GameScene');
-            this.scene.stop('WorldMapScene');
-            
-            // Restart game scene with saved state
-            this.scene.start('GameScene', { playerState: savedState });
-        });
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                const preservedState = this.gameScene.playerState;
+                this.scene.stop();
+                this.gameScene.scene.restart({ loadedState: preservedState });
+            });
+        } catch (e) {
+            console.error('Travel error:', e);
+        }
     }
     
     returnToGame() {
         this.cameras.main.fadeOut(300, 0, 0, 0);
-        
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.stop();
             this.scene.resume('GameScene');
         });
-    }
-    
-    showMessage(text, color) {
-        const { width, height } = this.scale;
-        
-        const msg = this.add.text(width/2, height - 60, text, {
-            fontSize: '16px',
-            fontFamily: 'Courier, monospace',
-            color: color,
-            backgroundColor: '#000000',
-            padding: { x: 10, y: 5 }
-        }).setOrigin(0.5);
-        
-        this.time.delayedCall(2000, () => msg.destroy());
     }
 }

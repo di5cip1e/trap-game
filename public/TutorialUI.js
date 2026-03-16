@@ -11,7 +11,7 @@ export default class TutorialUI {
         // Hints System - non-blocking contextual tips
         this.hintsSystem = new HintsSystem(scene);
         
-        // Tutorial sections - matches TUTORIAL.md content
+        // Tutorial sections - updated for new RPG and Drug mechanics
         this.sections = [
             {
                 title: 'MOVEMENT',
@@ -24,172 +24,53 @@ CONTROLS:
 • Click/Tap - Walk to that spot
 
 TIPS:
-- Each step costs time and HUSTLE
-- Stick to alleyways - less heat, more speed
-- Running burns hustle fast - walk when you can`
+- Each step costs time and HUSTLE.
+- Stick to alleyways - less heat, more speed.
+- Running burns hustle fast - walk when you can.`
             },
             {
-                title: 'MAKING MONEY',
+                title: 'THE ECONOMY',
                 icon: '💰',
                 content: `This is a business. Master the cycle or get crushed.
 
-STEP 1: BUY RAW
-Find a Supplier (📦 on map)
-Cost: $50 per unit
-Watch your inventory limit!
+STEP 1: SUPPLIES
+Find a Supplier (📦) to buy Raw Materials or the Traveling Salesman for rare Precursors.
 
-STEP 2: PROCESS
-Go to Workstation (🔥 in Safehouse)
-Convert raw → product
-Costs HUSTLE - watch your energy!
-Yield: 2 product per 1 raw
+STEP 2: COOK
+Find Workstations or Labs (🔥) to process your stash.
+Basic: Raw Materials → Weed/Cocaine
+Advanced: Precursors → Meth
 
 STEP 3: SELL
-Find a Buyer (💵 on map)
-Sell for $100 per unit
-Each sale generates HEAT
-
-PROFIT: ~$85 per cycle, minus heat costs`
+Find Buyers (💵). Different customers (Junkies, Party Guys, etc.) want different drugs and pay different prices!`
             },
             {
-                title: 'SAFEHOUSE',
-                icon: '🏠',
-                content: `Your base. Upgrade it or die in the streets.
-
-SLEEP:
-- Recover HUSTLE (energy)
-- Reduces HEAT by 20
-- Essential for survival
-
-STASH:
-- Store raw & product safely
-- Protected from police seizures
-- More slots with upgrades
-
-WORKSTATION:
-- Process raw → product
-- Upgrade for speed/efficiency
-
-SAFEHOUSE TIERS:
-- Crib (Tier 1): 2 stash slots
-- Apartment (Tier 3): +Workstation
-- House (Tier 5): +Runners, 6 slots
-- Mansion (Tier 7): Full power`
-            },
-            {
-                title: 'HEAT & POLICE',
-                icon: '🚔',
-                content: `The law is watching. Stay below the radar.
-
-HEAT LEVELS:
-• 0-25%: Clean - ignore police
-• 26-50%: Suspicious - more police
-• 51-75%: Wanted - active hunting
-• 76-100%: BUSTED - non-stop pursuit
-
-HEAT SOURCES:
-• Selling: +5 per sale
-• Passing out: +25
-• Running from police: +10
-
-REDUCE HEAT:
-• Sleep at safehouse: -20
-• New day passes: -10
-• Time heals all wounds
-
-If caught: lose product, pay fine!`
-            },
-            {
-                title: 'RUNNERS',
-                icon: '🏃',
-                content: `Work smart. Let others work for you.
-
-WHAT THEY DO:
-• Auto-sell product while you're away
-• Zero heat from their sales
-• Take a cut, but volume makes profit
-
-HOW TO HIRE:
-• Unlock at Safehouse Tier 3
-• Visit Safehouse menu
-• Pay hiring fee
-• Assign product to runner
-
-TIPS:
-- Stock runner before sleeping
-- Higher tier = faster + more profit
-- Build a network for full automation
-
-THE KEY TO GETTING RICH!`
-            },
-            {
-                title: 'CALENDAR EVENTS',
-                icon: '📅',
-                content: `The streets change every week. Adapt or die.
-
-TIME SYSTEM:
-- Morning, Afternoon, Evening, Night
-- Some spots only open at certain times
-- Weekends = special opportunities
-
-WEEKLY EVENTS:
-
-🔴 CRACKDOWN
-Police everywhere. Heat builds fast.
-TIP: Stay low, limit sales
-
-🟢 DROUGHT
-Prices 2x-3x! Supply scarce.
-TIP: Buy raw early, profit big
-
-⚡ POWER OUTAGE
-Some locations close. Workstations slow.
-TIP: Plan processing ahead
-
-Watch the calendar in your HUD!`
-            },
-            {
-                title: 'COMBAT',
+                title: 'COMBAT & SKILLS',
                 icon: '⚔️',
-                content: `Sometimes you can't run. Fight smart.
+                content: `The streets are dangerous. Be ready.
 
-ROCK-PAPER-SCISSORS:
-• 🔨 HAMMER beats ✂️ KNIFE
-• ✂️ KNIFE beats 🛡️ SHIELD
-• 🛡️ SHIELD beats 🔨 HAMMER
+FIGHTING:
+Combat is REAL-TIME. You will auto-attack your enemy.
 
-DAMAGE:
-- Based on ABILITY stat
-- INTUITION helps predict opponent
-- LUCK = critical hits
+SKILLS:
+Press 'K' to open your Skill Tree. Active skills cost AP (Ability Points) to use in combat. Unlock new skills as you level up!
 
-TIPS:
-- Read patterns in opponent choices
-- Don't fight fair - run if outmatched
-- Winning = respect + loot
-- Losing = product lost + medical bills
-
-Sometimes running is the smart play.`
+SURVIVAL:
+Outmatched? RUN away! It costs Hustle, but saves your stash and your life.`
             },
             {
-                title: 'QUICK START',
-                icon: '✅',
-                content: `YOUR MISSION (if you choose to accept it):
+                title: 'POLICE & HEAT',
+                icon: '🚔',
+                content: `The cops are always watching.
 
-□ Buy raw materials from Supplier (📦)
-□ Process at Safehouse Workstation (🔥)
-□ Sell product at Buyer (💵)
-□ Monitor heat - sleep to reduce
-□ Upgrade safehouse when possible
-□ Watch calendar for events
-□ Avoid fights unless necessary
+HEAT:
+Selling drugs, running, and fighting generates HEAT. If your Heat gets too high, the Police will spawn and chase you.
 
-PROFIT FORMULA:
-Sell $100 - Buy $50 - Hustle Cost = ~$85 profit
+BUSTED:
+If caught, you lose cash and ALL your drugs/precursors.
 
-Remember:
-Stay smart. Stay alive.
-Welcome to the game.`
+COOL DOWN:
+Sleep at your Safehouse or lay low to let Heat decay over time.`
             }
         ];
     }

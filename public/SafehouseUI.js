@@ -527,6 +527,14 @@ export default class SafehouseUI {
     }
     
 
+
+    hireRunner() {
+        this.scene.playerState.hasRunner = true;
+        if (this.scene.questSystem) this.scene.questSystem.onHireRunner();
+        this.showQuickMessage('Runner hired! Assign product to start.', CONFIG.COLORS.success);
+        this.renderRunnerMenu();
+    }
+    
     assignProductToRunner(drugKey, amount) {
         const player = this.scene.playerState;
         const drugs = player.drugs || {};

@@ -636,13 +636,18 @@ export function getBigCityCopPosition(copKey, hour) {
     const cop = BIG_CITY_COPS[copKey];
     if (!cop) return null;
     
-    // Find the closest schedule entry
-    const schedules = Object.entries(cop.schedule).map(([h, pos]) => ({
-        hour: parseInt(h),
-        pos
-    })).sort((a, b) => a.hour - b.hour);
+    // Filter out 'default' before parsing and sorting
+    const schedules = Object.entries(cop.schedule)
+        .filter(([h]) => h !== 'default')
+        .map(([h, pos]) => ({
+            hour: parseInt(h),
+            pos
+        }))
+        .sort((a, b) => a.hour - b.hour);
     
-    // Find the current or last schedule point
+    // Fallback to default if no schedule exists
+    if (schedules.length === 0) return cop.schedule.default;
+    
     let currentPos = schedules[0].pos;
     for (const schedule of schedules) {
         if (hour >= schedule.hour) {

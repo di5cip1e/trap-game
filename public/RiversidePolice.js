@@ -885,8 +885,11 @@ export class RiversidePoliceSystem {
         // Show welcome message for new area
         this.scene.showFloatingText('Welcome to Big City!', CONFIG.COLORS.success);
         
-        // Reload the scene for new neighborhood
-        this.scene.scene.restart();
+        // Save player state before restart
+        const savedState = JSON.stringify(this.scene.playerState);
+        
+        // Reload the scene for new neighborhood - pass saved state
+        this.scene.scene.start('GameScene', { playerState: savedState });
     }
 }
 
@@ -918,13 +921,18 @@ export function getCopPosition(copKey, hour) {
     const cop = RIVERSIDE_COPS[copKey];
     if (!cop) return null;
     
-    // Find the closest schedule entry
-    const schedules = Object.entries(cop.schedule).map(([h, pos]) => ({
-        hour: parseInt(h),
-        pos
-    })).sort((a, b) => a.hour - b.hour);
+    // Filter out 'default' before parsing and sorting
+    const schedules = Object.entries(cop.schedule)
+        .filter(([h]) => h !== 'default')
+        .map(([h, pos]) => ({
+            hour: parseInt(h),
+            pos
+        }))
+        .sort((a, b) => a.hour - b.hour);
     
-    // Find the current or last schedule point
+    // Fallback to default if no schedule exists
+    if (schedules.length === 0) return cop.schedule.default;
+    
     let currentPos = schedules[0].pos;
     for (const schedule of schedules) {
         if (hour >= schedule.hour) {
@@ -942,7 +950,13 @@ export function isCopOnDuty(copKey, hour) {
     const cop = RIVERSIDE_COPS[copKey];
     if (!cop) return false;
     
-    // All cops have schedules - check if hour falls within any range
-    const hours = Object.keys(cop.schedule).map(h => parseInt(h));
+    // Filter out 'default' to avoid NaN comparisons
+    const hours = Object.keys(cop.schedule)
+        .filter(h => h !== 'default')
+        .map(h => parseInt(h))
+        .sort((a, b) => a - b);
+    
+    if (hours.length === 0) return true; // Operates 24/7 if only default is set
+    
     return hours.some(h => h === hour || (hour > h && hour < (hours[hours.indexOf(h) + 1] || 24)));
 }

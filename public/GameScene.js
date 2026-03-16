@@ -70,6 +70,19 @@ export default class GameScene extends Phaser.Scene {
         // Get character data from registry
         this.characterData = this.registry.get('characterData');
         
+        // Check for loaded save data (passed from another scene like prison transition)
+        const passedData = this.sys.events.locatedData?.playerState;
+        if (passedData) {
+            // Restore player state from passed data (e.g., after prison release)
+            try {
+                const restoredState = JSON.parse(passedData);
+                // Store for use after full init
+                this._restoredPlayerState = restoredState;
+            } catch (e) {
+                console.warn('Failed to parse passed playerState:', e);
+            }
+        }
+        
         // Check for loaded save data
         const loadSaveData = this.registry.get('loadSaveData');
         
@@ -666,6 +679,12 @@ export default class GameScene extends Phaser.Scene {
     }
     
     create() {
+        // Restore player state if passed from prison transition
+        if (this._restoredPlayerState) {
+            Object.assign(this.playerState, this._restoredPlayerState);
+            delete this._restoredPlayerState;
+        }
+        
         const { width, height } = this.scale;
         
         // Generate fallback textures in case external assets failed to load

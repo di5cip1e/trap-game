@@ -5309,6 +5309,20 @@ export default class GameScene extends Phaser.Scene {
         }
     }
     
+    loadFromSlot(slotIndex) {
+        const saveData = SaveLoadSystem.loadFromSlot(slotIndex);
+        
+        if (saveData) {
+            SaveLoadSystem.applySaveData(this, saveData);
+            this.showFloatingText('Game Loaded!', CONFIG.COLORS.success);
+            if (this.hud) this.hud.update();
+        } else {
+            this.showFloatingText('No save found!', CONFIG.COLORS.danger);
+        }
+        
+        this.closePauseMenu();
+    }
+    
     /**
      * Close the pause menu
      */

@@ -600,11 +600,21 @@ export default class EquipmentUI {
             this.moneyText.setText(`Cash: $${this.scene.playerState.money}`);
         }
         
-        // Update category tabs to reflect active category state
-        this.updateCategoryTabs();
+        // Update category tabs to reflect active category state (if in shop mode)
+        if (this.viewMode === 'shop') {
+            this.updateCategoryTabs();
+        }
         
-        // Re-render equipment list
-        this.renderEquipment();
+        // Re-render the correct view based on mode
+        this.renderContent();
+    }
+    
+    renderContent() {
+        if (this.viewMode === 'shop') {
+            this.renderEquipment();
+        } else {
+            this.renderEquipped();
+        }
     }
     
     close() {

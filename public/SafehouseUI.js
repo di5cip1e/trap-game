@@ -527,63 +527,133 @@ export default class SafehouseUI {
     }
     
     renderUpgradeMenu() {
+        this.currentMenu = 'upgrade';
         this.clearUI();
-        const { width, height } = this.scene.scale;
-        const player = this.scene.playerState;
-        const currentTier = player.safehouseTier;
-        const nextTier = currentTier + 1;
         
-        if (nextTier >= CONFIG.SAFEHOUSE_TIERS.length) {
-            this.showMessage('Max tier reached!', CONFIG.COLORS.success);
+        const { width, height } = this.scene.scale;
+        const currentTier = this.scene.playerState.safehouseTier;
+        const nextTierIndex = currentTier + 1;
+        
+        if (nextTierIndex >= CONFIG.SAFEHOUSE_TIERS.length) {
             this.renderMainMenu();
             return;
         }
         
-        const nextTierData = CONFIG.SAFEHOUSE_TIERS[nextTier];
+        const nextTier = CONFIG.SAFEHOUSE_TIERS[nextTierIndex];
         
         this.overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
         this.overlay.setScrollFactor(0);
         this.overlay.setDepth(900);
+        this.overlay.setInteractive();
+        
+        this.panel = this.scene.add.image(width / 2, height / 2, 'panel');
+        this.panel.setDisplaySize(800, 600);
+        this.panel.setScrollFactor(0);
+        this.panel.setDepth(901);
+        this.panel.setAlpha(0.95);
         
         this.container = this.scene.add.container(0, 0);
         this.container.setScrollFactor(0);
         this.container.setDepth(902);
         
-        const title = this.scene.add.text(width / 2, height / 2 - 200, 'UPGRADE SAFEHOUSE', {
+        const title = this.scene.add.text(width / 2, height / 2 - 250, 'UPGRADE SAFEHOUSE', {
             fontFamily: 'Press Start 2P',
-            fontSize: '24px',
-            color: CONFIG.COLORS.primary
+            fontSize: '28px',
+            color: CONFIG.COLORS.primary,
+            stroke: '#000000',
+            strokeThickness: 4
         }).setOrigin(0.5);
         this.container.add(title);
         
-        const infoText = this.scene.add.text(width / 2, height / 2 - 100, 
-            `Current: ${CONFIG.SAFEHOUSE_TIERS[currentTier].name}\n` +
-            `Next: ${nextTierData.name}\n` +
-            `Cost: $${nextTierData.cost}`, {
+        const infoPanel = this.scene.add.rectangle(width / 2, height / 2 - 100, 700, 250, 0x1a1a1a);
+        infoPanel.setStrokeStyle(3, CONFIG.COLORS.secondary);
+        this.container.add(infoPanel);
+        
+        const tierName = this.scene.add.text(width / 2, height / 2 - 200, nextTier.name, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '22px',
+            color: CONFIG.COLORS.success
+        }).setOrigin(0.5);
+        this.container.add(tierName);
+        
+        const benefits = [
+            `Stash Capacity: ${nextTier.stashSlots} slots`,
+            `Hustle Restore: ${Math.floor(nextTier.hustleRestore * 100)}%`,
+            'Improved Security'
+        ];
+        
+        if (nextTier.canHireRunners) benefits.push('Can Hire Runners');
+        
+        let yOffset = -150;
+        benefits.forEach(benefit => {
+            const benefitText = this.scene.add.text(width / 2, height / 2 + yOffset, `+ ${benefit}`, {
+                fontFamily: 'Press Start 2P',
+                fontSize: '14px',
+                color: CONFIG.COLORS.text
+            }).setOrigin(0.5);
+            this.container.add(benefitText);
+            yOffset += 35;
+        });
+        
+        const canAfford = this.scene.playerState.money >= nextTier.cost;
+        const costColor = canAfford ? CONFIG.COLORS.success : CONFIG.COLORS.danger;
+        
+        const costText = this.scene.add.text(width / 2, height / 2 + 40, `COST: $${nextTier.cost}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '20px',
+            color: costColor,
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+        this.container.add(costText);
+        
+        const currentMoneyText = this.scene.add.text(width / 2, height / 2 + 80, `Your Money: $${this.scene.playerState.money}`, {
             fontFamily: 'Press Start 2P',
             fontSize: '14px',
-            color: CONFIG.COLORS.text,
-            align: 'center'
+            color: CONFIG.COLORS.textDark
         }).setOrigin(0.5);
-        this.container.add(infoText);
+        this.container.add(currentMoneyText);
         
-        const buyBtn = this.createButton(width / 2, height / 2 + 50, 250, 50, 'UPGRADE', () => {
-            if (player.money >= nextTierData.cost) {
-                player.money -= nextTierData.cost;
-                player.safehouseTier = nextTier;
-                this.showMessage('Safehouse upgraded!', CONFIG.COLORS.success);
-                if (this.scene.hud) this.scene.hud.update();
-                this.renderMainMenu();
-            } else {
-                this.showMessage('Not enough money!', CONFIG.COLORS.danger);
+        const purchaseButton = this.createButton(width / 2 - 120, height / 2 + 180, 200, 50, 
+            canAfford ? 'PURCHASE' : 'TOO POOR', () => {
+            if (canAfford) {
+                const success = this.scene.upgradeSafehouse ? this.scene.upgradeSafehouse(nextTierIndex) : true;
+                if (success) {
+                    this.showUpgradeSuccess(nextTier.name);
+                }
             }
         });
-        this.container.add(buyBtn);
+        this.container.add(purchaseButton);
         
-        const backBtn = this.createButton(width / 2, height / 2 + 130, 200, 45, 'BACK', () => {
+        const backButton = this.createButton(width / 2 + 120, height / 2 + 180, 200, 50, 'BACK', () => {
             this.renderMainMenu();
         });
-        this.container.add(backBtn);
+        this.container.add(backButton);
+    }
+    
+    showUpgradeSuccess(tierName) {
+        this.close();
+        const { width, height } = this.scene.scale;
+        
+        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(1000);
+        
+        const message = this.scene.add.text(width / 2, height / 2, 
+            `SAFEHOUSE UPGRADED!\n\n${tierName}`, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '28px',
+            color: CONFIG.COLORS.success,
+            align: 'center'
+        }).setOrigin(0.5);
+        message.setScrollFactor(0);
+        message.setDepth(1001);
+        
+        this.scene.time.delayedCall(3000, () => {
+            overlay.destroy();
+            message.destroy();
+            this.open();
+        });
     }
     
     showSaveLoadMessage(success, successMsg, failMsg) {

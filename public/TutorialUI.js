@@ -602,7 +602,7 @@ class HintsSystem {
         this.state.hustle = playerState.hustle || 100;
         this.state.money = playerState.money || 0;
         this.state.rawMaterials = playerState.rawMaterials || 0;
-        this.state.product = playerState.product || 0;
+        this.state.drugs = playerState.drugs || {};
         this.state.safehouseTier = playerState.safehouseTier || 0;
         
         // Check inventory capacity

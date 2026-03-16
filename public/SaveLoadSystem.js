@@ -365,7 +365,7 @@ export default class SaveLoadSystem {
                 // Resources
                 money: gameScene.playerState.money,
                 rawMaterials: gameScene.playerState.rawMaterials,
-                product: gameScene.playerState.product,
+                drugs: gameScene.playerState.drugs || {},
                 
                 // NEW: Drugs inventory
                 drugs: { ...gameScene.playerState.drugs },
@@ -614,7 +614,7 @@ export default class SaveLoadSystem {
                 // Resources
                 money: gameScene.playerState.money,
                 rawMaterials: gameScene.playerState.rawMaterials,
-                product: gameScene.playerState.product,
+                drugs: gameScene.playerState.drugs || {},
                 
                 // NEW: Drugs inventory
                 drugs: { ...gameScene.playerState.drugs },
@@ -971,7 +971,7 @@ export default class SaveLoadSystem {
             // Restore resources
             gameScene.playerState.money = typeof saveData.money === 'number' ? saveData.money : 0;
             gameScene.playerState.rawMaterials = typeof saveData.rawMaterials === 'number' ? saveData.rawMaterials : 0;
-            gameScene.playerState.product = typeof saveData.product === 'number' ? saveData.product : 0;
+            if (saveData.drugs) gameScene.playerState.drugs = saveData.drugs;
             
             // NEW: Restore drugs inventory
             if (saveData.drugs && typeof saveData.drugs === 'object') {

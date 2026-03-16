@@ -239,7 +239,8 @@ export default class RelationshipUI {
                 return;
             }
             
-            this.scene.playerState.product -= CONFIG.BRIBE_PRODUCT_AMOUNT;
+            const drugs = this.scene.playerState.drugs || {};
+            if (drugKey && drugs[drugKey]) drugs[drugKey] -= CONFIG.BRIBE_PRODUCT_AMOUNT;
             this.scene.playerState.npcRelationships[this.currentNPC.npcId] = 
                 Math.min(CONFIG.MAX_LOYALTY, loyalty + CONFIG.BRIBE_PRODUCT_LOYALTY);
             

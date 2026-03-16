@@ -265,7 +265,9 @@ export default class SceneManager {
      * Handle buyer interaction
      */
     handleBuyerInteraction(buyer) {
-        if (this.playerState.product <= 0) {
+        const drugs = this.playerState.drugs || {};
+        const hasDrugs = Object.values(drugs).some(v => v > 0);
+        if (!hasDrugs) {
             this.scene.showFloatingText('No Product to sell!', this.scene.CONFIG.COLORS.danger);
             return;
         }
@@ -287,8 +289,11 @@ export default class SceneManager {
         if (buyer.specialBehavior === 'steal') {
             const stealChance = customerConfig?.stealChance || 0.15;
             if (Math.random() < stealChance) {
-                const stolenAmount = Math.min(2, this.playerState.product);
-                this.playerState.product -= stolenAmount;
+                const firstDrug = Object.keys(drugs).find(k => drugs[k] > 0);
+                if (firstDrug) {
+                    const stolenAmount = Math.min(2, drugs[firstDrug]);
+                    drugs[firstDrug] -= stolenAmount;
+                }
                 this.npcController.removeBuyer(buyer);
                 this.scene.hud.update();
                 if (this.scene.minimap) this.scene.minimap.update();
@@ -321,7 +326,7 @@ export default class SceneManager {
             }
             
             // Fallback: check legacy product (assume it's Weed if player has any)
-            if (!soldDrug && this.playerState.product > 0) {
+            if (!soldDrug && hasDrugs) {
                 soldDrug = 'Weed'; // Default assumption
             }
             

@@ -865,7 +865,7 @@ export class RiversidePoliceSystem {
         
         // Set money to a small amount (prison took most)
         this.scene.playerState.money = 100;
-        this.scene.playerState.product = 0;
+        Object.keys(this.scene.playerState.drugs || {}).forEach(k => this.scene.playerState.drugs[k] = 0);
         
         // Clear drugs
         Object.keys(this.scene.playerState.drugs).forEach(key => {

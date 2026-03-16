@@ -522,6 +522,34 @@ class SkillTreeUI {
             color: '#ffcc00'
         }).setOrigin(0.5);
         this.container.add(pointsText);
+        
+        // Stat allocation section
+        const stats = ['intuition', 'ability', 'luck'];
+        const statLabels = { intuition: 'INT', ability: 'ABI', luck: 'LCK' };
+        const statX = [width/2 - 200, width/2, width/2 + 200];
+        
+        stats.forEach((stat, i) => {
+            const statValue = playerState.stats[stat] || 0;
+            const statLabel = this.scene.add.text(statX[i], 200, `${statLabels[stat]}: ${statValue}`, {
+                fontFamily: 'Press Start 2P', fontSize: '12px', color: '#88ff88'
+            }).setOrigin(0.5);
+            this.container.add(statLabel);
+            
+            // Plus button if statPoints available
+            if (playerState.statPoints > 0) {
+                const plusBtn = this.scene.add.text(statX[i] + 50, 200, '+', {
+                    fontFamily: 'Press Start 2P', fontSize: '14px', color: '#00ff00'
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                this.container.add(plusBtn);
+                plusBtn.on('pointerup', () => {
+                    playerState.statPoints--;
+                    playerState.stats[stat]++;
+                    if (this.scene.hud) this.scene.hud.update();
+                    this.close();
+                    this.scene.time.delayedCall(100, () => this.open());
+                });
+            }
+        });
 
         // Create skill cards
         const tiers = [1, 2, 3];

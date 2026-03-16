@@ -402,75 +402,82 @@ export default class SafehouseUI {
 
 
     depositItem(itemId, amount) {
-        const player = this.scene.playerState;
+        const tier = CONFIG.SAFEHOUSE_TIERS[this.scene.playerState.safehouseTier];
         
-        // Handle raw materials
-        if (itemId === 'Raw Materials') {
-            if (player.rawMaterials >= amount) {
-                player.rawMaterials -= amount;
-                this.addToStash('Raw Materials', amount);
-                this.showMessage(`Stored ${amount} Raw Materials`, CONFIG.COLORS.success);
-                this.renderMainMenu();
-            } else {
-                this.showMessage('Not enough!', CONFIG.COLORS.danger);
+        // Check if we already have a slot with this item to stack
+        let slot = this.stash.find(s => s.id === itemId);
+        if (!slot) {
+            if (this.stash.length >= tier.stashSlots) {
+                this.showQuickMessage('Stash is full!', CONFIG.COLORS.danger);
+                return;
             }
-            return;
+            slot = { id: itemId, amount: 0 };
+            this.stash.push(slot);
         }
         
-        // Handle drugs
-        const drugs = player.drugs || {};
-        if (drugs[itemId] >= amount) {
-            drugs[itemId] -= amount;
-            this.addToStash(itemId, amount);
-            this.showMessage(`Stored ${amount} ${itemId}`, CONFIG.COLORS.success);
-            this.renderMainMenu();
+        // Deduct from player
+        if (itemId === 'Raw Materials') {
+            this.scene.playerState.rawMaterials -= amount;
         } else {
-            this.showMessage('Not enough!', CONFIG.COLORS.danger);
+            this.scene.playerState.drugs[itemId] -= amount;
         }
         
-        if (this.scene.hud) this.scene.hud.update();
-    }
-    
-    addToStash(itemId, amount) {
-        const existing = this.stash.find(i => i.id === itemId);
-        if (existing) {
-            existing.amount += amount;
-        } else {
-            this.stash.push({ id: itemId, amount: amount });
-        }
+        // Add to stash
+        slot.amount += amount;
+        
+        this.scene.hud.update();
+        this.renderMainMenu();
     }
     
     withdrawItem(slotIndex) {
         const item = this.stash[slotIndex];
         if (!item) return;
         
-        const player = this.scene.playerState;
+        // Check player capacity
+        const isPrecursor = CONFIG.DRUG_TYPES[item.id]?.isPrecursor;
+        const maxCapacity = item.id === 'Raw Materials' ? this.scene.playerState.rawCapacity :
+            (isPrecursor ? 20 : (this.scene.playerState.productCapacity || 20));
         
-        // Check capacity
-        const maxCarry = player.productCapacity || 20;
+        const currentStock = item.id === 'Raw Materials' ? this.scene.playerState.rawMaterials :
+            (this.scene.playerState.drugs[item.id] || 0);
         
-        if (item.id === 'Raw Materials') {
-            if (player.rawMaterials + item.amount <= player.rawCapacity) {
-                player.rawMaterials += item.amount;
-                this.stash.splice(slotIndex, 1);
-                this.showMessage(`Withdrew ${item.amount} Raw Materials`, CONFIG.COLORS.success);
-            } else {
-                this.showMessage('Inventory full!', CONFIG.COLORS.danger);
-            }
-        } else {
-            // Drug
-            const drugs = player.drugs || {};
-            if ((drugs[item.id] || 0) + item.amount <= maxCarry) {
-                drugs[item.id] = (drugs[item.id] || 0) + item.amount;
-                this.stash.splice(slotIndex, 1);
-                this.showMessage(`Withdrew ${item.amount} ${item.id}`, CONFIG.COLORS.success);
-            } else {
-                this.showMessage('Inventory full!', CONFIG.COLORS.danger);
-            }
+        if (currentStock + item.amount > maxCapacity) {
+            this.showQuickMessage('Not enough inventory space!', CONFIG.COLORS.danger);
+            return;
         }
         
-        if (this.scene.hud) this.scene.hud.update();
+        // Add to player
+        if (item.id === 'Raw Materials') {
+            this.scene.playerState.rawMaterials += item.amount;
+        } else {
+            this.scene.playerState.drugs[item.id] = (this.scene.playerState.drugs[item.id] || 0) + item.amount;
+        }
+        
+        // Remove from stash
+        this.stash.splice(slotIndex, 1);
+        
+        this.scene.hud.update();
         this.renderMainMenu();
+    }
+    
+    showQuickMessage(text, color) {
+        const { width, height } = this.scene.scale;
+        
+        const msg = this.scene.add.text(width / 2, height / 2 + 150, text, {
+            fontFamily: 'Press Start 2P',
+            fontSize: '12px',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(950);
+        
+        this.scene.tweens.add({
+            targets: msg,
+            alpha: 0,
+            y: height / 2 + 130,
+            duration: 1500,
+            onComplete: () => msg.destroy()
+        });
     }
     
     createSmallButton(x, y, w, h, label, onClick) {

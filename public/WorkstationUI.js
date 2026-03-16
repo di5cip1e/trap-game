@@ -331,7 +331,7 @@ export default class WorkstationUI {
             const cocaineNeeded = 2;
             const hasEnoughCocaine = player.drugs['Cocaine'] >= cocaineNeeded;
             const hasEnoughHustle = player.hustle >= CONFIG.PROCESSING_HUSTLE_COST;
-            const hasSpace = (player.drugs.crack || 0) < (player.productCapacity || 20);
+            const hasSpace = (player.drugs['Crack'] || 0) < (player.productCapacity || 20);
             
             if (!hasEnoughCocaine) {
                 this.showMessage('Need 2 Cocaine to process!', CONFIG.COLORS.danger);
@@ -348,7 +348,7 @@ export default class WorkstationUI {
             
             // Deduct cocaine, add crack
             player.drugs['Cocaine'] -= cocaineNeeded;
-            player.drugs.crack = (player.drugs.crack || 0) + 1;
+            player.drugs['Crack'] = (player.drugs['Crack'] || 0) + 1;
             player.hustle -= CONFIG.PROCESSING_HUSTLE_COST;
             
             // Update HUD

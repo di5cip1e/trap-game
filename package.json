@@ -26,6 +26,7 @@
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "jimp": "^1.6.0",
     "phaser": "^3.90.0"
   }
 }

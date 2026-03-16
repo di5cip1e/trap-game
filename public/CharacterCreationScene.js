@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+
 import { CONFIG } from './config.js';
 import SaveLoadSystem from './SaveLoadSystem.js';
 

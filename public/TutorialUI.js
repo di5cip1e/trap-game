@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+
 import { CONFIG } from './config.js';
 import { EventBus, EVENTS } from './EventBus.js';
 

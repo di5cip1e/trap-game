@@ -400,6 +400,101 @@ export default class SafehouseUI {
     }
     
 
+
+    depositItem(itemId, amount) {
+        const player = this.scene.playerState;
+        
+        // Handle raw materials
+        if (itemId === 'Raw Materials') {
+            if (player.rawMaterials >= amount) {
+                player.rawMaterials -= amount;
+                this.addToStash('Raw Materials', amount);
+                this.showMessage(`Stored ${amount} Raw Materials`, CONFIG.COLORS.success);
+                this.renderMainMenu();
+            } else {
+                this.showMessage('Not enough!', CONFIG.COLORS.danger);
+            }
+            return;
+        }
+        
+        // Handle drugs
+        const drugs = player.drugs || {};
+        if (drugs[itemId] >= amount) {
+            drugs[itemId] -= amount;
+            this.addToStash(itemId, amount);
+            this.showMessage(`Stored ${amount} ${itemId}`, CONFIG.COLORS.success);
+            this.renderMainMenu();
+        } else {
+            this.showMessage('Not enough!', CONFIG.COLORS.danger);
+        }
+        
+        if (this.scene.hud) this.scene.hud.update();
+    }
+    
+    addToStash(itemId, amount) {
+        const existing = this.stash.find(i => i.id === itemId);
+        if (existing) {
+            existing.amount += amount;
+        } else {
+            this.stash.push({ id: itemId, amount: amount });
+        }
+    }
+    
+    withdrawItem(slotIndex) {
+        const item = this.stash[slotIndex];
+        if (!item) return;
+        
+        const player = this.scene.playerState;
+        
+        // Check capacity
+        const maxCarry = player.productCapacity || 20;
+        
+        if (item.id === 'Raw Materials') {
+            if (player.rawMaterials + item.amount <= player.rawCapacity) {
+                player.rawMaterials += item.amount;
+                this.stash.splice(slotIndex, 1);
+                this.showMessage(`Withdrew ${item.amount} Raw Materials`, CONFIG.COLORS.success);
+            } else {
+                this.showMessage('Inventory full!', CONFIG.COLORS.danger);
+            }
+        } else {
+            // Drug
+            const drugs = player.drugs || {};
+            if ((drugs[item.id] || 0) + item.amount <= maxCarry) {
+                drugs[item.id] = (drugs[item.id] || 0) + item.amount;
+                this.stash.splice(slotIndex, 1);
+                this.showMessage(`Withdrew ${item.amount} ${item.id}`, CONFIG.COLORS.success);
+            } else {
+                this.showMessage('Inventory full!', CONFIG.COLORS.danger);
+            }
+        }
+        
+        if (this.scene.hud) this.scene.hud.update();
+        this.renderMainMenu();
+    }
+    
+    createSmallButton(x, y, w, h, label, onClick) {
+        const btn = this.scene.add.container(x, y);
+        
+        const bg = this.scene.add.rectangle(0, 0, w, h, 0x2a2a4a);
+        bg.setStrokeStyle(2, 0x666666);
+        btn.add(bg);
+        
+        const text = this.scene.add.text(0, 0, label, {
+            fontFamily: 'Arial',
+            fontSize: '11px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        btn.add(text);
+        
+        bg.setInteractive({ useHandCursor: true });
+        bg.on('pointerover', () => bg.setFillStyle(0x3a3a5a));
+        bg.on('pointerout', () => bg.setFillStyle(0x2a2a4a));
+        bg.on('pointerup', onClick);
+        
+        return btn;
+    }
+
     rest() {
         const player = this.scene.playerState;
         const restHustle = CONFIG.MAX_HUSTLE;

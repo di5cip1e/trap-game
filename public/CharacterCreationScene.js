@@ -227,7 +227,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
                 }).setDepth(1003);
                 deleteBtn.setInteractive({ useHandCursor: true });
                 deleteBtn.on('pointerdown', (e) => {
-                    e.stopPropagation();
+                    e.event.stopPropagation();
                     this.confirmDeleteSlot(index);
                 });
             } else {
@@ -298,7 +298,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
     /**
      * Create a menu button (smaller, simpler than createButton)
      */
-    createMenuButton(x, y, width, height, text) {
+    createMenuButton(x, y, width, height, text, callback) {
         const btn = this.add.rectangle(x, y, width, height, 0x2a2a2a);
         btn.setStrokeStyle(2, CONFIG.COLORS.primary);
         btn.setInteractive({ useHandCursor: true });
@@ -315,6 +315,10 @@ export default class CharacterCreationScene extends Phaser.Scene {
         btn.on('pointerout', () => {
             btn.setFillStyle(0x2a2a2a);
         });
+
+    btn.on('pointerup', () => {
+        if (callback) callback();
+    });
         
         return { bg: btn, label: label };
     }
@@ -544,6 +548,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
         previewContainer.add(this.neighborhoodDisplay);
         
         this.updateCharacterPreview();
+                this.updateStartButton();
     }
     
     createForm(x, y) {
@@ -632,13 +637,14 @@ export default class CharacterCreationScene extends Phaser.Scene {
         input.addEventListener('input', (e) => {
             this.characterData.name = e.target.value;
             this.updateCharacterPreview();
+                this.updateStartButton();
         });
         
         document.body.appendChild(input);
         this.nameInput = input;
         
         // Ensure cleanup on scene shutdown
-        this.events.once('shutdown', this.destroyNameInput);
+        this.events.once('shutdown', this.destroyNameInput, this);
     }
     
     destroyNameInput() {
@@ -662,6 +668,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
             this.characterData.gender = 'male';
             this.updateGenderButtons();
             this.updateCharacterPreview();
+                this.updateStartButton();
         });
         
         // Female button
@@ -669,6 +676,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
             this.characterData.gender = 'female';
             this.updateGenderButtons();
             this.updateCharacterPreview();
+                this.updateStartButton();
         });
         
         this.genderButtons = { male: maleBtn, female: femaleBtn };
@@ -700,6 +708,7 @@ export default class CharacterCreationScene extends Phaser.Scene {
                 }
                 this.updateNeighborhoodButtons();
                 this.updateCharacterPreview();
+                this.updateStartButton();
             });
             
             this.neighborhoodButtons[neighborhood] = btn;
